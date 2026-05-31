@@ -266,7 +266,10 @@
     lastX: 0,
     lastY: 0,
     laneY: 0,
+    targetX: null,
     startedAt: 0,
+    lastEndedAt: 0,
+    startedInPlay: false,
     dragging: false,
   };
 
@@ -571,6 +574,7 @@
       "pointerdown",
       (event) => {
         if (event.pointerType === "mouse" || state.phase !== "playing") return;
+        if (!isGameplayPointer(event)) return;
         event.preventDefault();
         touch.id = event.pointerId;
         touch.startX = event.clientX;
@@ -578,8 +582,11 @@
         touch.lastX = event.clientX;
         touch.lastY = event.clientY;
         touch.laneY = event.clientY;
+        touch.targetX = pointerToPlayerX(event.clientX);
         touch.startedAt = performance.now();
+        touch.startedInPlay = true;
         touch.dragging = false;
+        followPointerLane(event.clientY);
         canvas.setPointerCapture?.(event.pointerId);
       },
       { passive: false }
@@ -592,19 +599,14 @@
         event.preventDefault();
         const dx = event.clientX - touch.startX;
         const dy = event.clientY - touch.laneY;
-        if (Math.abs(dy) > 38) {
+        touch.targetX = pointerToPlayerX(event.clientX);
+        followPointerLane(event.clientY);
+        if (Math.abs(dy) > 30) {
           changeLane(dy > 0 ? 1 : -1);
           touch.laneY = event.clientY;
           touch.dragging = true;
         }
-        if (Math.abs(dx) > 20) {
-          controls.left = dx < 0;
-          controls.right = dx > 0;
-          touch.dragging = true;
-        } else if (Math.abs(dx) < 10) {
-          controls.left = false;
-          controls.right = false;
-        }
+        if (Math.abs(dx) > 12) touch.dragging = true;
         touch.lastX = event.clientX;
         touch.lastY = event.clientY;
       },
@@ -618,9 +620,9 @@
       const elapsed = performance.now() - touch.startedAt;
       controls.left = false;
       controls.right = false;
-      if (totalMove < 24 && elapsed < 360) triggerAction();
-      touch.id = null;
-      touch.dragging = false;
+      if (touch.startedInPlay && totalMove < 28 && elapsed < 360) triggerAction();
+      touch.lastEndedAt = performance.now();
+      resetPointerControl();
       try {
         canvas.releasePointerCapture?.(event.pointerId);
       } catch {
@@ -630,6 +632,40 @@
 
     canvas.addEventListener("pointerup", endTouch, { passive: false });
     canvas.addEventListener("pointercancel", endTouch, { passive: false });
+  }
+
+  function resetPointerControl() {
+    touch.id = null;
+    touch.targetX = null;
+    touch.startedInPlay = false;
+    touch.dragging = false;
+  }
+
+  function isGameplayPointer(event) {
+    return event.clientY >= Math.max(120, state.lanes[0] - 150);
+  }
+
+  function pointerToPlayerX(x) {
+    return clamp(x, 86, state.width * 0.58);
+  }
+
+  function followPointerLane(y) {
+    const lane = nearestLane(y);
+    if (lane !== null) setLane(lane);
+  }
+
+  function nearestLane(y) {
+    if (!state.lanes.length || y < state.lanes[0] - 120) return null;
+    let best = 0;
+    let bestDistance = Infinity;
+    for (let i = 0; i < state.lanes.length; i += 1) {
+      const distance = Math.abs(y - state.lanes[i]);
+      if (distance < bestDistance) {
+        best = i;
+        bestDistance = distance;
+      }
+    }
+    return best;
   }
 
   function resize() {
@@ -706,6 +742,7 @@
     player.actionTimer = 0;
     player.invuln = 0;
     player.laneRepeat = 0;
+    resetPointerControl();
     spawnOrder(!state.openingMode);
     dom.startOverlay.classList.add("hidden");
     dom.gameOverOverlay.classList.add("hidden");
@@ -783,7 +820,15 @@
 
     processLaneControls(dt);
     const move = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
-    player.x = clamp(player.x + move * (state.feverTime > 0 ? 330 : 260) * dt, 86, state.width * 0.58);
+    const maxX = state.width * 0.58;
+    if (touch.id !== null && Number.isFinite(touch.targetX)) {
+      const dx = touch.targetX - player.x;
+      const followSpeed = state.feverTime > 0 ? 620 : 520;
+      player.x = clamp(player.x + clamp(dx * 9, -followSpeed, followSpeed) * dt, 86, maxX);
+      if (Math.abs(dx) < 2) player.x = clamp(touch.targetX, 86, maxX);
+    } else {
+      player.x = clamp(player.x + move * (state.feverTime > 0 ? 330 : 260) * dt, 86, maxX);
+    }
     player.y += (state.lanes[player.lane] - player.y) * Math.min(1, dt * 13);
     player.stepBob += dt * (8 + Math.abs(move) * 6 + state.speed / 95);
 
@@ -832,6 +877,13 @@
       particle.x += particle.vx * dt;
       particle.y += particle.vy * dt;
       particle.vy += particle.gravity * dt;
+      if (particle.friction) {
+        const drag = Math.pow(particle.friction, dt * 60);
+        particle.vx *= drag;
+        particle.vy *= drag;
+      }
+      particle.angle = (particle.angle || 0) + (particle.spin || 0) * dt;
+      if (particle.grow) particle.size = Math.max(1, particle.size + particle.grow * dt);
       particle.life -= dt;
     }
     state.particles = state.particles.filter((particle) => particle.life > 0);
@@ -930,6 +982,7 @@
     if (entity.type === "hazard") {
       entity.done = true;
       entity.remove = true;
+      emitHazardImpact(entity);
       registerMistake(`${entity.label}混進來了`);
       return;
     }
@@ -945,8 +998,10 @@
     const match = step && entity.key === step.key && ((step.mode === "work") === (entity.type === "station"));
 
     if (entity.type === "station") {
-      if (player.actionTimer <= 0) return;
+      const touchWork = isTouchWorkActive();
+      if (player.actionTimer <= 0 && !touchWork) return;
       if (match) {
+        if (touchWork && player.actionTimer <= 0) triggerAction();
         entity.done = true;
         entity.remove = true;
         completeStep(entity);
@@ -963,6 +1018,10 @@
     } else {
       dismissNeutral(entity);
     }
+  }
+
+  function isTouchWorkActive() {
+    return touch.id !== null || performance.now() - touch.lastEndedAt < 420;
   }
 
   function dismissNeutral(entity) {
@@ -994,6 +1053,7 @@
     state.stepIndex += 1;
     state.shake = 0.34;
     emitPop(entity.x + entity.w / 2, entity.y - 28, def.color, 18);
+    emitElementImpact(step.key, entity, def.color, quality.grade === "perfect");
     if (quality.grade !== "perfect") emitRingBurst(entity.x + entity.w / 2, entity.y - 34, def.color, 1, 20);
     floatText(`+${formatNumber(points)}`, entity.x + entity.w / 2, entity.y - 70, def.color);
     beep(520 + Math.min(620, state.combo * 22), 0.045, "square", 0.035);
@@ -1172,6 +1232,7 @@
     emitPop(entity.x, entity.y - 20, bonus.color, 12);
     emitRingBurst(entity.x + entity.w / 2, entity.y - 34, bonus.color, 2, 28);
     emitLaneFlash(entity.lane, bonus.color);
+    emitBonusImpact(bonus.key, entity, bonus.color);
     floatText(text || `+${value}`, entity.x, entity.y - 64, bonus.color);
     floatText(`+${value}`, entity.x, entity.y - 88, COLORS.leaf);
     beep(700, 0.04, "triangle", 0.03);
@@ -1271,7 +1332,12 @@
 
   function changeLane(delta) {
     if (state.phase !== "playing") return;
-    const nextLane = clamp(player.lane + delta, 0, 2);
+    setLane(player.lane + delta);
+  }
+
+  function setLane(lane) {
+    if (state.phase !== "playing") return;
+    const nextLane = clamp(Math.round(lane), 0, 2);
     if (nextLane === player.lane) return;
     player.lane = nextLane;
     player.targetLane = player.lane;
@@ -1330,6 +1396,7 @@
     for (const pack of state.packages) drawPackage(pack);
     drawPlayer();
     drawActiveEffects();
+    drawTouchCursor();
     for (const burst of state.bursts) drawBurst(burst);
     for (const particle of state.particles) drawParticle(particle);
     for (const text of state.floats) drawFloat(text);
@@ -1720,6 +1787,8 @@
       fillRect(burst.x - size / 2, y - size / 2, size, size, "rgba(255,255,255,.88)");
       strokeRect(burst.x - size / 2, y - size / 2, size, size, burst.color, 3);
       drawText(burst.text, burst.x, y + 1, Math.max(12, size * 0.42), burst.color, "center");
+    } else if (burst.type === "impact") {
+      drawImpactBurst(burst, alpha, progress);
     } else {
       const size = burst.radius + burst.grow * progress;
       ctx.globalAlpha = alpha * 0.9;
@@ -1734,11 +1803,128 @@
     ctx.restore();
   }
 
+  function drawImpactBurst(burst, alpha, progress) {
+    const x = burst.x;
+    const y = burst.y;
+    const size = burst.radius + burst.grow * progress;
+    const color = burst.color;
+    const spin = burst.angle + burst.spin * progress;
+    ctx.globalAlpha = alpha * 0.88;
+
+    if (burst.style === "splash") {
+      strokeRect(x - size / 2, y - size / 2, size, size, color, 4);
+      strokeRect(x - size * 0.34, y - size * 0.34, size * 0.68, size * 0.68, "#ffffff", 3);
+      drawImpactSatellites(x, y, size * 0.45, spin, 8, color, 6);
+    } else if (burst.style === "orbit" || burst.style === "magnet") {
+      strokeRect(x - size / 2, y - size * 0.32, size, size * 0.64, color, 3);
+      strokeRect(x - size * 0.32, y - size / 2, size * 0.64, size, "#ffffff", 2);
+      drawImpactSatellites(x, y, size * 0.48, spin * 1.6, 10, color, 5);
+    } else if (burst.style === "punch") {
+      fillRect(x - size * 0.48, y - 5, size * 0.96, 10, color);
+      fillRect(x - 5, y - size * 0.48, 10, size * 0.96, "#ffffff");
+      strokeRect(x - size * 0.3, y - size * 0.3, size * 0.6, size * 0.6, color, 5);
+    } else if (burst.style === "crystal" || burst.style === "slow") {
+      strokeRect(x - size / 2, y - size / 2, size, size, color, 3);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.PI / 4 + spin);
+      strokeRect(-size * 0.36, -size * 0.36, size * 0.72, size * 0.72, "#ffffff", 2);
+      ctx.restore();
+      drawImpactSatellites(x, y, size * 0.52, spin, 6, color, 7);
+    } else if (burst.style === "confetti") {
+      drawImpactSatellites(x, y, size * 0.32, spin, 12, COLORS.berry, 7);
+      drawImpactSatellites(x, y, size * 0.5, -spin, 10, COLORS.orange, 5);
+    } else if (burst.style === "drip" || burst.style === "filter") {
+      for (let i = -2; i <= 2; i += 1) {
+        const h = size * (0.34 + (i + 3) * 0.05);
+        fillRect(x + i * 14 - 4, y - size * 0.24, 8, h, i % 2 ? "#ffffff" : color);
+      }
+      strokeRect(x - size * 0.42, y - size * 0.28, size * 0.84, size * 0.22, color, 3);
+    } else if (burst.style === "vortex") {
+      for (let i = 0; i < 12; i += 1) {
+        const a = spin + i * 0.72;
+        const r = size * (0.12 + i * 0.035);
+        fillRect(x + Math.cos(a) * r - 4, y + Math.sin(a) * r - 4, 8, 8, i % 3 ? color : "#ffffff");
+      }
+      strokeRect(x - size * 0.42, y - size * 0.42, size * 0.84, size * 0.84, color, 2);
+    } else if (burst.style === "bubble") {
+      for (let i = 0; i < 5; i += 1) {
+        const s = size * (0.2 + i * 0.09);
+        strokeRect(x - s / 2 + i * 8 - 16, y - s / 2 - i * 8, s, s, i % 2 ? "#ffffff" : color, 2);
+      }
+    } else if (burst.style === "scan") {
+      fillRect(x - size * 0.68, y - 18, size * 1.36, 6, "#ffffff");
+      fillRect(x - size * 0.58, y, size * 1.16, 7, color);
+      fillRect(x - size * 0.46, y + 18, size * 0.92, 5, "#ffffff");
+      strokeRect(x - size * 0.38, y - size * 0.38, size * 0.76, size * 0.76, color, 3);
+    } else if (burst.style === "ribbon") {
+      for (let i = -3; i <= 3; i += 1) {
+        fillRect(x + i * 12, y + Math.sin(i + progress * 7) * 18, 18, 6, i % 2 ? "#ffffff" : color);
+      }
+      strokeRect(x - size * 0.46, y - size * 0.28, size * 0.92, size * 0.56, color, 2);
+    } else if (burst.style === "stamp") {
+      fillRect(x - size * 0.34, y - size * 0.28, size * 0.68, size * 0.56, "rgba(255,255,255,.82)");
+      strokeRect(x - size * 0.34, y - size * 0.28, size * 0.68, size * 0.56, color, 5);
+      fillRect(x - size * 0.22, y - 4, size * 0.44, 8, color);
+    } else if (burst.style === "speed") {
+      for (let i = 0; i < 6; i += 1) {
+        fillRect(x - size * 0.72 - i * 18, y - 24 + i * 9, size * 1.05, 5, i % 2 ? "#ffffff" : color);
+      }
+      strokeRect(x - size * 0.16, y - size * 0.28, size * 0.5, size * 0.56, color, 3);
+    } else if (burst.style === "shield") {
+      strokeRect(x - size * 0.52, y - size * 0.52, size * 1.04, size * 1.04, color, 5);
+      strokeRect(x - size * 0.34, y - size * 0.34, size * 0.68, size * 0.68, "#ffffff", 3);
+      fillRect(x - 6, y - size * 0.3, 12, size * 0.6, color);
+    } else if (burst.style === "hazard") {
+      fillRect(x - size * 0.45, y - 5, size * 0.9, 10, color);
+      fillRect(x - 5, y - size * 0.45, 10, size * 0.9, color);
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.PI / 4);
+      fillRect(-size * 0.48, -4, size * 0.96, 8, "#ffffff");
+      ctx.restore();
+    } else {
+      strokeRect(x - size / 2, y - size / 2, size, size, color, 4);
+      drawImpactSatellites(x, y, size * 0.45, spin, 8, color, 6);
+    }
+  }
+
+  function drawImpactSatellites(x, y, radius, spin, count, color, size) {
+    for (let i = 0; i < count; i += 1) {
+      const a = spin + (i / count) * Math.PI * 2;
+      fillRect(x + Math.cos(a) * radius - size / 2, y + Math.sin(a) * radius - size / 2, size, size, i % 2 ? "#ffffff" : color);
+    }
+  }
+
   function drawParticle(particle) {
     const alpha = Math.max(0, particle.life / particle.maxLife);
+    ctx.save();
     ctx.globalAlpha = alpha;
-    fillRect(particle.x, particle.y, particle.size, particle.size, particle.color);
-    ctx.globalAlpha = 1;
+    ctx.translate(particle.x, particle.y);
+    ctx.rotate(particle.angle || 0);
+    if (particle.shape === "line") {
+      fillRect(-particle.size * 1.8, -particle.size / 2, particle.size * 3.6, particle.size, particle.color);
+    } else if (particle.shape === "diamond" || particle.shape === "shard") {
+      ctx.rotate(Math.PI / 4);
+      fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size, particle.color);
+    } else if (particle.shape === "drop") {
+      fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size * 1.45, particle.color);
+      fillRect(-particle.size * 0.25, -particle.size, particle.size * 0.5, particle.size * 0.5, "#ffffff");
+    } else if (particle.shape === "bubble") {
+      strokeRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size, particle.color, 2);
+      fillRect(-1, -1, 2, 2, "#ffffff");
+    } else if (particle.shape === "confetti") {
+      fillRect(-particle.size, -particle.size / 2, particle.size * 2, particle.size, particle.color);
+    } else if (particle.shape === "zig") {
+      fillRect(-particle.size, -particle.size / 2, particle.size * 1.4, particle.size, particle.color);
+      fillRect(0, 0, particle.size * 1.4, particle.size, "#ffffff");
+    } else if (particle.shape === "block") {
+      fillRect(-particle.size / 2, -particle.size / 2, particle.size * 1.2, particle.size * 1.2, particle.color);
+      strokeRect(-particle.size / 2, -particle.size / 2, particle.size * 1.2, particle.size * 1.2, "rgba(36,50,58,.28)", 1);
+    } else {
+      fillRect(-particle.size / 2, -particle.size / 2, particle.size, particle.size, particle.color);
+    }
+    ctx.restore();
   }
 
   function drawFloat(text) {
@@ -1803,6 +1989,24 @@
     }
   }
 
+  function drawTouchCursor() {
+    if (touch.id === null || !Number.isFinite(touch.targetX)) return;
+    const x = Math.round(touch.targetX);
+    const y = state.lanes[player.lane];
+    const pulse = 0.5 + Math.sin(state.time * 16) * 0.28;
+    ctx.save();
+    ctx.globalAlpha = 0.2 + pulse * 0.18;
+    fillRect(x - 27, y - 105, 54, 132, COLORS.aquaDeep);
+    ctx.globalAlpha = 0.76;
+    strokeRect(x - 30, y - 108, 60, 138, "#ffffff", 3);
+    strokeRect(x - 22, y - 96, 44, 116, COLORS.aquaDeep, 3);
+    fillRect(x - 4, y - 118, 8, 20, "#ffffff");
+    fillRect(x - 4, y + 22, 8, 20, "#ffffff");
+    fillRect(x - 40, y - 42, 20, 8, "#ffffff");
+    fillRect(x + 20, y - 42, 20, 8, "#ffffff");
+    ctx.restore();
+  }
+
   function drawCloud(x, y) {
     fillRect(x, y, 84, 22, "rgba(255,255,255,.75)");
     fillRect(x + 16, y - 14, 34, 24, "rgba(255,255,255,.85)");
@@ -1836,6 +2040,123 @@
 
   function drawPixelShadow(x, y, w) {
     fillRect(x - w / 2, y, w, 10, "rgba(36,50,58,.15)");
+  }
+
+  function impactCenter(entity) {
+    return { x: entity.x + entity.w / 2, y: entity.y - entity.h * 0.7 };
+  }
+
+  function emitElementImpact(key, entity, color, perfect) {
+    const { x, y } = impactCenter(entity);
+    const intensity = perfect ? 1.35 : 1;
+    const styles = {
+      milk: "splash",
+      culture: "orbit",
+      protein: "punch",
+      calcium: "crystal",
+      fruit: "confetti",
+      honey: "drip",
+      mix: "vortex",
+      ferment: "bubble",
+      strain: "filter",
+      qc: "scan",
+      texture: "ribbon",
+      pack: "stamp",
+      ship: "speed",
+    };
+    emitImpactBurst(x, y, color, styles[key] || "spark", intensity);
+
+    if (key === "milk") {
+      emitImpactParticles(x, y, ["#ffffff", "#dff6ff", color], Math.round(18 * intensity), { start: -Math.PI / 2, spread: Math.PI * 1.45, speedMin: 90, speedMax: 250, gravity: 260, shape: "drop", sizeMin: 4, sizeMax: 9 });
+    } else if (key === "culture") {
+      emitImpactParticles(x, y, [color, COLORS.aqua, "#ffffff"], Math.round(16 * intensity), { spread: Math.PI * 2, speedMin: 80, speedMax: 190, gravity: -20, friction: 0.965, spin: 8, shape: "diamond" });
+    } else if (key === "protein") {
+      emitImpactParticles(x, y, [color, COLORS.yellow, "#ffffff"], Math.round(14 * intensity), { start: -Math.PI / 2, spread: Math.PI * 0.8, speedMin: 150, speedMax: 310, gravity: 340, shape: "block", sizeMin: 6, sizeMax: 12 });
+    } else if (key === "calcium") {
+      emitImpactParticles(x, y, [color, "#dceffc", "#ffffff"], Math.round(18 * intensity), { spread: Math.PI * 2, speedMin: 95, speedMax: 230, friction: 0.94, spin: 5, shape: "diamond", grow: -2 });
+    } else if (key === "fruit") {
+      emitImpactParticles(x, y, [COLORS.berry, COLORS.orange, COLORS.leaf, "#ffffff"], Math.round(22 * intensity), { start: -Math.PI / 2, spread: Math.PI * 1.65, speedMin: 120, speedMax: 290, gravity: 260, spin: 12, shape: "confetti" });
+    } else if (key === "honey") {
+      emitImpactParticles(x, y, [color, COLORS.yellow, "#fff8c6"], Math.round(17 * intensity), { start: Math.PI / 2, spread: Math.PI * 0.42, speedMin: 35, speedMax: 120, gravity: 120, shape: "line", sizeMin: 5, sizeMax: 11, grow: 5 });
+    } else if (key === "mix") {
+      emitImpactParticles(x, y, [color, COLORS.aqua, "#ffffff"], Math.round(19 * intensity), { spread: Math.PI * 2, speedMin: 70, speedMax: 210, friction: 0.92, spin: 11, shape: "line" });
+    } else if (key === "ferment") {
+      emitImpactParticles(x, y, [color, "#def3df", "#ffffff"], Math.round(18 * intensity), { start: -Math.PI / 2, spread: Math.PI * 0.95, speedMin: 55, speedMax: 180, gravity: -35, friction: 0.97, shape: "bubble", grow: 10 });
+    } else if (key === "strain") {
+      emitImpactParticles(x, y, [color, "#f4e0cf", "#ffffff"], Math.round(18 * intensity), { start: Math.PI / 2, spread: Math.PI * 0.28, speedMin: 50, speedMax: 155, gravity: 65, shape: "line", sizeMin: 5, sizeMax: 12 });
+    } else if (key === "qc") {
+      emitImpactParticles(x, y, [color, "#ffffff"], Math.round(16 * intensity), { start: 0, spread: Math.PI * 0.2, speedMin: 160, speedMax: 340, friction: 0.96, shape: "line", sizeMin: 4, sizeMax: 9 });
+      emitImpactParticles(x, y, [color, "#ffffff"], Math.round(10 * intensity), { start: Math.PI, spread: Math.PI * 0.2, speedMin: 140, speedMax: 260, friction: 0.96, shape: "line", sizeMin: 4, sizeMax: 8 });
+    } else if (key === "texture") {
+      emitImpactParticles(x, y, [color, COLORS.yellow, "#ffffff"], Math.round(20 * intensity), { spread: Math.PI * 2, speedMin: 90, speedMax: 230, friction: 0.94, spin: 15, shape: "zig" });
+    } else if (key === "pack") {
+      emitImpactParticles(x, y, [color, "#eadfff", "#ffffff"], Math.round(16 * intensity), { spread: Math.PI * 2, speedMin: 80, speedMax: 210, gravity: 140, spin: 8, shape: "block", sizeMin: 5, sizeMax: 11 });
+    } else if (key === "ship") {
+      emitImpactParticles(x - 8, y, [color, "#ffffff", "#dceffc"], Math.round(20 * intensity), { start: 0, spread: Math.PI * 0.32, speedMin: 180, speedMax: 420, friction: 0.98, shape: "line", sizeMin: 5, sizeMax: 12 });
+    }
+    trimParticles();
+  }
+
+  function emitBonusImpact(key, entity, color) {
+    const { x, y } = impactCenter(entity);
+    const style = key === "cleanBoost" ? "shield" : key === "probioticBoost" ? "magnet" : "slow";
+    emitImpactBurst(x, y, color, style, 1.25);
+    emitImpactParticles(x, y, [color, "#ffffff", COLORS.yellow], 24, { spread: Math.PI * 2, speedMin: 100, speedMax: 280, friction: 0.95, spin: 10, shape: key === "calciumBoost" ? "diamond" : "spark" });
+    trimParticles();
+  }
+
+  function emitHazardImpact(entity) {
+    const { x, y } = impactCenter(entity);
+    emitImpactBurst(x, y, entity.color, "hazard", 1.15);
+    emitImpactParticles(x, y, [entity.color, "#6b513f", "#ffffff"], 18, { spread: Math.PI * 2, speedMin: 110, speedMax: 260, gravity: 260, spin: 9, shape: "shard", sizeMin: 5, sizeMax: 11 });
+    trimParticles();
+  }
+
+  function emitImpactBurst(x, y, color, style, intensity = 1) {
+    state.bursts.push({
+      type: "impact",
+      style,
+      x,
+      y,
+      radius: 30 * intensity,
+      grow: 58 * intensity,
+      thickness: 4,
+      color,
+      angle: random(0, Math.PI),
+      spin: random(-5, 5),
+      life: 0.52 * intensity,
+      maxLife: 0.52 * intensity,
+    });
+    trimBursts();
+  }
+
+  function emitImpactParticles(x, y, colors, count, options = {}) {
+    const spread = options.spread ?? Math.PI * 2;
+    const start = options.start ?? 0;
+    const speedMin = options.speedMin ?? 80;
+    const speedMax = options.speedMax ?? 220;
+    const jitter = options.jitter ?? 14;
+    for (let i = 0; i < count; i += 1) {
+      const angle = start + random(-spread / 2, spread / 2);
+      const speed = random(speedMin, speedMax);
+      const life = random(options.lifeMin || 0.44, options.lifeMax || 0.9);
+      state.particles.push({
+        x: x + random(-jitter, jitter),
+        y: y + random(-jitter * 0.7, jitter * 0.7),
+        vx: Math.cos(angle) * speed + (options.vx || 0),
+        vy: Math.sin(angle) * speed + (options.vy || 0),
+        gravity: options.gravity || 0,
+        friction: options.friction,
+        angle: random(0, Math.PI),
+        spin: random(-(options.spin || 0), options.spin || 0),
+        grow: options.grow || 0,
+        shape: options.shape || "square",
+        size: randomInt(options.sizeMin || 3, options.sizeMax || 8),
+        color: colors[i % colors.length],
+        life,
+        maxLife: life,
+      });
+    }
   }
 
   function emitPop(x, y, color, count) {
@@ -2067,6 +2388,7 @@
     controls.up = false;
     controls.down = false;
     controls.action = false;
+    resetPointerControl();
     state.shake = 0;
     state.feverTime = 0;
     state.highScore = Math.max(state.highScore, state.score);
