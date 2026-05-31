@@ -60,39 +60,39 @@
   };
 
   const TYPES = {
-    milk: { label: "鮮奶", short: "奶", color: "#7fc3de", bg: "#dff6ff", hold: "鮮奶" },
-    culture: { label: "益菌", short: "菌", color: "#268aa1", bg: "#caeef6", hold: "益菌" },
-    protein: { label: "高蛋白", short: "蛋", color: "#ef8b53", bg: "#ffe0cc", hold: "蛋白" },
-    calcium: { label: "鈣", short: "鈣", color: "#4b91b6", bg: "#dceffc", hold: "鈣" },
-    fruit: { label: "水果", short: "果", color: "#b44966", bg: "#f4d7df", hold: "水果" },
-    honey: { label: "蜂蜜", short: "蜜", color: "#c58b27", bg: "#fff2b8", hold: "蜂蜜" },
-    mix: { label: "混乳", short: "混", color: "#f4d16f", bg: "#fff2b8", stage: "混乳中" },
-    ferment: { label: "熟成", short: "酵", color: "#65a85f", bg: "#def3df", stage: "熟成中" },
-    strain: { label: "濾乳", short: "濾", color: "#9b6c53", bg: "#f4e0cf", stage: "希臘濾乳" },
-    qc: { label: "檢查", short: "檢", color: "#b44966", bg: "#f4d7df", stage: "純淨檢查" },
-    texture: { label: "口感", short: "滑", color: "#ef8b53", bg: "#ffe0cc", stage: "口感調整" },
-    pack: { label: "貼標", short: "標", color: "#7d5ba6", bg: "#eadfff", stage: "封杯完成" },
-    ship: { label: "出貨", short: "出", color: "#4b91b6", bg: "#dceffc", stage: "冷鏈出貨" },
+    milk: { label: "鮮奶", short: "奶", color: "#7fc3de", bg: "#dff6ff", hold: "鮮奶", feature: "純淨基底", effect: "純淨+", verb: "補純" },
+    culture: { label: "益菌", short: "菌", color: "#268aa1", bg: "#caeef6", hold: "益菌", feature: "8 種益菌", effect: "牽引", verb: "牽引" },
+    protein: { label: "高蛋白", short: "蛋", color: "#ef8b53", bg: "#ffe0cc", hold: "蛋白", feature: "厚實飽足", effect: "分數+", verb: "加分" },
+    calcium: { label: "鈣", short: "鈣", color: "#4b91b6", bg: "#dceffc", hold: "鈣", feature: "鈣力守護", effect: "慢拍", verb: "慢拍" },
+    fruit: { label: "水果", short: "果", color: "#b44966", bg: "#f4d7df", hold: "水果", feature: "果香層次", effect: "能量+", verb: "提香" },
+    honey: { label: "蜂蜜", short: "蜜", color: "#c58b27", bg: "#fff2b8", hold: "蜂蜜", feature: "自然甜感", effect: "秒數+", verb: "回甘" },
+    mix: { label: "混乳", short: "混", color: "#f4d16f", bg: "#fff2b8", stage: "混乳中", feature: "滑順混乳", effect: "接續快", verb: "滑順" },
+    ferment: { label: "熟成", short: "酵", color: "#65a85f", bg: "#def3df", stage: "熟成中", feature: "低溫熟成", effect: "能量+", verb: "熟成" },
+    strain: { label: "濾乳", short: "濾", color: "#9b6c53", bg: "#f4e0cf", stage: "希臘濾乳", feature: "綿密濾乳", effect: "精品+", verb: "濾厚" },
+    qc: { label: "檢查", short: "檢", color: "#b44966", bg: "#f4d7df", stage: "純淨檢查", feature: "純淨把關", effect: "護盾", verb: "把關" },
+    texture: { label: "口感", short: "滑", color: "#ef8b53", bg: "#ffe0cc", stage: "口感調整", feature: "口感研發", effect: "連線+", verb: "調滑" },
+    pack: { label: "貼標", short: "標", color: "#7d5ba6", bg: "#eadfff", stage: "封杯完成", feature: "精品封杯", effect: "熱度+", verb: "封杯" },
+    ship: { label: "出貨", short: "出", color: "#4b91b6", bg: "#dceffc", stage: "冷鏈出貨", feature: "冷鏈保鮮", effect: "秒數+", verb: "保鮮" },
   };
 
   const HAZARDS = [
-    { key: "flavor", label: "香精", short: "香", color: "#b44966" },
-    { key: "coloring", label: "色素", short: "色", color: "#8e4da8" },
-    { key: "dirty", label: "髒汙", short: "髒", color: "#6b513f" },
-    { key: "sugar", label: "過糖", short: "糖", color: "#d17a2f" },
+    { key: "flavor", label: "香精", short: "香", color: "#b44966", feature: "非純淨", effect: "扣純" },
+    { key: "coloring", label: "色素", short: "色", color: "#8e4da8", feature: "人工色", effect: "扣秒" },
+    { key: "dirty", label: "髒汙", short: "髒", color: "#6b513f", feature: "品管失守", effect: "重扣" },
+    { key: "sugar", label: "過糖", short: "糖", color: "#d17a2f", feature: "甜感失衡", effect: "扣能" },
   ];
 
   const BONUS = [
-    { key: "calciumBoost", label: "鈣力慢拍", short: "鈣", color: "#4b91b6" },
-    { key: "probioticBoost", label: "益菌磁吸", short: "益", color: "#268aa1" },
-    { key: "cleanBoost", label: "純淨盾", short: "淨", color: "#65a85f" },
+    { key: "calciumBoost", label: "鈣力慢拍", short: "鈣", color: "#4b91b6", feature: "鈣力補給", effect: "危險物慢" },
+    { key: "probioticBoost", label: "益菌磁吸", short: "益", color: "#268aa1", feature: "益菌活力", effect: "目標貼近" },
+    { key: "cleanBoost", label: "純淨盾", short: "淨", color: "#65a85f", feature: "純淨製作", effect: "擋添加物" },
   ];
 
   const STATION_KEYS = ["mix", "ferment", "strain", "qc", "texture", "pack", "ship"];
 
   const DIFFICULTY_TIERS = [
-    { min: 1, name: "鮮奶新手線", speed: 184, sameLane: 0.96, required: 1.86, decoy: false, hazard: false, decoyMin: 3.4, decoyMax: 4.2, hazardMin: 9.5, hazardMax: 11.5, timeCap: 72, orderTime: 14, missPurity: 5, missTime: 0.8, timerDrain: 0.96, hazardTarget: 0, bonusChance: 0.6 },
-    { min: 2, name: "純淨封杯線", speed: 198, sameLane: 0.9, required: 1.68, decoy: true, hazard: false, decoyMin: 2.8, decoyMax: 3.7, hazardMin: 8.0, hazardMax: 9.8, timeCap: 70, orderTime: 12, missPurity: 6, missTime: 1.0, timerDrain: 1, hazardTarget: 0.08, bonusChance: 0.54 },
+    { min: 1, name: "鮮奶新手線", speed: 202, sameLane: 0.9, required: 1.58, decoy: true, hazard: false, decoyMin: 1.55, decoyMax: 2.25, hazardMin: 9.5, hazardMax: 11.5, timeCap: 72, orderTime: 13, missPurity: 5, missTime: 0.8, timerDrain: 0.98, hazardTarget: 0, bonusChance: 0.46 },
+    { min: 2, name: "純淨封杯線", speed: 212, sameLane: 0.84, required: 1.48, decoy: true, hazard: false, decoyMin: 1.7, decoyMax: 2.55, hazardMin: 8.0, hazardMax: 9.8, timeCap: 70, orderTime: 11, missPurity: 6, missTime: 1.0, timerDrain: 1.02, hazardTarget: 0.08, bonusChance: 0.5 },
     { min: 5, name: "益菌熟成線", speed: 224, sameLane: 0.8, required: 1.44, decoy: true, hazard: true, decoyMin: 2.05, decoyMax: 2.85, hazardMin: 5.2, hazardMax: 6.8, timeCap: 64, orderTime: 9, missPurity: 8, missTime: 1.3, timerDrain: 1.06, hazardTarget: 0.3, bonusChance: 0.45 },
     { min: 8, name: "口感研發線", speed: 254, sameLane: 0.68, required: 1.24, decoy: true, hazard: true, decoyMin: 1.55, decoyMax: 2.2, hazardMin: 3.3, hazardMax: 4.6, timeCap: 60, orderTime: 7, missPurity: 12, missTime: 1.8, timerDrain: 1.16, hazardTarget: 0.46, bonusChance: 0.38 },
     { min: 12, name: "精品爆單線", speed: 292, sameLane: 0.56, required: 1.02, decoy: true, hazard: true, decoyMin: 1.16, decoyMax: 1.7, hazardMin: 2.25, hazardMax: 3.35, timeCap: 54, orderTime: 5.2, missPurity: 17, missTime: 2.5, timerDrain: 1.34, hazardTarget: 0.62, bonusChance: 0.34 },
@@ -115,6 +115,8 @@
 
   const MISSION_RULES = [
     { id: "noMiss", unlock: 1, label: "本批不碰添加物", points: 900, kind: "orderPerfect" },
+    { id: "starterCombo4", unlock: 1, label: "4 連線完成手感", points: 980, target: 4, counter: "combo" },
+    { id: "brandHeat3", unlock: 1, label: "集 3 個品牌亮點", points: 1100, target: 3, counter: "brandFeatures" },
     { id: "perfect3", unlock: 2, label: "連續 3 次 PERFECT", points: 1200, target: 3, counter: "perfectStreak" },
     { id: "collectPerfect2", unlock: 3, label: "原料 2 次 PERFECT", points: 1350, target: 2, counter: "collectPerfects" },
     { id: "bonus1", unlock: 4, label: "吃到 1 個營養道具", points: 1250, target: 1, counter: "bonuses" },
@@ -205,6 +207,7 @@
     bestPrecisionStreak: 0,
     multiplier: 1,
     lastComboPrize: 0,
+    brandHeat: 0,
     shield: 0,
     slowTime: 0,
     magnetTime: 0,
@@ -228,6 +231,7 @@
     batchCollectPerfects: 0,
     batchOkHits: 0,
     batchPureRushes: 0,
+    batchFeatureKeys: {},
     shake: 0,
     entities: [],
     particles: [],
@@ -269,6 +273,19 @@
   const audio = {
     muted: localStorage.getItem(AUDIO_KEY) === "1",
     context: null,
+    sfxGain: null,
+    bgmGain: null,
+    bgmTimer: null,
+    bgmStep: 0,
+    bgmNextTime: 0,
+  };
+
+  const BGM = {
+    bpm: 96,
+    melody: ["E5", null, "G5", null, "A5", "G5", null, "E5", "D5", null, "E5", "G5", null, "C6", "B5", null, "A5", null, "G5", "E5", null, "D5", "E5", null, "G5", null, "A5", "G5", "E5", null, "D5", null],
+    bass: ["C3", null, null, null, "G2", null, null, null, "A2", null, null, null, "F2", null, "G2", null, "C3", null, null, null, "E3", null, null, null, "A2", null, null, null, "F2", null, "G2", null],
+    sparkle: ["C6", null, null, null, "E6", null, null, "G6", null, null, "B5", null, "C6", null, null, null, "E6", null, null, "G6", null, "A6", null, null, "G6", null, "E6", null, null, "D6", null, null],
+    chords: [["C4", "E4", "G4"], ["G3", "B3", "D4"], ["A3", "C4", "E4"], ["F3", "A3", "C4"]],
   };
 
   const logo = new Image();
@@ -654,6 +671,7 @@
     state.bestPrecisionStreak = 0;
     state.multiplier = 1;
     state.lastComboPrize = 0;
+    state.brandHeat = 0;
     state.shield = 0;
     state.slowTime = 0;
     state.magnetTime = 0;
@@ -665,8 +683,8 @@
     state.level = state.openingMode?.level || 1;
     state.purity = state.openingMode?.purity || 100;
     state.timeRemaining = state.openingMode?.timeRemaining || 64;
-    state.requiredTimer = state.openingMode?.requiredTimer || 0.42;
-    state.decoyTimer = state.openingMode?.decoyTimer || 3.2;
+    state.requiredTimer = state.openingMode?.requiredTimer || 0.34;
+    state.decoyTimer = state.openingMode?.decoyTimer || 1.25;
     state.hazardTimer = state.openingMode?.hazardTimer || 9;
     state.batchLaneChanges = 0;
     state.batchBonuses = 0;
@@ -675,6 +693,7 @@
     state.batchCollectPerfects = 0;
     state.batchOkHits = 0;
     state.batchPureRushes = 0;
+    state.batchFeatureKeys = {};
     state.entities = [];
     state.particles = [];
     state.bursts = [];
@@ -691,6 +710,7 @@
     dom.startOverlay.classList.add("hidden");
     dom.gameOverOverlay.classList.add("hidden");
     showToast(state.openingMode ? `${state.openingMode.label}：${state.openingMode.desc}` : "開工！先穩穩完成鮮奶線");
+    startBgm(true);
     beep(560, 0.055, "square", 0.04);
   }
 
@@ -710,10 +730,11 @@
     state.batchCollectPerfects = 0;
     state.batchOkHits = 0;
     state.batchPureRushes = 0;
+    state.batchFeatureKeys = {};
     state.mission = createMission();
     state.carry = "空手";
     const opening = activeOpeningMode();
-    state.requiredTimer = opening ? opening.requiredTimer : state.completedOrders === 0 ? 0.55 : Math.min(0.8, diff.required * 0.55);
+    state.requiredTimer = opening ? opening.requiredTimer : state.completedOrders === 0 ? 0.38 : Math.min(0.8, diff.required * 0.55);
     if (opening) {
       state.decoyTimer = opening.decoyTimer;
       state.hazardTimer = opening.hazardTimer;
@@ -783,6 +804,11 @@
       const slowFactor = entity.type === "hazard" && state.slowTime > 0 ? 0.56 : 1;
       entity.x -= (state.speed + entity.speedOffset) * slowFactor * dt;
       entity.anim += dt;
+      entity.trailTimer -= dt;
+      if (entity.trailTimer <= 0 && entity.x > -40 && entity.x < state.width + 120) {
+        emitEntityTrail(entity);
+        entity.trailTimer = entity.type === "hazard" ? 0.1 : entity.type === "bonus" ? 0.07 : entity.required ? 0.12 : 0.18;
+      }
       if (entity.required && !entity.done && entity.x + entity.w < player.x - 46) {
         skipRequired(entity);
       }
@@ -893,6 +919,7 @@
       bg: def.bg || "#fff4dc",
       speedOffset: random(-12, 28),
       anim: random(0, 2),
+      trailTimer: random(0.04, 0.16),
       hazard: options.hazard,
       bonus: options.bonus,
       pulse: 0,
@@ -963,6 +990,7 @@
     state.fever = clamp(state.fever + 10 + Math.min(14, state.combo * 0.45), 0, 100);
     state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 0.7);
     state.carry = step.mode === "collect" ? def.hold || def.label : def.stage || def.label;
+    applyElementFeature(step, def, entity, quality);
     state.stepIndex += 1;
     state.shake = 0.34;
     emitPop(entity.x + entity.w / 2, entity.y - 28, def.color, 18);
@@ -989,6 +1017,99 @@
     } else {
       state.requiredTimer = Math.min(state.requiredTimer, quality.grade === "perfect" ? 0.1 : quality.grade === "good" ? 0.18 : 0.32);
       renderRecipe();
+    }
+  }
+
+  function applyElementFeature(step, def, entity, quality) {
+    const perfect = quality.grade === "perfect";
+    let points = 0;
+    let time = 0;
+    let purity = 0;
+    let fever = 0;
+    let text = def.effect;
+
+    if (step.key === "milk") {
+      purity = perfect ? 3 : 2;
+      text = "鮮乳純淨";
+    } else if (step.key === "culture") {
+      state.magnetTime = Math.max(state.magnetTime, perfect ? 3.8 : 2.4);
+      fever = perfect ? 5 : 3;
+      text = "益菌牽引";
+    } else if (step.key === "protein") {
+      points = 220 + state.level * 18;
+      text = "高蛋白加分";
+    } else if (step.key === "calcium") {
+      state.slowTime = Math.max(state.slowTime, perfect ? 2.6 : 1.7);
+      purity = 1;
+      text = "鈣力慢拍";
+    } else if (step.key === "fruit") {
+      fever = perfect ? 8 : 5;
+      text = "果香能量";
+    } else if (step.key === "honey") {
+      time = perfect ? 0.9 : 0.55;
+      points = 120;
+      text = "自然回甘";
+    } else if (step.key === "mix") {
+      state.requiredTimer = Math.min(state.requiredTimer, 0.2);
+      text = "滑順接續";
+    } else if (step.key === "ferment") {
+      purity = perfect ? 3 : 1;
+      fever = 4;
+      text = "低溫熟成";
+    } else if (step.key === "strain") {
+      points = 260 + state.level * 16;
+      text = "濾出綿密";
+    } else if (step.key === "qc") {
+      purity = perfect ? 4 : 2;
+      if (perfect) state.shield = Math.min(3, state.shield + 1);
+      text = perfect ? "品檢補盾" : "純淨把關";
+    } else if (step.key === "texture") {
+      fever = 5;
+      if (perfect) {
+        state.combo += 1;
+        state.maxCombo = Math.max(state.maxCombo, state.combo);
+        text = "口感連線+1";
+      } else {
+        text = "口感滑順";
+      }
+    } else if (step.key === "pack") {
+      points = 180 + state.level * 12;
+      text = "精品封杯";
+    } else if (step.key === "ship") {
+      time = perfect ? 1.0 : 0.65;
+      text = "冷鏈保鮮";
+    }
+
+    if (points > 0) state.score += Math.round(points * state.multiplier);
+    if (time > 0) state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + time);
+    if (purity > 0) state.purity = clamp(state.purity + purity, 0, 100);
+    if (fever > 0) state.fever = clamp(state.fever + fever, 0, 100);
+
+    markBrandFeature(step.key, def, entity, text);
+    if (text) {
+      floatText(text, entity.x + entity.w / 2, entity.y - 122, def.color);
+      emitFeatureSpark(entity.x + entity.w / 2, entity.y - 42, def.color, perfect ? 10 : 6);
+      emitBadgeBurst(entity.x + entity.w / 2, entity.y - 52, def.color, def.short);
+    }
+    handleComboPrize();
+  }
+
+  function markBrandFeature(key, def, entity, text) {
+    if (state.batchFeatureKeys[key]) return;
+    state.batchFeatureKeys[key] = true;
+    state.brandHeat += 1;
+    bumpMission("brandFeatures");
+    if (state.brandHeat > 0 && state.brandHeat % 5 === 0) {
+      const bonus = 520 + state.brandHeat * 70;
+      state.score += bonus;
+      state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 1.2);
+      state.fever = clamp(state.fever + 9, 0, 100);
+      floatText("品牌熱度！", player.x + 72, player.y - 148, COLORS.purple);
+      floatText(`+${formatNumber(bonus)}`, player.x + 72, player.y - 122, COLORS.leaf);
+      emitRingBurst(player.x + 58, player.y - 46, COLORS.purple, 3, 32);
+      emitFeatureSpark(player.x + 58, player.y - 42, COLORS.purple, 18);
+    } else if (text) {
+      floatText("品牌亮點 +1", entity.x + entity.w / 2, entity.y - 146, COLORS.purple);
     }
   }
 
@@ -1301,6 +1422,7 @@
     } else {
       drawIngredientIcon(entity.key, x, y, entity.required);
     }
+    if (entity.required || entity.type === "bonus") drawFeatureChip(entity, x + entity.w / 2, y - 24);
     if (entity.required || entity.type === "bonus") drawEntityLabel(entity, x + entity.w / 2, y + 76);
   }
 
@@ -1405,6 +1527,7 @@
     drawText(def.short, x + 52, y + 7, 20, def.color, "center");
     if (entity.required) {
       drawText("按做", x + 52, y - 15, 17, COLORS.berry, "center");
+      drawFeatureChip(entity, x + 52, y - 38);
     }
     if (entity.required) drawEntityLabel(entity, x + 52, y + 101);
   }
@@ -1424,7 +1547,24 @@
     fillRect(x + 61, y + 2, 12, 12, entity.color);
     fillRect(x - 1, y + 58, 12, 12, entity.color);
     fillRect(x + 61, y + 58, 12, 12, entity.color);
+    drawFeatureChip(entity, x + 36, y - 7);
     drawEntityLabel(entity, x + 36, y + 88);
+  }
+
+  function drawFeatureChip(entity, cx, y) {
+    const def = entity.bonus || entity.hazard || TYPES[entity.key];
+    if (!def?.effect) return;
+    const text = def.effect;
+    const compact = state.width < 520;
+    const width = clamp(text.length * (compact ? 10 : 13) + (compact ? 14 : 18), 46, compact ? 84 : 112);
+    const height = compact ? 18 : 22;
+    const pulse = entity.required || entity.type === "bonus" ? Math.sin(entity.anim * 7) * 0.08 : 0;
+    ctx.save();
+    ctx.globalAlpha = 0.82 + pulse;
+    fillRect(cx - width / 2, y - height / 2, width, height, "rgba(255,255,255,.88)");
+    strokeRect(cx - width / 2, y - height / 2, width, height, def.color, 2);
+    drawText(text, cx, y + 1, compact ? 10 : 11, def.color, "center");
+    ctx.restore();
   }
 
   function drawBonusAura(entity, cx, cy, color) {
@@ -1573,6 +1713,13 @@
       ctx.globalAlpha = alpha * 0.72;
       fillRect(0, burst.y - 16, state.width, 6, "#ffffff");
       fillRect(0, burst.y + 20, state.width, 4, burst.color);
+    } else if (burst.type === "badge") {
+      const y = burst.y - progress * 22;
+      const size = burst.radius + progress * 14;
+      ctx.globalAlpha = alpha * 0.86;
+      fillRect(burst.x - size / 2, y - size / 2, size, size, "rgba(255,255,255,.88)");
+      strokeRect(burst.x - size / 2, y - size / 2, size, size, burst.color, 3);
+      drawText(burst.text, burst.x, y + 1, Math.max(12, size * 0.42), burst.color, "center");
     } else {
       const size = burst.radius + burst.grow * progress;
       ctx.globalAlpha = alpha * 0.9;
@@ -1616,6 +1763,7 @@
     if (state.shield > 0) items.push({ text: `盾x${state.shield}`, color: COLORS.leaf });
     if (state.magnetTime > 0) items.push({ text: `磁${Math.ceil(state.magnetTime)}`, color: COLORS.aquaDeep });
     if (state.slowTime > 0) items.push({ text: `慢${Math.ceil(state.slowTime)}`, color: COLORS.purple });
+    if (state.brandHeat > 0) items.push({ text: `熱${state.brandHeat}`, color: COLORS.yellow });
     if (!items.length) return;
     ctx.save();
     if (state.shield > 0) {
@@ -1633,6 +1781,14 @@
       ctx.globalAlpha = 0.42 + Math.sin(state.time * 8) * 0.14;
       for (let i = 0; i < 3; i += 1) {
         fillRect(player.x - 48 + i * 32, player.y + 16 + i * 3, 18, 5, COLORS.purple);
+      }
+    }
+    if (state.brandHeat > 0) {
+      ctx.globalAlpha = 0.36 + Math.sin(state.time * 6) * 0.12;
+      const orbit = 30 + Math.min(18, state.brandHeat * 1.6);
+      for (let i = 0; i < Math.min(6, 2 + Math.floor(state.brandHeat / 3)); i += 1) {
+        const a = state.time * 1.4 + i * Math.PI * 0.66;
+        fillRect(player.x + Math.cos(a) * orbit - 4, player.y - 42 + Math.sin(a) * 28 - 4, 8, 8, i % 2 ? COLORS.yellow : COLORS.purple);
       }
     }
     ctx.restore();
@@ -1696,6 +1852,50 @@
         maxLife: 0.72,
       });
     }
+    trimParticles();
+  }
+
+  function emitFeatureSpark(x, y, color, count) {
+    for (let i = 0; i < count; i += 1) {
+      state.particles.push({
+        x: x + random(-18, 18),
+        y: y + random(-10, 12),
+        vx: random(-70, 70),
+        vy: random(-120, -18),
+        gravity: random(80, 150),
+        size: randomInt(3, 7),
+        color: i % 3 === 0 ? "#ffffff" : color,
+        life: random(0.42, 0.86),
+        maxLife: 0.86,
+      });
+    }
+    trimParticles();
+  }
+
+  function emitEntityTrail(entity) {
+    if (state.particles.length > 170) return;
+    const def = entity.bonus || entity.hazard || TYPES[entity.key];
+    const x = entity.x + entity.w * 0.25 + random(-6, 12);
+    const y = entity.y - entity.h * 0.75 + random(-10, 18);
+    const hazard = entity.type === "hazard";
+    const bonus = entity.type === "bonus";
+    const required = entity.required;
+    if (!hazard && !bonus && !required) return;
+    state.particles.push({
+      x,
+      y,
+      vx: hazard ? random(-18, 18) : random(-48, -12),
+      vy: hazard ? random(-42, -16) : random(-34, 18),
+      gravity: hazard ? 18 : 30,
+      size: bonus ? randomInt(4, 7) : hazard ? randomInt(5, 9) : randomInt(3, 6),
+      color: hazard ? "rgba(180,73,102,.72)" : required && Math.random() < 0.45 ? "#ffffff" : def.color,
+      life: hazard ? 0.58 : 0.48,
+      maxLife: hazard ? 0.58 : 0.48,
+    });
+  }
+
+  function trimParticles() {
+    if (state.particles.length > 220) state.particles.splice(0, state.particles.length - 220);
   }
 
   function emitRingBurst(x, y, color, count = 1, radius = 24) {
@@ -1714,6 +1914,22 @@
         maxLife: 0.42 + i * 0.05,
       });
     }
+    trimBursts();
+  }
+
+  function emitBadgeBurst(x, y, color, text) {
+    state.bursts.push({
+      type: "badge",
+      x,
+      y,
+      radius: 28,
+      color,
+      text,
+      angle: 0,
+      spin: 0,
+      life: 0.48,
+      maxLife: 0.48,
+    });
     trimBursts();
   }
 
@@ -1804,10 +2020,11 @@
       const def = TYPES[current.key];
       const missionText = missionProgressText();
       const pressureText = modifier.id === "standard" ? diff.name : `${diff.name}｜${modifier.label}`;
+      const featureText = `${def.feature}會觸發「${def.effect}」`;
       dom.fact.textContent =
         current.mode === "work"
-          ? `${pressureText} / 挑戰：${missionText} / 甜點區處理亮框「${def.label}」拿 PERFECT。`
-          : `${pressureText} / 挑戰：${missionText} / 甜點區接亮框「${def.label}」拿 PERFECT。`;
+          ? `${pressureText} / 挑戰：${missionText} / ${featureText}，甜點區處理「${def.label}」。`
+          : `${pressureText} / 挑戰：${missionText} / ${featureText}，甜點區接「${def.label}」。`;
     }
   }
 
@@ -1817,6 +2034,7 @@
     if (state.shield > 0) tags.push(`盾${state.shield}`);
     if (state.magnetTime > 0) tags.push(`磁${Math.ceil(state.magnetTime)}`);
     if (state.slowTime > 0) tags.push(`慢${Math.ceil(state.slowTime)}`);
+    if (state.brandHeat > 0) tags.push(`熱${state.brandHeat}`);
     return tags.length ? `${state.carry}｜${tags.join(" ")}` : state.carry;
   }
 
@@ -1843,6 +2061,7 @@
   function endGame(reason) {
     if (state.phase === "over") return;
     state.phase = "over";
+    stopBgm(0.28);
     controls.left = false;
     controls.right = false;
     controls.up = false;
@@ -1910,16 +2129,35 @@
     audio.muted = !audio.muted;
     localStorage.setItem(AUDIO_KEY, audio.muted ? "1" : "0");
     dom.muteIcon.textContent = audio.muted ? "靜" : "音";
+    if (audio.bgmGain && audio.context) {
+      audio.bgmGain.gain.cancelScheduledValues(audio.context.currentTime);
+      audio.bgmGain.gain.setValueAtTime(audio.bgmGain.gain.value, audio.context.currentTime);
+      audio.bgmGain.gain.linearRampToValueAtTime(audio.muted ? 0 : 0.026, audio.context.currentTime + 0.18);
+    }
     if (!audio.muted) {
       ensureAudio();
+      if (state.phase === "playing") startBgm(false);
       beep(520, 0.05, "square", 0.025);
+    } else {
+      stopBgm(0.18);
     }
   }
 
   function ensureAudio() {
-    if (audio.muted || audio.context) return;
+    if (audio.muted) return;
+    if (audio.context) {
+      if (audio.context.state === "suspended") audio.context.resume?.();
+      return;
+    }
     const AudioContext = window.AudioContext || window.webkitAudioContext;
-    if (AudioContext) audio.context = new AudioContext();
+    if (!AudioContext) return;
+    audio.context = new AudioContext();
+    audio.sfxGain = audio.context.createGain();
+    audio.bgmGain = audio.context.createGain();
+    audio.sfxGain.gain.value = 0.72;
+    audio.bgmGain.gain.value = 0;
+    audio.sfxGain.connect(audio.context.destination);
+    audio.bgmGain.connect(audio.context.destination);
   }
 
   function beep(frequency, duration, type, volume) {
@@ -1933,9 +2171,122 @@
     gain.gain.linearRampToValueAtTime(volume, now + 0.006);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
     oscillator.connect(gain);
-    gain.connect(audio.context.destination);
+    gain.connect(audio.sfxGain || audio.context.destination);
     oscillator.start(now);
     oscillator.stop(now + duration + 0.02);
+  }
+
+  function startBgm(reset = false) {
+    ensureAudio();
+    if (audio.muted || !audio.context || !audio.bgmGain) return;
+    if (reset || !audio.bgmTimer) {
+      audio.bgmStep = 0;
+      audio.bgmNextTime = audio.context.currentTime + 0.05;
+    }
+    const now = audio.context.currentTime;
+    const volume = state.openingMode ? 0.026 : 0.022;
+    audio.bgmGain.gain.cancelScheduledValues(now);
+    audio.bgmGain.gain.setValueAtTime(audio.bgmGain.gain.value, now);
+    audio.bgmGain.gain.linearRampToValueAtTime(volume, now + 0.35);
+    if (!audio.bgmTimer) {
+      scheduleBgm();
+      audio.bgmTimer = window.setInterval(scheduleBgm, 80);
+    }
+  }
+
+  function stopBgm(fade = 0.2) {
+    if (audio.bgmTimer) {
+      window.clearInterval(audio.bgmTimer);
+      audio.bgmTimer = null;
+    }
+    if (!audio.context || !audio.bgmGain) return;
+    const now = audio.context.currentTime;
+    audio.bgmGain.gain.cancelScheduledValues(now);
+    audio.bgmGain.gain.setValueAtTime(audio.bgmGain.gain.value, now);
+    audio.bgmGain.gain.linearRampToValueAtTime(0, now + fade);
+  }
+
+  function scheduleBgm() {
+    if (audio.muted || !audio.context || !audio.bgmGain || state.phase !== "playing") return;
+    const tempo = BGM.bpm + Math.min(8, Math.max(0, state.level - 1) * 0.45) + (state.feverTime > 0 ? 6 : 0);
+    const stepSeconds = 60 / tempo / 4;
+    while (audio.bgmNextTime < audio.context.currentTime + 0.32) {
+      scheduleBgmStep(audio.bgmStep, audio.bgmNextTime, stepSeconds);
+      audio.bgmStep = (audio.bgmStep + 1) % BGM.melody.length;
+      audio.bgmNextTime += stepSeconds;
+    }
+  }
+
+  function scheduleBgmStep(step, time, stepSeconds) {
+    const beat = step % 4;
+    const barStep = step % 16;
+    const fever = state.feverTime > 0;
+    if (barStep === 0) {
+      const chord = BGM.chords[Math.floor(step / 8) % BGM.chords.length];
+      for (const note of chord) playTone(noteToFrequency(note), time, stepSeconds * 11.5, "sine", 0.026, 0.18, 1200);
+    }
+    if (beat === 0) playPerc(time, fever ? 0.012 : 0.008, 95, 0.04);
+    if (barStep === 10 || fever && barStep === 6) playPerc(time + stepSeconds * 0.48, 0.006, 520, 0.018);
+
+    const bass = BGM.bass[step];
+    if (bass) playTone(noteToFrequency(bass), time, stepSeconds * 2.8, "sine", 0.075, 0.04, 760);
+
+    const melody = BGM.melody[step];
+    if (melody) {
+      playTone(noteToFrequency(melody), time, stepSeconds * 2.2, "triangle", fever ? 0.1 : 0.078, 0.04, 1900);
+      if (fever && (step % 8 === 2 || step % 8 === 4)) {
+        playTone(noteToFrequency(melody) * 1.5, time + stepSeconds * 0.06, stepSeconds * 1.4, "sine", 0.03, 0.025, 2400);
+      }
+    }
+
+    const sparkle = BGM.sparkle[step];
+    if (sparkle && (fever || step % 8 === 7 || state.combo >= 10)) {
+      playTone(noteToFrequency(sparkle), time + stepSeconds * 0.22, stepSeconds * 1.2, "sine", 0.032, 0.025, 3000);
+    }
+  }
+
+  function playTone(frequency, time, duration, type, volume, attack, cutoff) {
+    if (!audio.context || !audio.bgmGain || !frequency) return;
+    const oscillator = audio.context.createOscillator();
+    const filter = audio.context.createBiquadFilter();
+    const gain = audio.context.createGain();
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(frequency, time);
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(cutoff, time);
+    filter.Q.setValueAtTime(0.8, time);
+    gain.gain.setValueAtTime(0.0001, time);
+    gain.gain.linearRampToValueAtTime(volume, time + attack);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    oscillator.connect(filter);
+    filter.connect(gain);
+    gain.connect(audio.bgmGain);
+    oscillator.start(time);
+    oscillator.stop(time + duration + 0.03);
+  }
+
+  function playPerc(time, volume, frequency, duration) {
+    if (!audio.context || !audio.bgmGain) return;
+    const oscillator = audio.context.createOscillator();
+    const gain = audio.context.createGain();
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(frequency, time);
+    oscillator.frequency.exponentialRampToValueAtTime(Math.max(45, frequency * 0.35), time + duration);
+    gain.gain.setValueAtTime(volume, time);
+    gain.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+    oscillator.connect(gain);
+    gain.connect(audio.bgmGain);
+    oscillator.start(time);
+    oscillator.stop(time + duration + 0.02);
+  }
+
+  function noteToFrequency(note) {
+    const match = /^([A-G])(#?)(\d)$/.exec(note);
+    if (!match) return 0;
+    const semitones = { C: -9, D: -7, E: -5, F: -4, G: -2, A: 0, B: 2 };
+    const octave = Number(match[3]);
+    const offset = semitones[match[1]] + (match[2] ? 1 : 0) + (octave - 4) * 12;
+    return 440 * 2 ** (offset / 12);
   }
 
   function cloneOrder(template) {
