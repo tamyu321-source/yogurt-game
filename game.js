@@ -108,12 +108,26 @@
     { id: "additiveAlert", unlock: 13, label: "添加物警報", desc: "危險物會追線，撐住就高分", speed: 1.08, timerDrain: 1.18, requiredRate: 0.94, hazardRate: 0.68, hazardTarget: 0.24, orderTime: 0.74, purityPenalty: 1.55, bonusChance: -0.1, reward: 1950 },
   ];
 
+  const OPENING_MODES = [
+    { id: "coldOpen", chance: 0.1, label: "快閃冷鏈局", desc: "開場直接第 5 關，秒數更少、節奏更密。", level: 5, timeRemaining: 38, purity: 96, requiredTimer: 0.24, decoyTimer: 0.9, hazardTimer: 1.6, modifierId: "coldRush", speed: 1.04, timerDrain: 1.08, hazardTarget: 0.12 },
+    { id: "auditOpen", chance: 0.035, label: "黑標稽核局", desc: "開場就是稽核壓力，失誤很快會結束本局。", level: 8, timeRemaining: 30, purity: 88, requiredTimer: 0.18, decoyTimer: 0.72, hazardTimer: 0.9, modifierId: "audit", speed: 1.08, timerDrain: 1.14, hazardTarget: 0.2 },
+  ];
+
   const MISSION_RULES = [
-    { id: "noMiss", unlock: 1, label: "本批不碰添加物", points: 900 },
-    { id: "perfect3", unlock: 2, label: "連續 3 次 PERFECT", points: 1200, target: 3 },
-    { id: "perfect5", unlock: 5, label: "累積 5 次 PERFECT", points: 1700, target: 5 },
-    { id: "combo12", unlock: 7, label: "12 連線不中斷", points: 2200, target: 12 },
-    { id: "pure90", unlock: 10, label: "純淨率 90% 以上出貨", points: 2600 },
+    { id: "noMiss", unlock: 1, label: "本批不碰添加物", points: 900, kind: "orderPerfect" },
+    { id: "perfect3", unlock: 2, label: "連續 3 次 PERFECT", points: 1200, target: 3, counter: "perfectStreak" },
+    { id: "collectPerfect2", unlock: 3, label: "原料 2 次 PERFECT", points: 1350, target: 2, counter: "collectPerfects" },
+    { id: "bonus1", unlock: 4, label: "吃到 1 個營養道具", points: 1250, target: 1, counter: "bonuses" },
+    { id: "lane4", unlock: 5, label: "換軌 4 次完成本批", points: 1550, target: 4, counter: "laneChanges", completeOnOrder: true },
+    { id: "perfect5", unlock: 5, label: "累積 5 次 PERFECT", points: 1700, target: 5, counter: "perfectTotal" },
+    { id: "workPerfect2", unlock: 6, label: "設備 2 次 PERFECT", points: 1850, target: 2, counter: "workPerfects" },
+    { id: "combo12", unlock: 7, label: "12 連線不中斷", points: 2200, target: 12, counter: "combo" },
+    { id: "goodBatch", unlock: 8, label: "整批 GOOD 以上", points: 2350, kind: "orderNoOk" },
+    { id: "bonus3", unlock: 9, label: "吃到 3 個營養道具", points: 2600, target: 3, counter: "bonuses" },
+    { id: "pure95", unlock: 10, label: "純淨率 95% 以上出貨", points: 2800, kind: "purityOrder", threshold: 95 },
+    { id: "shieldBlock", unlock: 11, label: "純淨盾擋 1 次添加物", points: 3200, target: 1, counter: "shieldBlocks" },
+    { id: "pureRush", unlock: 12, label: "打出 1 次 PURE RUSH", points: 3400, target: 1, counter: "pureRushes" },
+    { id: "combo24", unlock: 14, label: "24 連線不中斷", points: 4200, target: 24, counter: "combo" },
   ];
 
   const ORDERS = [
@@ -194,6 +208,8 @@
     shield: 0,
     slowTime: 0,
     magnetTime: 0,
+    openingMode: null,
+    recentMissionIds: [],
     mission: null,
     modifier: null,
     order: null,
@@ -205,6 +221,13 @@
     requiredTimer: 0,
     decoyTimer: 0,
     hazardTimer: 0,
+    batchLaneChanges: 0,
+    batchBonuses: 0,
+    batchShieldBlocks: 0,
+    batchWorkPerfects: 0,
+    batchCollectPerfects: 0,
+    batchOkHits: 0,
+    batchPureRushes: 0,
     shake: 0,
     entities: [],
     particles: [],
@@ -274,25 +297,34 @@
     }
     const modifier = state.modifier || MODIFIERS[0];
     const pressure = Math.max(0, state.level - tier.min);
+    const latePressure = Math.max(0, state.level - 8);
+    const opening = activeOpeningMode();
+    const openingSpeed = opening?.speed || 1;
+    const openingDrain = opening?.timerDrain || 1;
+    const openingHazardTarget = opening?.hazardTarget || 0;
     return {
       ...tier,
-      speed: (tier.speed + pressure * 8 + state.completedOrders * 2.2) * modifier.speed,
+      speed: (tier.speed + pressure * 9.5 + latePressure * 3.6 + state.completedOrders * 2.8) * modifier.speed * openingSpeed,
       sameLane: clamp(tier.sameLane - pressure * 0.015 + (modifier.sameLane || 0), 0.28, 0.96),
-      required: Math.max(0.62, (tier.required - pressure * 0.025 - state.combo * 0.0009) * modifier.requiredRate),
+      required: Math.max(0.54, (tier.required - pressure * 0.029 - latePressure * 0.008 - state.combo * 0.0009) * modifier.requiredRate),
       decoyMin: Math.max(0.68, tier.decoyMin - pressure * 0.025),
       decoyMax: Math.max(0.95, tier.decoyMax - pressure * 0.025),
-      hazardMin: Math.max(0.9, (tier.hazardMin - pressure * 0.04) * modifier.hazardRate),
-      hazardMax: Math.max(1.25, (tier.hazardMax - pressure * 0.04) * modifier.hazardRate),
+      hazardMin: Math.max(0.72, (tier.hazardMin - pressure * 0.048 - latePressure * 0.025) * modifier.hazardRate),
+      hazardMax: Math.max(1.02, (tier.hazardMax - pressure * 0.048 - latePressure * 0.025) * modifier.hazardRate),
       orderTime: Math.max(2.2, tier.orderTime * modifier.orderTime),
       missPurity: Math.ceil(tier.missPurity * modifier.purityPenalty),
       missTime: tier.missTime * modifier.purityPenalty,
-      timerDrain: tier.timerDrain * modifier.timerDrain,
-      hazardTarget: clamp(tier.hazardTarget + modifier.hazardTarget, 0, 0.92),
+      timerDrain: tier.timerDrain * modifier.timerDrain * openingDrain,
+      hazardTarget: clamp(tier.hazardTarget + modifier.hazardTarget + openingHazardTarget, 0, 0.92),
       bonusChance: clamp(tier.bonusChance + modifier.bonusChance, 0.12, 0.72),
     };
   }
 
   function createModifier(forceFirst = false) {
+    const opening = activeOpeningMode();
+    if (opening?.modifierId) {
+      return { ...(MODIFIERS.find((item) => item.id === opening.modifierId) || MODIFIERS[0]) };
+    }
     if (forceFirst || state.level < 5) return { ...MODIFIERS[0] };
     const pool = MODIFIERS.filter((item) => item.unlock <= state.level);
     const index = (state.completedOrders * 2 + state.level + randomInt(0, Math.max(0, pool.length - 1))) % pool.length;
@@ -300,9 +332,39 @@
   }
 
   function createMission() {
-    const pool = MISSION_RULES.filter((rule) => rule.unlock <= state.level);
-    const rule = pool[(state.completedOrders + state.level) % pool.length] || MISSION_RULES[0];
+    const candidates = MISSION_RULES.filter((rule) => rule.unlock <= state.level && missionAvailable(rule));
+    const recent = new Set(state.recentMissionIds);
+    const fresh = candidates.filter((rule) => !recent.has(rule.id));
+    const pool = fresh.length ? fresh : candidates;
+    const rule = pool[randomInt(0, pool.length - 1)] || MISSION_RULES[0];
+    state.recentMissionIds.push(rule.id);
+    state.recentMissionIds = state.recentMissionIds.slice(-4);
     return { ...rule, progress: 0, done: false };
+  }
+
+  function activeOpeningMode() {
+    return state.openingMode && state.completedOrders === 0 ? state.openingMode : null;
+  }
+
+  function createOpeningMode() {
+    const roll = Math.random();
+    let mark = 0;
+    for (const mode of OPENING_MODES) {
+      mark += mode.chance;
+      if (roll < mark) return { ...mode };
+    }
+    return null;
+  }
+
+  function missionAvailable(rule) {
+    const steps = state.order?.steps || [];
+    const collectCount = steps.filter((step) => step.mode === "collect").length;
+    const workCount = steps.filter((step) => step.mode === "work").length;
+    if (rule.counter === "collectPerfects") return collectCount >= rule.target;
+    if (rule.counter === "workPerfects") return workCount >= rule.target;
+    if (rule.id === "shieldBlock") return state.level >= 11;
+    if (rule.id === "pureRush") return state.level >= 12 || Boolean(activeOpeningMode());
+    return true;
   }
 
   function missionProgressText() {
@@ -313,26 +375,50 @@
     return mission.label;
   }
 
-  function updateMissionOnStep(quality) {
+  function updateMissionOnStep(quality, step) {
     const mission = state.mission;
     if (!mission || mission.done) return;
 
-    if (mission.id === "perfect3") {
-      mission.progress = quality.grade === "perfect" ? mission.progress + 1 : 0;
-    } else if (mission.id === "perfect5") {
-      if (quality.grade === "perfect") mission.progress += 1;
-    } else if (mission.id === "combo12") {
-      mission.progress = Math.max(mission.progress, state.combo);
+    if (quality.grade === "ok") state.batchOkHits += 1;
+    if (quality.grade === "perfect") {
+      bumpMission("perfectStreak");
+      bumpMission("perfectTotal");
+      if (step?.mode === "collect") {
+        state.batchCollectPerfects += 1;
+        bumpMission("collectPerfects");
+      }
+      if (step?.mode === "work") {
+        state.batchWorkPerfects += 1;
+        bumpMission("workPerfects");
+      }
+    } else if (mission.counter === "perfectStreak") {
+      mission.progress = 0;
     }
 
-    if (mission.target && mission.progress >= mission.target) completeMission();
+    setMissionProgress("combo", state.combo);
   }
 
   function updateMissionOnOrder(perfect) {
     const mission = state.mission;
     if (!mission || mission.done) return;
-    if (mission.id === "noMiss" && perfect) completeMission();
-    if (mission.id === "pure90" && state.purity >= 90) completeMission();
+    if (mission.kind === "orderPerfect" && perfect) completeMission();
+    if (mission.kind === "purityOrder" && state.purity >= mission.threshold) completeMission();
+    if (mission.kind === "orderNoOk" && state.batchOkHits === 0 && perfect) completeMission();
+    if (mission.completeOnOrder && mission.target && mission.progress >= mission.target) completeMission();
+  }
+
+  function bumpMission(counter, amount = 1) {
+    const mission = state.mission;
+    if (!mission || mission.done || mission.counter !== counter) return;
+    mission.progress += amount;
+    if (mission.target && mission.progress >= mission.target && !mission.completeOnOrder) completeMission();
+  }
+
+  function setMissionProgress(counter, value) {
+    const mission = state.mission;
+    if (!mission || mission.done || mission.counter !== counter) return;
+    mission.progress = Math.max(mission.progress, value);
+    if (mission.target && mission.progress >= mission.target && !mission.completeOnOrder) completeMission();
   }
 
   function completeMission() {
@@ -571,13 +657,24 @@
     state.shield = 0;
     state.slowTime = 0;
     state.magnetTime = 0;
+    state.openingMode = createOpeningMode();
+    state.recentMissionIds = [];
     state.mission = null;
     state.modifier = null;
     state.speed = 188;
-    state.timeRemaining = 64;
-    state.requiredTimer = 0.42;
-    state.decoyTimer = 3.2;
-    state.hazardTimer = 9;
+    state.level = state.openingMode?.level || 1;
+    state.purity = state.openingMode?.purity || 100;
+    state.timeRemaining = state.openingMode?.timeRemaining || 64;
+    state.requiredTimer = state.openingMode?.requiredTimer || 0.42;
+    state.decoyTimer = state.openingMode?.decoyTimer || 3.2;
+    state.hazardTimer = state.openingMode?.hazardTimer || 9;
+    state.batchLaneChanges = 0;
+    state.batchBonuses = 0;
+    state.batchShieldBlocks = 0;
+    state.batchWorkPerfects = 0;
+    state.batchCollectPerfects = 0;
+    state.batchOkHits = 0;
+    state.batchPureRushes = 0;
     state.entities = [];
     state.particles = [];
     state.bursts = [];
@@ -590,10 +687,10 @@
     player.actionTimer = 0;
     player.invuln = 0;
     player.laneRepeat = 0;
-    spawnOrder(true);
+    spawnOrder(!state.openingMode);
     dom.startOverlay.classList.add("hidden");
     dom.gameOverOverlay.classList.add("hidden");
-    showToast("開工！先穩穩完成鮮奶線");
+    showToast(state.openingMode ? `${state.openingMode.label}：${state.openingMode.desc}` : "開工！先穩穩完成鮮奶線");
     beep(560, 0.055, "square", 0.04);
   }
 
@@ -606,12 +703,24 @@
     state.stepIndex = 0;
     state.batchMistakes = 0;
     state.batchPerfects = 0;
+    state.batchLaneChanges = 0;
+    state.batchBonuses = 0;
+    state.batchShieldBlocks = 0;
+    state.batchWorkPerfects = 0;
+    state.batchCollectPerfects = 0;
+    state.batchOkHits = 0;
+    state.batchPureRushes = 0;
     state.mission = createMission();
     state.carry = "空手";
-    state.requiredTimer = state.completedOrders === 0 ? 0.55 : Math.min(0.8, diff.required * 0.55);
+    const opening = activeOpeningMode();
+    state.requiredTimer = opening ? opening.requiredTimer : state.completedOrders === 0 ? 0.55 : Math.min(0.8, diff.required * 0.55);
+    if (opening) {
+      state.decoyTimer = opening.decoyTimer;
+      state.hazardTimer = opening.hazardTimer;
+    }
     renderRecipe();
     updateHud();
-    if (!forceFirst && state.modifier.id !== "standard") {
+    if (!forceFirst && state.modifier.id !== "standard" && !opening) {
       showToast(`${state.modifier.label}：${state.modifier.desc}`);
     }
   }
@@ -754,7 +863,7 @@
   }
 
   function spawnHazard() {
-    if (state.completedOrders === 0 && state.stepIndex < 2) return;
+    if (!activeOpeningMode() && state.completedOrders === 0 && state.stepIndex < 2) return;
     const diff = getDifficulty();
     const hazard = HAZARDS[randomInt(0, HAZARDS.length - 1)];
     const lane = Math.random() < diff.hazardTarget ? player.lane : randomInt(0, 2);
@@ -860,7 +969,7 @@
     if (quality.grade !== "perfect") emitRingBurst(entity.x + entity.w / 2, entity.y - 34, def.color, 1, 20);
     floatText(`+${formatNumber(points)}`, entity.x + entity.w / 2, entity.y - 70, def.color);
     beep(520 + Math.min(620, state.combo * 22), 0.045, "square", 0.035);
-    updateMissionOnStep(quality);
+    updateMissionOnStep(quality, step);
 
     if (state.combo > 0 && state.combo % 6 === 0) {
       const chainBonus = 420 + state.level * 55 + state.combo * 12;
@@ -935,7 +1044,9 @@
     state.score += value;
     state.fever = clamp(state.fever + 11, 0, 100);
     state.combo += 1;
+    state.batchBonuses += 1;
     state.maxCombo = Math.max(state.maxCombo, state.combo);
+    bumpMission("bonuses");
     handleComboPrize();
     emitPop(entity.x, entity.y - 20, bonus.color, 12);
     emitRingBurst(entity.x + entity.w / 2, entity.y - 34, bonus.color, 2, 28);
@@ -971,6 +1082,8 @@
       state.shield -= 1;
       player.invuln = 0.65;
       state.fever = clamp(state.fever + 6, 0, 100);
+      state.batchShieldBlocks += 1;
+      bumpMission("shieldBlocks");
       showToast(`純淨盾擋下${reason}`);
       floatText("純淨盾！", player.x + 28, player.y - 92, COLORS.leaf);
       emitPop(player.x + 18, player.y - 34, COLORS.leaf, 20);
@@ -1002,6 +1115,8 @@
     state.feverTime = 7.2;
     state.fever = 100;
     state.shake = 0.8;
+    state.batchPureRushes += 1;
+    bumpMission("pureRushes");
     showToast("純淨能量滿格：PURE RUSH！");
     floatText("PURE!", player.x + 54, player.y - 110, COLORS.orange);
     emitRingBurst(player.x + 40, player.y - 46, COLORS.orange, 4, 38);
@@ -1039,6 +1154,8 @@
     if (nextLane === player.lane) return;
     player.lane = nextLane;
     player.targetLane = player.lane;
+    state.batchLaneChanges += 1;
+    bumpMission("laneChanges");
     beep(440 + player.lane * 80, 0.025, "square", 0.018);
   }
 
