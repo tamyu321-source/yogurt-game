@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      name="description"
+      content="純粹好食像素風橫版優格快線，接原料、做製程、守純淨、拚本地排行榜。"
+    />
+    <title>純粹好食 | 純淨優格快線</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23f7fdff'/%3E%3Cpath d='M18 23h28l-4 26H22z' fill='%237fc3de'/%3E%3Cpath d='M21 19h22v7H21z' fill='%23268aa1'/%3E%3Ccircle cx='32' cy='36' r='9' fill='%23fff4dc'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="game-root" aria-label="純粹好食純淨優格快線">
+      <canvas id="sceneCanvas" aria-label="像素風優格橫版遊戲"></canvas>
+
+      <header class="topbar" aria-label="遊戲狀態">
+        <div class="brand-lockup">
+          <img src="./assets/ugoodays-logo.png" alt="純粹好食" />
+          <div>
+            <strong>純淨優格快線</strong>
+            <span>UGOODAYS PURE RUSH</span>
+          </div>
+        </div>
+
+        <div class="score-grid">
+          <div class="metric">
+            <span>關卡</span>
+            <strong id="levelValue">1</strong>
+          </div>
+          <div class="metric">
+            <span>分數</span>
+            <strong id="scoreValue">0</strong>
+          </div>
+          <div class="metric">
+            <span>連線</span>
+            <strong id="comboValue">0</strong>
+          </div>
+          <div class="metric">
+            <span>秒數</span>
+            <strong id="timeValue">45</strong>
+          </div>
+        </div>
+
+        <button class="icon-button" id="muteButton" type="button" aria-label="切換音效">
+          <span id="muteIcon" aria-hidden="true">音</span>
+        </button>
+      </header>
+
+      <aside class="game-panel" aria-label="訂單與排行榜">
+        <div class="panel-head">
+          <span>玩家</span>
+          <strong id="playerNameLabel">Guest</strong>
+        </div>
+
+        <div class="progress-block">
+          <div class="progress-label">
+            <span>純淨率</span>
+            <strong id="purityText">100%</strong>
+          </div>
+          <div class="bar">
+            <span id="purityFill"></span>
+          </div>
+        </div>
+
+        <div class="progress-block">
+          <div class="progress-label">
+            <span>純淨能量</span>
+            <strong id="feverText">0%</strong>
+          </div>
+          <div class="bar fever-bar">
+            <span id="feverFill"></span>
+          </div>
+        </div>
+
+        <div class="carry-line">
+          <span>手上</span>
+          <strong id="carryValue">空手</strong>
+        </div>
+
+        <div class="order-card">
+          <div class="panel-title">
+            <span>品牌訂單</span>
+            <strong id="orderName">鮮奶優格</strong>
+          </div>
+          <div id="recipeList" class="recipe-list"></div>
+        </div>
+
+        <div class="fact-line" id="factText">先穩穩守住鮮奶線，再解鎖益菌熟成、口感調整與精品封杯。</div>
+
+        <section class="leaderboard" aria-label="本地排行榜">
+          <div class="panel-title">
+            <span>本地榜</span>
+            <strong id="highScoreValue">0</strong>
+          </div>
+          <div id="leaderboardList" class="leaderboard-list"></div>
+        </section>
+      </aside>
+
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+      <section class="overlay" id="startOverlay" aria-label="開始遊戲">
+        <div class="dialog">
+          <img class="dialog-logo" src="./assets/ugoodays-logo.png" alt="純粹好食" />
+          <p class="eyebrow">PURE RUSH</p>
+          <h1>純淨優格快線</h1>
+          <p class="dialog-copy">接鮮奶、養益菌、做熟成、封杯出貨。守住純淨率，越準越快，連線越高。</p>
+          <label class="name-field">
+            <span>玩家名稱</span>
+            <input id="nameInput" maxlength="16" autocomplete="nickname" placeholder="輸入暱稱" />
+          </label>
+          <button class="primary-button" id="startButton" type="button">開始接單</button>
+        </div>
+      </section>
+
+      <section class="overlay hidden" id="gameOverOverlay" aria-label="遊戲結算">
+        <div class="dialog">
+          <img class="dialog-logo" src="./assets/ugoodays-logo.png" alt="純粹好食" />
+          <p class="eyebrow">生產結算</p>
+          <h2 id="resultTitle">完成 0 批</h2>
+          <p class="result-copy" id="resultCopy">再衝一輪，把純淨率守住。</p>
+          <div class="result-stats">
+            <div>
+              <span>總分</span>
+              <strong id="finalScore">0</strong>
+            </div>
+            <div>
+              <span>最高連線</span>
+              <strong id="finalCombo">0</strong>
+            </div>
+            <div>
+              <span>最高關卡</span>
+              <strong id="finalLevel">1</strong>
+            </div>
+          </div>
+          <div class="dialog-actions">
+            <button class="primary-button" id="restartButton" type="button">再玩一次</button>
+            <button class="secondary-button" id="shareButton" type="button">複製戰績</button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <script src="./game.js" defer></script>
+  </body>
+</html>
