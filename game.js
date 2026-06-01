@@ -294,7 +294,17 @@
     flavorRushTime: 0,
     flavorMultiplier: 1,
     flavorComboLabel: "",
+    flavorCountdown: 0,
+    flavorPending: null,
+    flavorCueTime: 0,
     customFlavors: 0,
+    idleTime: 0,
+    idleToastCooldown: 0,
+    hazardPressure: 0,
+    rhythmSave: 100,
+    controlGrace: 0,
+    lastPlayerX: 190,
+    lastPlayerLane: 1,
     entities: [],
     particles: [],
     bursts: [],
@@ -348,11 +358,11 @@
   };
 
   const BGM = {
-    bpm: 112,
-    melody: ["C5", "E5", "G5", "E5", "A5", "G5", "E5", null, "D5", "F5", "A5", "F5", "G5", "E5", "C5", null, "E5", "G5", "C6", "G5", "B5", "A5", "G5", null, "F5", "A5", "D6", "A5", "G5", "E5", "D5", null],
-    hook: ["G5", null, "E5", null, "C6", null, "G5", null, "A5", null, "F5", null, "D6", null, "G5", null, "E6", null, "C6", null, "G5", null, "E5", null, "F5", null, "A5", null, "G5", null, "C6", null],
+    bpm: 88,
+    melody: ["C5", null, "E5", "G5", null, "E5", "D5", null, "C5", null, "G4", "C5", "E5", null, "D5", null, "E5", null, "G5", "C6", null, "G5", "E5", null, "D5", null, "E5", "G5", "C5", null, null, null],
+    hook: ["G5", null, null, "E5", null, "C5", null, null, "A5", null, "G5", null, "E5", null, "C5", null, "C6", null, null, "G5", null, "E5", null, null, "G5", null, "E5", null, "C5", null, null, null],
     bass: ["C3", null, "C3", null, "G2", null, "G2", null, "A2", null, "A2", null, "F2", null, "G2", null, "C3", null, "C3", null, "E3", null, "E3", null, "A2", null, "A2", null, "F2", null, "G2", null],
-    sparkle: ["C6", null, "G6", null, "E6", null, "C6", "G6", null, "A6", null, "F6", "E6", null, "D6", null, "G6", null, "E6", null, "C6", "E6", "G6", null, "A6", null, "F6", null, "E6", null, "G6", null],
+    sparkle: ["G6", null, "E6", null, "C6", null, "G6", null, "A6", null, "G6", null, "E6", null, "C6", null, "E6", null, "G6", null, "C7", null, "G6", null, "A6", null, "G6", null, "E6", null, "C6", null],
     chords: [["C4", "E4", "G4"], ["G3", "B3", "D4"], ["A3", "C4", "E4"], ["F3", "A3", "C4"], ["C4", "E4", "G4"], ["E3", "G3", "B3"], ["A3", "C4", "E4"], ["F3", "A3", "C4"]],
   };
 
@@ -388,20 +398,23 @@
     const openingDrain = opening?.timerDrain || 1;
     const openingHazardTarget = opening?.hazardTarget || 0;
     const flavorSpeed = state.flavorRushTime > 0 ? 1.2 + Math.min(0.34, state.customFlavors * 0.018 + state.combo * 0.002) : 1;
+    const comboSpeed = 1 + Math.min(0.42, state.combo * 0.008 + state.completedOrders * 0.018);
+    const idleThreat = state.flavorRushTime > 0 ? 0 : clamp((state.idleTime - 0.85) * 0.34 + state.hazardPressure * 0.12, 0, 0.72);
     return {
       ...tier,
-      speed: (tier.speed + pressure * 19 + latePressure * 10.5 + Math.max(0, state.level - 18) * 16 + state.completedOrders * 5.2) * modifier.speed * openingSpeed * flavorSpeed,
-      sameLane: clamp(tier.sameLane - pressure * 0.018 + (modifier.sameLane || 0), 0.24, 0.96),
+      speed: (tier.speed + pressure * 22 + latePressure * 13.5 + Math.max(0, state.level - 18) * 20 + state.completedOrders * 7.4) * modifier.speed * openingSpeed * flavorSpeed * comboSpeed,
+      hazard: tier.hazard || state.completedOrders >= 1 || idleThreat > 0.18,
+      sameLane: clamp(tier.sameLane - 0.36 - pressure * 0.02 + (modifier.sameLane || 0), 0.16, 0.64),
       required: Math.max(0.3, (tier.required - pressure * 0.044 - latePressure * 0.018 - state.combo * 0.0016) * modifier.requiredRate),
       decoyMin: Math.max(0.26, tier.decoyMin - pressure * 0.05 - latePressure * 0.018),
       decoyMax: Math.max(0.42, tier.decoyMax - pressure * 0.05 - latePressure * 0.018),
-      hazardMin: Math.max(0.3, (tier.hazardMin - pressure * 0.085 - latePressure * 0.05) * modifier.hazardRate),
-      hazardMax: Math.max(0.5, (tier.hazardMax - pressure * 0.085 - latePressure * 0.05) * modifier.hazardRate),
+      hazardMin: Math.max(0.24, (tier.hazardMin - pressure * 0.085 - latePressure * 0.05) * modifier.hazardRate - idleThreat * 1.25),
+      hazardMax: Math.max(0.42, (tier.hazardMax - pressure * 0.085 - latePressure * 0.05) * modifier.hazardRate - idleThreat * 1.55),
       orderTime: Math.max(2.2, tier.orderTime * modifier.orderTime),
       missPurity: Math.ceil(tier.missPurity * modifier.purityPenalty),
       missTime: tier.missTime * modifier.purityPenalty,
-      timerDrain: tier.timerDrain * modifier.timerDrain * openingDrain,
-      hazardTarget: clamp(tier.hazardTarget + modifier.hazardTarget + openingHazardTarget, 0, 0.92),
+      timerDrain: tier.timerDrain * modifier.timerDrain * openingDrain * (1 + Math.min(0.36, state.completedOrders * 0.018 + state.combo * 0.004)),
+      hazardTarget: clamp(tier.hazardTarget + modifier.hazardTarget + openingHazardTarget + idleThreat, 0, 0.98),
       bonusChance: clamp(tier.bonusChance + modifier.bonusChance, 0.12, 0.72),
     };
   }
@@ -549,8 +562,6 @@
     state.fever = clamp(state.fever + quality.fever, 0, 100);
     state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + quality.time);
 
-    const label = state.multiplier > 1 ? `${quality.label} x${state.multiplier.toFixed(1)}` : quality.label;
-    floatText(label, entity.x + entity.w / 2, entity.y - 98, quality.color);
     emitLaneFlash(entity.lane, quality.color);
     if (quality.grade === "perfect") {
       state.shake = Math.max(state.shake, 0.46);
@@ -755,7 +766,7 @@
     ctx.imageSmoothingEnabled = false;
 
     const safeBottom = state.height - (state.width < 520 ? 74 : 76);
-    const safeTop = state.width < 520 ? 350 : 210;
+    const safeTop = state.width < 520 ? 226 : 188;
     const gap = Math.max(68, Math.min(96, (safeBottom - safeTop) / 3));
     state.lanes = [safeBottom - gap * 2, safeBottom - gap, safeBottom];
     player.x = clamp(player.x || state.width * 0.22, 92, state.width * 0.5);
@@ -815,7 +826,15 @@
     state.flavorRushTime = 0;
     state.flavorMultiplier = 1;
     state.flavorComboLabel = "";
+    state.flavorCountdown = 0;
+    state.flavorPending = null;
+    state.flavorCueTime = 0;
     state.customFlavors = 0;
+    state.idleTime = 0;
+    state.idleToastCooldown = 0;
+    state.hazardPressure = 0;
+    state.rhythmSave = 100;
+    state.controlGrace = 0;
     state.entities = [];
     state.particles = [];
     state.bursts = [];
@@ -825,6 +844,8 @@
     player.lane = 1;
     player.targetLane = 1;
     player.y = state.lanes[1];
+    state.lastPlayerX = player.x;
+    state.lastPlayerLane = player.lane;
     player.actionTimer = 0;
     player.invuln = 0;
     player.laneRepeat = 0;
@@ -889,6 +910,15 @@
     state.zoomKick = Math.max(0, state.zoomKick - fxDt * 4.6);
     state.speedLineTime = Math.max(0, state.speedLineTime - fxDt);
     state.comboSurge = Math.max(0, state.comboSurge - fxDt * 2.4);
+    state.flavorCueTime = Math.max(0, state.flavorCueTime - fxDt);
+    if (state.flavorCountdown > 0) {
+      state.flavorCountdown = Math.max(0, state.flavorCountdown - fxDt);
+      state.speedLineTime = Math.max(state.speedLineTime, 0.35);
+      state.comboSurge = Math.max(state.comboSurge, 0.8);
+      if (state.flavorCountdown <= 0 && state.flavorPending) {
+        activateFlavorCombo();
+      }
+    }
     if (state.flavorRushTime > 0) {
       state.flavorRushTime = Math.max(0, state.flavorRushTime - worldDt);
       if (state.flavorRushTime <= 0) {
@@ -901,6 +931,7 @@
       endGame("時間歸零");
       return;
     }
+    state.idleToastCooldown = Math.max(0, state.idleToastCooldown - fxDt);
 
     const feverBoost = state.feverTime > 0 ? 1.24 : 1;
     state.speed = diff.speed * feverBoost;
@@ -934,6 +965,7 @@
     }
     player.y += (state.lanes[player.lane] - player.y) * Math.min(1, fxDt * 13);
     player.stepBob += fxDt * (8 + Math.abs(move) * 6 + state.speed / 95 + state.comboSurge * 4);
+    updateActivityPressure(worldDt, fxDt, move);
 
     if (state.requiredTimer <= 0) {
       spawnRequired();
@@ -1006,6 +1038,57 @@
     updateHud();
   }
 
+  function noteActivePlay(strength = 1) {
+    state.idleTime = 0;
+    state.hazardPressure = Math.max(0, state.hazardPressure - strength * 0.55);
+    state.rhythmSave = clamp(state.rhythmSave + strength * 14, 0, 100);
+  }
+
+  function updateActivityPressure(worldDt, fxDt, move) {
+    const pointerActive = touch.id !== null && Number.isFinite(touch.targetX) && Math.abs(touch.targetX - player.x) > 2;
+    const keyActive = Boolean(controls.left || controls.right || controls.up || controls.down || controls.action || move);
+    const moved = Math.abs(player.x - state.lastPlayerX) > 0.8 || player.lane !== state.lastPlayerLane;
+    const active = pointerActive || keyActive || moved;
+    state.lastPlayerX = player.x;
+    state.lastPlayerLane = player.lane;
+    if (state.phase !== "playing") return;
+    state.controlGrace = Math.max(0, state.controlGrace - fxDt);
+    if (active) {
+      state.controlGrace = 2.2;
+      state.idleTime = Math.max(0, state.idleTime - fxDt * 4.5);
+      state.hazardPressure = Math.max(0, state.hazardPressure - fxDt * 1.8);
+      state.rhythmSave = clamp(state.rhythmSave + fxDt * 18, 0, 100);
+      return;
+    }
+
+    if (state.flavorRushTime > 0) {
+      state.idleTime = Math.max(0, state.idleTime - fxDt * 0.8);
+      state.hazardPressure = Math.max(0, state.hazardPressure - fxDt * 2.2);
+      return;
+    }
+
+    state.idleTime += fxDt;
+    const grace = 0.95;
+    if (state.idleTime <= grace) return;
+
+    const over = state.idleTime - grace;
+    state.hazardPressure = clamp(state.hazardPressure + worldDt * (0.75 + over * 0.55), 0, 3.2);
+    state.rhythmSave = clamp(state.rhythmSave + worldDt * 5, 0, 100);
+    state.fever = Math.max(0, state.fever - worldDt * Math.min(5, 1 + over * 1.4));
+    const chaseDelay = clamp(0.62 - over * 0.18 - state.level * 0.006, 0.18, 0.62);
+    state.hazardTimer = Math.min(state.hazardTimer, chaseDelay);
+    if (over > 1.25 && state.combo > 0) {
+      state.combo = 0;
+      state.lastComboPrize = 0;
+      state.multiplier = 1;
+    }
+    if (state.idleToastCooldown <= 0) {
+      state.idleToastCooldown = 1.8;
+      showToast("紅色添加物追過來了，滑動躲開");
+      floatText("躲紅色!", player.x + 38, player.y - 118, COLORS.berry);
+    }
+  }
+
   function currentStep() {
     return state.order?.steps[state.stepIndex] || null;
   }
@@ -1029,9 +1112,16 @@
 
   function chooseTargetLane() {
     const diff = getDifficulty();
-    if (state.magnetTime > 0) return player.lane;
-    if (state.completedOrders === 0 || Math.random() < diff.sameLane) return player.lane;
-    return clamp(player.lane + (Math.random() < 0.5 ? -1 : 1), 0, 2);
+    if (state.magnetTime > 0 && state.idleTime < 0.8) return player.lane;
+    if (state.completedOrders === 0 && state.stepIndex === 0) return player.lane;
+    const sameLane = clamp(diff.sameLane - (state.idleTime > 1.2 ? 0.18 : 0), 0.12, 0.64);
+    if (Math.random() < sameLane) return player.lane;
+    return differentLane(player.lane);
+  }
+
+  function differentLane(lane) {
+    const options = [0, 1, 2].filter((item) => item !== lane);
+    return options[randomInt(0, options.length - 1)];
   }
 
   function spawnDecoy() {
@@ -1040,7 +1130,8 @@
     const keys = Object.keys(TYPES).filter((key) => key !== step?.key && (state.level >= 4 || !STATION_KEYS.includes(key)));
     const key = keys[randomInt(0, keys.length - 1)];
     const asStation = STATION_KEYS.includes(key);
-    if (Math.random() < diff.bonusChance) {
+    const bonusChance = state.flavorRushTime > 0 ? Math.min(0.86, diff.bonusChance + 0.38) : diff.bonusChance;
+    if (Math.random() < bonusChance) {
       const bonus = BONUS[randomInt(0, BONUS.length - 1)];
       spawnEntity({ type: "bonus", key: bonus.key, lane: randomInt(0, 2), bonus });
     } else {
@@ -1049,11 +1140,16 @@
   }
 
   function spawnHazard() {
-    if (!activeOpeningMode() && state.completedOrders === 0 && state.stepIndex < 2) return;
+    const idleThreat = state.idleTime > 1.05 || state.hazardPressure > 0.5;
+    if (!idleThreat && !activeOpeningMode() && state.completedOrders === 0 && state.stepIndex < 2) return;
+    if (state.flavorCountdown > 0 || state.flavorRushTime > 0) return;
     const diff = getDifficulty();
     const hazard = HAZARDS[randomInt(0, HAZARDS.length - 1)];
-    const lane = Math.random() < diff.hazardTarget ? player.lane : randomInt(0, 2);
-    spawnEntity({ type: "hazard", key: hazard.key, lane, hazard });
+    const chaseChance = clamp(diff.hazardTarget + state.hazardPressure * 0.18 + (idleThreat ? 0.18 : 0), 0, 0.98);
+    const lane = Math.random() < chaseChance ? player.lane : randomInt(0, 2);
+    const speedOffset = random(18, 46) + Math.min(95, state.hazardPressure * 32 + Math.max(0, state.idleTime - 1) * 22);
+    spawnEntity({ type: "hazard", key: hazard.key, lane, hazard, speedOffset });
+    if (lane === player.lane) emitLaneFlash(lane, hazard.color);
   }
 
   function spawnEntity(options) {
@@ -1061,7 +1157,7 @@
     const station = options.type === "station";
     const w = station ? 92 : options.type === "hazard" ? 64 : 58;
     const h = station ? 76 : options.type === "hazard" ? 58 : 54;
-    state.entities.push({
+    const entity = {
       id: entityId++,
       type: options.type,
       key: options.key,
@@ -1077,13 +1173,15 @@
       short: def.short,
       color: def.color,
       bg: def.bg || "#fff4dc",
-      speedOffset: random(-12, 28),
+      speedOffset: options.speedOffset ?? random(-12, 28),
       anim: random(0, 2),
       trailTimer: random(0.04, 0.16),
       hazard: options.hazard,
       bonus: options.bonus,
       pulse: 0,
-    });
+    };
+    state.entities.push(entity);
+    return entity;
   }
 
   function handleCollision(entity) {
@@ -1153,9 +1251,21 @@
   }
 
   function skipRequired(entity) {
+    const diff = getDifficulty();
     entity.done = true;
     entity.required = false;
     state.requiredTimer = Math.min(state.requiredTimer, 0.45);
+    state.missed += 1;
+    state.batchMistakes += 1;
+    state.combo = 0;
+    state.lastComboPrize = 0;
+    state.multiplier = 1;
+    state.fever = Math.max(0, state.fever - 8);
+    state.timeRemaining = Math.max(0, state.timeRemaining - Math.min(1.8, diff.missTime * 0.45));
+    state.hazardPressure = clamp(state.hazardPressure + 0.38, 0, 3.2);
+    if (state.flavorRushTime <= 0) state.hazardTimer = Math.min(state.hazardTimer, 0.32);
+    emitPop(entity.x + entity.w / 2, entity.y - 38, COLORS.berry, 9);
+    floatText("漏接", entity.x + entity.w / 2, entity.y - 72, COLORS.berry);
   }
 
   function completeStep(entity) {
@@ -1163,6 +1273,7 @@
     const def = TYPES[step.key];
     const quality = getHitQuality(entity);
     const fever = state.feverTime > 0;
+    noteActivePlay(1.3);
     applyHitQuality(entity, quality);
     setPlayerReaction(step.key, def.color, quality.grade === "perfect" ? 1.25 : 0.85);
     state.combo += 1;
@@ -1313,7 +1424,6 @@
 
     markBrandFeature(step.key, def, entity, text);
     if (text) {
-      floatText(text, entity.x + entity.w / 2, entity.y - 122, def.color);
       emitFeatureSpark(entity.x + entity.w / 2, entity.y - 42, def.color, perfect ? 10 : 6);
       emitBadgeBurst(entity.x + entity.w / 2, entity.y - 52, def.color, def.short);
     }
@@ -1326,15 +1436,21 @@
     state.flavorCharge += qualityCharge * workCharge;
     const threshold = Math.max(2.6, 4.25 - Math.min(1.35, state.level * 0.04 + state.completedOrders * 0.035));
     const fill = clamp(state.flavorCharge / threshold, 0, 1);
+    if (fill >= 0.72 && state.flavorCueTime <= 0 && state.flavorCountdown <= 0 && state.flavorRushTime <= 0) {
+      state.flavorCueTime = 1.4;
+      emitFlavorPreview(entity.x + entity.w / 2, entity.y - 76, def.color);
+      showToast("自搭配口味快好了，準備爽拿倍分");
+    }
     if (fill < 1) {
       emitFeatureSpark(entity.x + entity.w / 2, entity.y - 82, def.color, quality.grade === "perfect" ? 5 : 3);
       return;
     }
     state.flavorCharge -= threshold;
-    activateFlavorCombo(entity, def);
+    prepareFlavorCombo(entity, def);
   }
 
-  function activateFlavorCombo(entity, sourceDef) {
+  function prepareFlavorCombo(entity, sourceDef) {
+    if (state.flavorCountdown > 0 || state.flavorRushTime > 0) return;
     const first = FLAVOR_REWARD_KEYS[(state.customFlavors + state.level + state.combo) % FLAVOR_REWARD_KEYS.length];
     const second = FLAVOR_REWARD_KEYS[(state.customFlavors * 2 + state.completedOrders + 3) % FLAVOR_REWARD_KEYS.length];
     const fallback = FLAVOR_REWARD_NAMES[state.customFlavors % FLAVOR_REWARD_NAMES.length];
@@ -1345,28 +1461,60 @@
     const x = entity?.x + entity?.w / 2 || player.x + 56;
     const y = entity?.y - 56 || player.y - 62;
 
+    state.flavorPending = { first, second, label, multiplier, duration, bonus, x, y, color: sourceDef?.color || COLORS.berry };
+    state.flavorCountdown = 1.15;
+    state.flavorCueTime = 1.15;
+    state.hitStop = Math.max(state.hitStop, 0.08);
+    state.flash = Math.max(state.flash, 0.22);
+    state.flashColor = sourceDef?.color || COLORS.berry;
+    state.speedLineTime = Math.max(state.speedLineTime, 0.85);
+    showToast(`自搭配即將開始：${label}`);
+    emitFlavorPreview(x, y - 36, sourceDef?.color || COLORS.berry);
+    beep(760, 0.06, "triangle", 0.035);
+  }
+
+  function activateFlavorCombo() {
+    const pending = state.flavorPending;
+    if (!pending) return;
+    const { first, second, label, multiplier, duration, bonus, x, y, color } = pending;
+
     state.customFlavors += 1;
     state.flavorRushTime = Math.max(state.flavorRushTime, duration);
     state.flavorMultiplier = Math.max(state.flavorMultiplier, multiplier);
     state.flavorComboLabel = label;
+    state.flavorCountdown = 0;
+    state.flavorPending = null;
     state.score += bonus;
     state.fever = clamp(state.fever + 16, 0, 100);
     state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 1.15);
-    state.speedLineTime = Math.max(state.speedLineTime, 1.2);
-    state.comboSurge = Math.max(state.comboSurge, 1.15);
+    state.speedLineTime = Math.max(state.speedLineTime, 1.8);
+    state.comboSurge = Math.max(state.comboSurge, 1.7);
+    clearHazardsForFlavorRush();
 
     showToast(`自搭配口味：${label} x${multiplier.toFixed(1)} 爽速`);
-    floatText("自搭配口味！", x, y - 84, COLORS.berry);
+    floatText("JUICY RUSH", x, y - 84, COLORS.berry);
     floatText(`${label} x${multiplier.toFixed(1)}`, x, y - 58, COLORS.purple);
     floatText(`+${formatNumber(bonus)}`, x, y - 34, COLORS.leaf);
-    emitPop(x, y - 18, sourceDef?.color || COLORS.berry, 34);
+    emitFlavorRushStart(x, y - 18, color, first, second);
+    emitPop(x, y - 18, color, 42);
     emitRingBurst(x, y - 26, COLORS.berry, 4, 36);
     emitFeatureSpark(x, y - 26, COLORS.yellow, 24);
     emitBadgeBurst(x, y - 38, COLORS.purple, "搭");
     emitLaneFlash(player.lane, COLORS.berry);
-    setPlayerReaction("flavorCombo", COLORS.purple, 1.55);
-    triggerJuice(COLORS.berry, 2.15, { x, y: y - 26, style: "confetti", hitStop: 0.14 });
+    setPlayerReaction("flavorCombo", COLORS.purple, 1.25);
+    triggerJuice(COLORS.berry, 2.65, { x, y: y - 26, style: "confetti", hitStop: 0.18 });
     beep(980, 0.1, "triangle", 0.045);
+  }
+
+  function clearHazardsForFlavorRush() {
+    for (const entity of state.entities) {
+      if (entity.type !== "hazard" || entity.remove) continue;
+      entity.remove = true;
+      entity.done = true;
+      emitImpactBurst(entity.x + entity.w / 2, entity.y - 42, entity.color, "hazard", 0.85);
+      emitImpactParticles(entity.x + entity.w / 2, entity.y - 42, [entity.color, "#ffffff", COLORS.yellow], 12, { spread: Math.PI * 2, speedMin: 100, speedMax: 260, gravity: 220, spin: 10, shape: "shard" });
+    }
+    state.hazardTimer = Math.max(state.hazardTimer, 2.2);
   }
 
   function markBrandFeature(key, def, entity, text) {
@@ -1425,6 +1573,7 @@
     const bonus = entity.bonus;
     let text = "";
     let value = Math.round((180 + state.combo * 12) * state.multiplier);
+    noteActivePlay(1);
     if (bonus.key === "cleanBoost") {
       state.shield = Math.min(3, state.shield + 1);
       state.purity = clamp(state.purity + 6, 0, 100);
@@ -1466,7 +1615,6 @@
     emitBonusImpact(bonus.key, entity, bonus.color);
     setPlayerReaction(bonus.key, bonus.color, 1.1);
     triggerJuice(bonus.color, 1.25, { x: entity.x + entity.w / 2, y: entity.y - 46, style: "magnet", hitStop: 0.08 });
-    floatText(text || `+${value}`, entity.x, entity.y - 64, bonus.color);
     floatText(`+${value}`, entity.x, entity.y - 88, COLORS.leaf);
     beep(700, 0.04, "triangle", 0.03);
   }
@@ -1578,6 +1726,7 @@
     if (nextLane === player.lane) return;
     player.lane = nextLane;
     player.targetLane = player.lane;
+    noteActivePlay(0.55);
     state.batchLaneChanges += 1;
     bumpMission("laneChanges");
     beep(440 + player.lane * 80, 0.025, "square", 0.018);
@@ -1645,6 +1794,7 @@
     for (const particle of state.particles) drawParticle(particle);
     for (const text of state.floats) drawFloat(text);
     if (state.feverTime > 0) drawFeverOverlay();
+    if (state.flavorCountdown > 0 || state.flavorRushTime > 0) drawFlavorRushOverlay();
     ctx.restore();
     drawScreenFlash();
   }
@@ -1670,9 +1820,10 @@
       fillRect(0, y, w, 4, "rgba(38,138,161,.10)");
     }
 
-    drawPixelSign(w * 0.5 - ((t * 34) % 460), wallTop + 34, "純淨製程", COLORS.aquaDeep, 112);
-    drawPixelSign(w * 0.82 - ((t * 34) % 560), wallTop + 84, "精品優格", COLORS.berry, 128);
-    drawPixelSign(w * 0.28 - ((t * 30) % 620), wallTop + 126, "UGOODAYS", COLORS.leaf, 112);
+    drawPixelSign(w * 0.5 - ((t * 34) % 460), wallTop + 34, "純粹優格多一點", COLORS.aquaDeep, 156);
+    drawPixelSign(w * 0.82 - ((t * 34) % 560), wallTop + 84, "健康多一點", COLORS.leaf, 126);
+    drawPixelSign(w * 0.28 - ((t * 30) % 620), wallTop + 126, "UGOODAYS", COLORS.berry, 112);
+    drawCuteBrandDecals(w, wallTop, t);
 
     const floorY = state.lanes[0] - 78;
     fillRect(0, floorY, w, h - floorY, "#fff4dc");
@@ -1692,6 +1843,24 @@
     }
 
     drawConveyor(w, h, t);
+  }
+
+  function drawCuteBrandDecals(w, wallTop, t) {
+    ctx.save();
+    ctx.globalAlpha = 0.7;
+    for (let i = 0; i < 9; i += 1) {
+      const x = ((i * 176 + 70 - t * (18 + i)) % (w + 180)) - 90;
+      const y = wallTop + 20 + (i % 4) * 34;
+      const color = i % 3 === 0 ? "#ffffff" : i % 3 === 1 ? "#e3f8ff" : "#e6f5df";
+      drawCircle(x, y, 7 + (i % 2) * 3, color);
+      drawCircle(x + 12, y + 7, 4, "#ffffff");
+      if (i % 3 === 0) {
+        fillRect(x - 3, y - 16, 6, 6, COLORS.berry);
+        fillRect(x + 3, y - 16, 6, 6, COLORS.berry);
+        fillRect(x, y - 10, 6, 6, COLORS.berry);
+      }
+    }
+    ctx.restore();
   }
 
   function drawConveyor(w, h, t) {
@@ -1733,10 +1902,10 @@
     ctx.translate(x + 34, y + 34);
     ctx.scale(0.84, 0.84);
     ctx.translate(-(x + 34), -(y + 34));
+    drawGoodItemAura(entity, x + 34, y + 34, color, target);
     drawPixelShadow(x + 10, entity.y - 10, entity.w + 8);
     if (entity.type === "bonus") {
-      drawBonusAura(entity, x + 34, y + 34, color);
-      drawPixelStar(x + 34, y + 34, color);
+      drawBonusSticker(entity, x, y);
     } else {
       drawIngredientIcon(entity.key, x, y, target);
     }
@@ -1745,63 +1914,117 @@
     ctx.restore();
   }
 
+  function drawGoodItemAura(entity, cx, cy, color, target) {
+    const pulse = 0.45 + Math.sin(entity.anim * 8) * 0.28;
+    const strong = target || entity.type === "bonus";
+    ctx.save();
+    ctx.globalAlpha = strong ? 0.24 + pulse * 0.16 : 0.08;
+    drawCircle(cx, cy, strong ? 42 + pulse * 8 : 32, entity.type === "bonus" ? COLORS.yellow : color);
+    ctx.globalAlpha = strong ? 0.55 : 0.22;
+    for (let i = 0; i < (strong ? 6 : 3); i += 1) {
+      const a = entity.anim * 2.6 + i * Math.PI * 2 / (strong ? 6 : 3);
+      const r = strong ? 39 : 30;
+      fillRect(cx + Math.cos(a) * r - 3, cy + Math.sin(a) * (r * 0.72) - 3, 6, 6, i % 2 ? "#ffffff" : color);
+    }
+    ctx.restore();
+  }
+
+  function drawCircle(x, y, radius, color) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
+  function strokeCircle(x, y, radius, color, width = 2) {
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.stroke();
+  }
+
+  function drawCapsule(x, y, w, h, leftColor, rightColor, border = COLORS.ink) {
+    const r = h / 2;
+    drawCircle(x + r, y + r, r, leftColor);
+    drawCircle(x + w - r, y + r, r, rightColor);
+    fillRect(x + r, y, w - h, h, leftColor);
+    fillRect(x + w / 2, y, w / 2 - r, h, rightColor);
+    strokeRect(x + r - 1, y, w - h + 2, h, border, 2);
+    strokeCircle(x + r, y + r, r, border, 2);
+    strokeCircle(x + w - r, y + r, r, border, 2);
+  }
+
+  function drawStickerBase(x, y, def, required) {
+    const pulse = required ? 0.12 + Math.sin(state.time * 16) * 0.04 : 0;
+    ctx.save();
+    ctx.globalAlpha = 1;
+    fillRect(x + 2, y + 6, 64, 60, "rgba(255,255,255,.92)");
+    fillRect(x + 6, y + 10, 56, 52, def.bg || "#fff4dc");
+    fillRect(x + 10, y + 14, 48, 44, "#ffffff");
+    fillRect(x + 12, y + 16, 42, 8, `rgba(255,255,255,${0.56 + pulse})`);
+    strokeRect(x + 6, y + 10, 56, 52, def.color, required ? 4 : 3);
+    strokeRect(x + 10, y + 14, 48, 44, "rgba(36,50,58,.22)", 2);
+    ctx.restore();
+  }
+
+  function drawTargetPips(x, y, color) {
+    const pulse = Math.sin(state.time * 18) * 3;
+    fillRect(x - 3, y + 6, 9, 9, color);
+    fillRect(x + 62, y + 6, 9, 9, color);
+    fillRect(x - 3, y + 61, 9, 9, color);
+    fillRect(x + 62, y + 61, 9, 9, color);
+    strokeRect(x - 6 - pulse, y - 7 - pulse, 80 + pulse * 2, 80 + pulse * 2, color, 2);
+  }
+
   function drawIngredientIcon(key, x, y, required) {
     const def = TYPES[key];
-    if (required) drawBlinkFrame(x - 7, y - 8, 82, 82, def.color);
-    fillRect(x + 4, y + 8, 60, 56, "#ffffff");
-    fillRect(x + 4, y + 8, 60, 10, def.color);
-    strokeRect(x + 4, y + 8, 60, 56, COLORS.ink, 4);
+    if (required) drawTargetPips(x, y, def.color);
+    drawStickerBase(x, y, def, required);
     if (key === "milk") {
-      fillRect(x + 18, y + 17, 32, 43, "#f7fdff");
-      fillRect(x + 18, y + 17, 16, 9, "#ffffff");
-      fillRect(x + 34, y + 17, 16, 9, "#cfefff");
-      fillRect(x + 21, y + 29, 26, 16, "#dff6ff");
-      fillRect(x + 25, y + 46, 5, 7, "#ffffff");
-      fillRect(x + 36, y + 46, 5, 7, "#ffffff");
-      fillRect(x + 13, y + 49, 8, 8, "#ffffff");
-      fillRect(x + 47, y + 51, 7, 7, "#ffffff");
-      strokeRect(x + 18, y + 17, 32, 43, COLORS.aquaDeep, 3);
-      strokeRect(x + 21, y + 29, 26, 16, COLORS.aquaDeep, 2);
-      drawText("MILK", x + 34, y + 40, 10, COLORS.aquaDeep, "center");
+      fillRect(x + 21, y + 18, 26, 43, "#f7fdff");
+      fillRect(x + 21, y + 18, 13, 9, "#ffffff");
+      fillRect(x + 34, y + 18, 13, 9, "#cfefff");
+      fillRect(x + 24, y + 30, 20, 17, "#dff6ff");
+      drawCircle(x + 29, y + 51, 5, "#ffffff");
+      drawCircle(x + 38, y + 51, 5, "#ffffff");
+      strokeRect(x + 21, y + 18, 26, 43, COLORS.aquaDeep, 3);
+      strokeRect(x + 24, y + 30, 20, 17, COLORS.aquaDeep, 2);
     } else if (key === "culture") {
-      fillRect(x + 13, y + 42, 42, 14, "#caeef6");
-      strokeRect(x + 13, y + 42, 42, 14, COLORS.aquaDeep, 3);
-      fillRect(x + 18, y + 24, 16, 23, "#ffffff");
-      fillRect(x + 34, y + 24, 16, 23, COLORS.yellow);
-      strokeRect(x + 18, y + 24, 32, 23, COLORS.ink, 2);
+      drawCapsule(x + 16, y + 28, 36, 15, "#ffffff", COLORS.yellow, COLORS.aquaDeep);
+      drawCircle(x + 24, y + 50, 7, "#caeef6");
+      drawCircle(x + 38, y + 51, 8, "#caeef6");
+      strokeCircle(x + 24, y + 50, 7, COLORS.aquaDeep, 2);
+      strokeCircle(x + 38, y + 51, 8, COLORS.aquaDeep, 2);
       for (let i = 0; i < 7; i += 1) {
         const bx = x + 16 + (i % 4) * 10;
-        const by = y + 22 + Math.floor(i / 4) * 12;
-        fillRect(bx, by, 6, 6, i % 2 ? COLORS.aquaDeep : "#ffffff");
-        fillRect(bx + 2, by - 3, 2, 12, i % 2 ? COLORS.aquaDeep : "#ffffff");
-        fillRect(bx - 3, by + 2, 12, 2, i % 2 ? COLORS.aquaDeep : "#ffffff");
+        const by = y + 19 + Math.floor(i / 4) * 10;
+        drawCircle(bx, by, 3, i % 2 ? COLORS.aquaDeep : COLORS.leaf);
+        fillRect(bx + 4, by - 1, 5, 2, i % 2 ? COLORS.aquaDeep : COLORS.leaf);
       }
-      drawText("菌", x + 34, y + 62, 13, COLORS.aquaDeep, "center");
     } else if (key === "protein") {
-      fillRect(x + 16, y + 25, 36, 32, "#fff5eb");
-      fillRect(x + 20, y + 18, 28, 11, COLORS.orange);
-      fillRect(x + 22, y + 34, 24, 7, COLORS.orange);
-      fillRect(x + 22, y + 45, 18, 6, "#ffd2b4");
-      strokeRect(x + 16, y + 25, 36, 32, COLORS.ink, 3);
-      strokeRect(x + 20, y + 18, 28, 11, COLORS.ink, 2);
-      drawText("PRO", x + 34, y + 42, 10, COLORS.orange, "center");
+      fillRect(x + 17, y + 28, 34, 28, "#fff5eb");
+      fillRect(x + 22, y + 20, 24, 10, COLORS.orange);
+      drawCircle(x + 32, y + 41, 11, "#ffd2b4");
+      fillRect(x + 24, y + 38, 19, 6, COLORS.orange);
+      strokeRect(x + 17, y + 28, 34, 28, COLORS.ink, 3);
+      strokeRect(x + 22, y + 20, 24, 10, COLORS.ink, 2);
     } else if (key === "calcium") {
-      fillRect(x + 15, y + 31, 38, 18, "#dceffc");
-      fillRect(x + 10, y + 25, 14, 14, "#dceffc");
-      fillRect(x + 44, y + 25, 14, 14, "#dceffc");
-      fillRect(x + 10, y + 43, 14, 14, "#dceffc");
-      fillRect(x + 44, y + 43, 14, 14, "#dceffc");
-      strokeRect(x + 15, y + 31, 38, 18, "#4b91b6", 3);
-      drawText("Ca", x + 34, y + 42, 20, "#4b91b6", "center");
+      fillRect(x + 15, y + 33, 38, 13, "#dceffc");
+      fillRect(x + 27, y + 21, 13, 37, "#dceffc");
+      drawCircle(x + 17, y + 29, 7, "#ffffff");
+      drawCircle(x + 50, y + 29, 7, "#ffffff");
+      drawCircle(x + 17, y + 51, 7, "#ffffff");
+      drawCircle(x + 50, y + 51, 7, "#ffffff");
+      strokeRect(x + 15, y + 33, 38, 13, "#4b91b6", 3);
+      strokeRect(x + 27, y + 21, 13, 37, "#4b91b6", 3);
     } else if (key === "fruit") {
-      fillRect(x + 15, y + 35, 18, 18, COLORS.berry);
-      fillRect(x + 35, y + 37, 18, 18, COLORS.orange);
-      fillRect(x + 25, y + 22, 17, 17, COLORS.leaf);
-      strokeRect(x + 15, y + 35, 18, 18, COLORS.ink, 2);
-      strokeRect(x + 35, y + 37, 18, 18, COLORS.ink, 2);
-      fillRect(x + 29, y + 27, 8, 6, "#ffffff");
-      fillRect(x + 40, y + 30, 8, 5, "#ffffff");
-      drawText("果", x + 34, y + 20, 18, COLORS.berry, "center");
+      drawCircle(x + 25, y + 43, 12, COLORS.berry);
+      drawCircle(x + 43, y + 45, 11, COLORS.orange);
+      drawCircle(x + 35, y + 32, 9, COLORS.leaf);
+      strokeCircle(x + 25, y + 43, 12, COLORS.ink, 2);
+      strokeCircle(x + 43, y + 45, 11, COLORS.ink, 2);
+      fillRect(x + 30, y + 27, 13, 5, "#ffffff");
     } else if (key === "honey") {
       fillRect(x + 17, y + 27, 34, 30, COLORS.yellow);
       fillRect(x + 22, y + 19, 24, 10, "#fff8c6");
@@ -1812,7 +2035,6 @@
       fillRect(x + 53, y + 42, 5, 9, COLORS.yellow);
       strokeRect(x + 17, y + 27, 34, 30, COLORS.ink, 3);
       strokeRect(x + 22, y + 19, 24, 10, COLORS.ink, 2);
-      drawText("蜜", x + 34, y + 50, 16, "#7a5123", "center");
     } else if (key === "oat") {
       for (let i = 0; i < 5; i += 1) {
         const ox = x + 14 + i * 8;
@@ -1822,7 +2044,6 @@
         strokeRect(ox, oy, 10, 19, "#a47b42", 2);
       }
       fillRect(x + 16, y + 52, 36, 5, "#a47b42");
-      drawText("燕麥", x + 34, y + 21, 12, "#a47b42", "center");
     } else if (key === "matcha") {
       fillRect(x + 16, y + 39, 38, 16, "#dff0d5");
       fillRect(x + 20, y + 31, 30, 12, "#83c46a");
@@ -1831,7 +2052,6 @@
       fillRect(x + 43, y + 25, 4, 20, "#4f9a4b");
       strokeRect(x + 16, y + 39, 38, 16, "#4f9a4b", 3);
       strokeRect(x + 20, y + 31, 30, 12, COLORS.ink, 2);
-      drawText("抹茶", x + 34, y + 22, 12, "#4f9a4b", "center");
     } else if (key === "cocoa") {
       fillRect(x + 17, y + 24, 34, 32, "#7a4b35");
       for (let row = 0; row < 2; row += 1) {
@@ -1842,7 +2062,6 @@
       }
       fillRect(x + 13, y + 18, 40, 7, "#efd5c6");
       strokeRect(x + 17, y + 24, 34, 32, COLORS.ink, 3);
-      drawText("可可", x + 34, y + 61, 12, "#7a4b35", "center");
     } else if (key === "salt") {
       fillRect(x + 20, y + 25, 28, 32, "#d9f0fb");
       fillRect(x + 23, y + 17, 22, 10, "#ffffff");
@@ -1850,7 +2069,6 @@
       strokeRect(x + 20, y + 25, 28, 32, "#5aa4c8", 3);
       strokeRect(x + 23, y + 17, 22, 10, COLORS.ink, 2);
       for (let i = 0; i < 7; i += 1) fillRect(x + 14 + i * 7, y + 54 + (i % 2) * 3, 4, 4, i % 2 ? "#5aa4c8" : "#ffffff");
-      drawText("鹽", x + 34, y + 41, 14, "#5aa4c8", "center");
     } else if (key === "crunch") {
       for (let i = 0; i < 7; i += 1) {
         const cx = x + 13 + (i % 4) * 11;
@@ -1859,11 +2077,10 @@
         strokeRect(cx, cy, 10 + (i % 2) * 3, 9 + (i % 3), COLORS.ink, 1);
       }
       fillRect(x + 23, y + 50, 23, 6, "#fff8c6");
-      drawText("喀滋", x + 34, y + 61, 12, "#d48c32", "center");
     } else {
-      drawText(def.short, x + 34, y + 43, 25, def.color, "center");
+      drawCircle(x + 34, y + 38, 17, def.color);
+      strokeCircle(x + 34, y + 38, 17, COLORS.ink, 2);
     }
-    if (required) drawText("接", x + 34, y - 14, 17, COLORS.leaf, "center");
   }
 
   function drawStation(entity) {
@@ -1941,15 +2158,24 @@
   function drawHazard(entity) {
     const x = Math.round(entity.x);
     const y = Math.round(entity.y - 72 + Math.sin(entity.anim * 8) * 4);
+    drawHazardLaneWarning(entity);
     ctx.save();
     ctx.translate(x + 36, y + 36);
     ctx.scale(0.86, 0.86);
     ctx.translate(-(x + 36), -(y + 36));
     drawHazardAlert(entity, x, y);
     drawPixelShadow(x + 10, entity.y - 9, entity.w + 10);
-    fillRect(x + 5, y + 9, 62, 54, "#fff0f3");
+    const pulse = 0.55 + Math.sin(entity.anim * 10) * 0.22;
+    fillRect(x - 1, y + 3, 74, 66, `rgba(216,36,60,${0.15 + pulse * 0.08})`);
+    for (let i = 0; i < 6; i += 1) {
+      fillRect(x + 4 + i * 12, y + 7 + (i % 2) * 8, 7, 55, i % 2 ? "rgba(255,255,255,.72)" : "rgba(168,18,39,.2)");
+    }
+    fillRect(x + 5, y + 9, 62, 54, "#ffe8ed");
+    fillRect(x + 9, y + 13, 54, 11, "rgba(216,36,60,.18)");
+    strokeRect(x + 5, y + 9, 62, 54, COLORS.ink, 2);
     strokeRect(x + 5, y + 9, 62, 54, entity.color, 6);
     drawHazardSymbol(entity, x, y);
+    drawText("!", x + 36, y + 41, 32, "#ffffff", "center");
     drawText(entity.short, x + 36, y + 74, 15, entity.color, "center");
     fillRect(x - 1, y + 2, 12, 12, entity.color);
     fillRect(x + 61, y + 2, 12, 12, entity.color);
@@ -2039,6 +2265,56 @@
     ctx.restore();
   }
 
+  function drawBonusSticker(entity, x, y) {
+    const bonus = entity.bonus;
+    const color = bonus.color;
+    const cx = x + 34;
+    const cy = y + 36;
+    drawBonusAura(entity, cx, cy, color);
+    fillRect(x + 6, y + 10, 58, 54, "#fff8c6");
+    fillRect(x + 11, y + 15, 48, 44, "#ffffff");
+    strokeRect(x + 6, y + 10, 58, 54, color, 4);
+    strokeRect(x + 11, y + 15, 48, 44, "rgba(36,50,58,.2)", 2);
+
+    if (bonus.key === "cleanBoost") {
+      fillRect(cx - 18, cy - 13, 36, 30, "#def3df");
+      fillRect(cx - 12, cy - 7, 10, 18, COLORS.leaf);
+      fillRect(cx - 2, cy + 5, 20, 6, COLORS.leaf);
+      strokeRect(cx - 18, cy - 13, 36, 30, COLORS.leaf, 3);
+    } else if (bonus.key === "probioticBoost") {
+      strokeCircle(cx, cy, 20, COLORS.aquaDeep, 3);
+      for (let i = 0; i < 6; i += 1) {
+        const a = entity.anim * 4 + i * Math.PI / 3;
+        drawCircle(cx + Math.cos(a) * 18, cy + Math.sin(a) * 14, 4, i % 2 ? "#ffffff" : COLORS.aquaDeep);
+      }
+      drawCapsule(cx - 14, cy - 5, 28, 10, "#ffffff", COLORS.yellow, COLORS.aquaDeep);
+    } else if (bonus.key === "calciumBoost") {
+      fillRect(cx - 19, cy - 6, 38, 12, "#dceffc");
+      fillRect(cx - 6, cy - 19, 12, 38, "#dceffc");
+      strokeRect(cx - 19, cy - 6, 38, 12, "#4b91b6", 3);
+      strokeRect(cx - 6, cy - 19, 12, 38, "#4b91b6", 3);
+    } else if (bonus.key === "rushBoost") {
+      fillRect(cx - 6, cy - 22, 12, 44, COLORS.orange);
+      fillRect(cx - 22, cy - 6, 44, 12, COLORS.orange);
+      fillRect(cx - 13, cy - 13, 26, 26, COLORS.yellow);
+      strokeRect(cx - 16, cy - 16, 32, 32, COLORS.ink, 2);
+    } else if (bonus.key === "comboBoost") {
+      for (let i = 0; i < 5; i += 1) {
+        const a = -Math.PI / 2 + i * Math.PI * 0.4;
+        fillRect(cx + Math.cos(a) * 18 - 5, cy + Math.sin(a) * 16 - 5, 10, 10, i % 2 ? COLORS.berry : COLORS.yellow);
+      }
+      strokeCircle(cx, cy, 20, COLORS.yellow, 3);
+    } else if (bonus.key === "timeBurst") {
+      drawCircle(cx, cy, 19, "#eadfff");
+      strokeCircle(cx, cy, 19, COLORS.purple, 3);
+      fillRect(cx - 3, cy - 14, 6, 16, COLORS.purple);
+      fillRect(cx, cy, 13, 5, COLORS.purple);
+      fillRect(cx - 8, cy - 25, 16, 7, COLORS.purple);
+    } else {
+      drawPixelStar(cx, cy, color);
+    }
+  }
+
   function drawHazardAlert(entity, x, y) {
     const close = entity.lane === player.lane && entity.x > player.x + 8 && entity.x - player.x < Math.min(420, state.width * 0.62);
     if (state.phase !== "playing" || !close) return;
@@ -2056,6 +2332,22 @@
       fillRect(tx, y + 30, 9, 8, entity.color);
       fillRect(tx + 6, y + 38, 9, 8, entity.color);
       fillRect(tx, y + 46, 9, 8, entity.color);
+    }
+    ctx.restore();
+  }
+
+  function drawHazardLaneWarning(entity) {
+    const close = entity.lane === player.lane && entity.x > player.x + 8 && entity.x - player.x < Math.min(520, state.width * 0.72);
+    if (state.phase !== "playing" || !close) return;
+    const laneY = state.lanes[entity.lane];
+    const pulse = 0.45 + Math.sin(state.time * 18) * 0.25;
+    ctx.save();
+    ctx.globalAlpha = 0.14 + pulse * 0.1;
+    fillRect(0, laneY - 82, state.width, 124, entity.color);
+    ctx.globalAlpha = 0.38 + pulse * 0.24;
+    for (let x = -40 - (state.time * state.speed * 0.75) % 72; x < state.width + 80; x += 72) {
+      fillRect(x, laneY - 74, 34, 8, entity.color);
+      fillRect(x + 18, laneY + 28, 34, 8, entity.color);
     }
     ctx.restore();
   }
@@ -2092,30 +2384,33 @@
     const t = player.reactionTimer;
     const wobble = Math.sin(t * 46);
     const presets = {
-      milk: { mark: "鮮甜!", dx: wobble * 2, dy: -Math.abs(wobble) * 5, rot: wobble * 0.035, sx: 1.08, sy: 0.9 },
-      culture: { mark: "輕鬆!", dx: wobble * 3, dy: -Math.abs(wobble) * 4, rot: wobble * 0.045, sx: 0.96, sy: 1.1 },
-      protein: { mark: "飽足!", dx: wobble * 2, dy: -2, rot: -0.04, sx: 1.14, sy: 0.88 },
-      calcium: { mark: "穩住!", dx: 0, dy: -1, rot: wobble * 0.02, sx: 0.94, sy: 1.12 },
-      fruit: { mark: "果香!", dx: wobble * 5, dy: -Math.abs(wobble) * 2, rot: wobble * 0.09, sx: 1.04, sy: 0.94 },
-      honey: { mark: "回甘!", dx: -Math.abs(wobble) * 2, dy: -Math.abs(wobble) * 2, rot: wobble * 0.04, sx: 0.98, sy: 1.06 },
-      oat: { mark: "穀香!", dx: wobble * 2, dy: -1, rot: wobble * 0.03, sx: 1.05, sy: 0.96 },
-      matcha: { mark: "醒神!", dx: wobble * 3, dy: -Math.abs(wobble) * 5, rot: wobble * 0.07, sx: 1.04, sy: 0.96 },
-      cocoa: { mark: "濃郁!", dx: wobble * 2, dy: 1, rot: wobble * 0.05, sx: 1.1, sy: 0.9 },
-      salt: { mark: "鹹甜!", dx: wobble * 6, dy: -2, rot: wobble * 0.13, sx: 1.02, sy: 0.98 },
-      crunch: { mark: "喀滋!", dx: wobble * 3, dy: -3, rot: wobble * 0.08, sx: 1.1, sy: 0.86 },
-      flavorCombo: { mark: "自搭爽!", dx: wobble * 5, dy: -Math.abs(wobble) * 7, rot: wobble * 0.16, sx: 1.14, sy: 0.86 },
-      rushBoost: { mark: "爆爽!", dx: wobble * 5, dy: -Math.abs(wobble) * 5, rot: wobble * 0.16, sx: 1.12, sy: 0.88 },
-      comboBoost: { mark: "連!", dx: wobble * 4, dy: -3, rot: wobble * 0.1, sx: 1.08, sy: 0.92 },
-      timeBurst: { mark: "+秒", dx: wobble * 2, dy: -2, rot: wobble * 0.04, sx: 1, sy: 1 },
-      flavor: { mark: "痛!", dx: wobble * 7, dy: 2, rot: wobble * 0.16, sx: 0.9, sy: 1.12 },
-      coloring: { mark: "花!", dx: wobble * 7, dy: 2, rot: wobble * 0.15, sx: 0.92, sy: 1.1 },
-      dirty: { mark: "髒!", dx: wobble * 8, dy: 3, rot: wobble * 0.18, sx: 0.88, sy: 1.14 },
-      sugar: { mark: "膩!", dx: wobble * 6, dy: 4, rot: wobble * 0.12, sx: 1.1, sy: 0.9 },
-      sour: { mark: "牙!", dx: wobble * 8, dy: 1, rot: wobble * 0.18, sx: 0.94, sy: 1.08 },
-      ice: { mark: "冷!", dx: wobble * 2, dy: 0, rot: wobble * 0.04, sx: 0.9, sy: 1.16 },
-      sticky: { mark: "卡!", dx: -Math.abs(wobble) * 4, dy: Math.abs(wobble) * 4, rot: wobble * 0.08, sx: 0.94, sy: 1.1 },
+      milk: { kind: "milk", dx: wobble * 1.5, dy: -Math.abs(wobble) * 5, rot: wobble * 0.02, sx: 1.08, sy: 0.9 },
+      culture: { kind: "float", dx: wobble * 2, dy: -Math.abs(wobble) * 7, rot: wobble * 0.025, sx: 0.96, sy: 1.1 },
+      protein: { kind: "power", dx: wobble * 1.5, dy: -2, rot: -0.02, sx: 1.14, sy: 0.88 },
+      calcium: { kind: "shield", dx: 0, dy: -1, rot: wobble * 0.012, sx: 0.94, sy: 1.12 },
+      fruit: { kind: "fruit", dx: wobble * 4, dy: -Math.abs(wobble) * 2, rot: wobble * 0.04, sx: 1.04, sy: 0.94 },
+      honey: { kind: "honey", dx: -Math.abs(wobble), dy: -Math.abs(wobble) * 2, rot: wobble * 0.02, sx: 0.98, sy: 1.06 },
+      oat: { kind: "grain", dx: wobble * 1.5, dy: -1, rot: wobble * 0.015, sx: 1.05, sy: 0.96 },
+      matcha: { kind: "leaf", dx: wobble * 2, dy: -Math.abs(wobble) * 5, rot: wobble * 0.035, sx: 1.04, sy: 0.96 },
+      cocoa: { kind: "power", dx: wobble * 1.5, dy: 1, rot: wobble * 0.02, sx: 1.1, sy: 0.9 },
+      salt: { kind: "crystal", dx: wobble * 4, dy: -2, rot: wobble * 0.04, sx: 1.02, sy: 0.98 },
+      crunch: { kind: "crunch", dx: wobble * 2, dy: -3, rot: wobble * 0.035, sx: 1.1, sy: 0.86 },
+      flavorCombo: { kind: "flavor", dx: wobble * 5, dy: -Math.abs(wobble) * 7, rot: wobble * 0.08, sx: 1.14, sy: 0.86 },
+      cleanBoost: { kind: "shield", dx: 0, dy: -2, rot: 0, sx: 1.05, sy: 0.96 },
+      probioticBoost: { kind: "float", dx: wobble * 1.5, dy: -Math.abs(wobble) * 5, rot: wobble * 0.02, sx: 1.03, sy: 0.97 },
+      calciumBoost: { kind: "shield", dx: 0, dy: -1, rot: 0, sx: 1.04, sy: 0.98 },
+      rushBoost: { kind: "boost", dx: wobble * 3, dy: -Math.abs(wobble) * 5, rot: wobble * 0.06, sx: 1.12, sy: 0.88 },
+      comboBoost: { kind: "boost", dx: wobble * 2, dy: -3, rot: wobble * 0.04, sx: 1.08, sy: 0.92 },
+      timeBurst: { kind: "time", dx: wobble, dy: -2, rot: wobble * 0.02, sx: 1, sy: 1 },
+      flavor: { hazard: true, mark: "痛!", dx: wobble * 7, dy: 2, rot: wobble * 0.16, sx: 0.9, sy: 1.12 },
+      coloring: { hazard: true, mark: "花!", dx: wobble * 7, dy: 2, rot: wobble * 0.15, sx: 0.92, sy: 1.1 },
+      dirty: { hazard: true, mark: "髒!", dx: wobble * 8, dy: 3, rot: wobble * 0.18, sx: 0.88, sy: 1.14 },
+      sugar: { hazard: true, mark: "膩!", dx: wobble * 6, dy: 4, rot: wobble * 0.12, sx: 1.1, sy: 0.9 },
+      sour: { hazard: true, mark: "牙!", dx: wobble * 8, dy: 1, rot: wobble * 0.18, sx: 0.94, sy: 1.08 },
+      ice: { hazard: true, mark: "冷!", dx: wobble * 2, dy: 0, rot: wobble * 0.04, sx: 0.9, sy: 1.16 },
+      sticky: { hazard: true, mark: "卡!", dx: -Math.abs(wobble) * 4, dy: Math.abs(wobble) * 4, rot: wobble * 0.08, sx: 0.94, sy: 1.1 },
     };
-    return presets[k] || { mark: "痛!", dx: wobble * 4, dy: 0, rot: wobble * 0.08, sx: 1, sy: 1 };
+    return presets[k] || { kind: "spark", dx: wobble * 2, dy: -2, rot: wobble * 0.02, sx: 1.04, sy: 0.96 };
   }
 
   function drawPlayer() {
@@ -2177,11 +2472,14 @@
     fillRect(x + 6, y + 22, 8, 8, "#ffffff");
     fillRect(x - 10, y + 24, 4, 5, COLORS.ink);
     fillRect(x + 9, y + 24, 4, 5, COLORS.ink);
-    if (reaction) {
+    if (reaction?.hazard) {
       fillRect(x - 14, y + 22, 12, 3, COLORS.berry);
       fillRect(x - 12, y + 18, 3, 12, COLORS.berry);
       fillRect(x + 4, y + 22, 12, 3, COLORS.berry);
       fillRect(x + 13, y + 18, 3, 12, COLORS.berry);
+    } else if (reaction) {
+      fillRect(x - 13, y + 25, 8, 3, player.reactionColor);
+      fillRect(x + 6, y + 25, 8, 3, player.reactionColor);
     }
     fillRect(x - 18, y + 31, 7, 4, blush);
     fillRect(x + 11, y + 31, 7, 4, blush);
@@ -2211,15 +2509,49 @@
     if (work) {
       drawActionSlash(x - 76, y + 43 + armLift);
     }
-    if (reaction) {
-      drawText(reaction.mark, x + 6, y - 12, 16, player.reactionColor, "center");
-      for (let i = 0; i < 4; i += 1) {
-        const a = state.time * 10 + i * Math.PI * 0.5;
-        fillRect(x + Math.cos(a) * 36 - 3, y + 28 + Math.sin(a) * 22 - 3, 6, 6, i % 2 ? "#ffffff" : player.reactionColor);
+    if (reaction) drawPlayerReactionGlyphs(x, y, reaction);
+    ctx.restore();
+    if (reaction?.hazard) drawPlayerReactionCallout(x, y, reaction);
+  }
+
+  function drawPlayerReactionGlyphs(x, y, reaction) {
+    const color = player.reactionColor || COLORS.berry;
+    const t = state.time;
+    ctx.save();
+    if (reaction.hazard) {
+      drawText(reaction.mark, x + 6, y - 12, 16, color, "center");
+      for (let i = 0; i < 5; i += 1) {
+        const a = t * 11 + i * Math.PI * 0.42;
+        fillRect(x + Math.cos(a) * 35 - 4, y + 24 + Math.sin(a) * 23 - 4, 8, 8, i % 2 ? "#ffffff" : color);
+      }
+    } else {
+      const colors = reaction.kind === "flavor" ? [COLORS.berry, COLORS.yellow, COLORS.leaf, COLORS.purple] : [color, "#ffffff", COLORS.yellow, COLORS.aqua];
+      const count = reaction.kind === "flavor" ? 12 : 7;
+      const orbitX = reaction.kind === "shield" ? 42 : 34;
+      const orbitY = reaction.kind === "milk" || reaction.kind === "float" ? 30 : 24;
+      for (let i = 0; i < count; i += 1) {
+        const a = t * (reaction.kind === "flavor" ? 6.5 : 4.5) + i * Math.PI * 2 / count;
+        const px = x + Math.cos(a) * orbitX;
+        const py = y + 28 + Math.sin(a) * orbitY;
+        if (reaction.kind === "milk" || reaction.kind === "honey") {
+          fillRect(px - 3, py - 6, 6, 12, colors[i % colors.length]);
+          fillRect(px - 5, py + 2, 10, 5, colors[i % colors.length]);
+        } else if (reaction.kind === "shield" || reaction.kind === "crystal") {
+          ctx.save();
+          ctx.translate(px, py);
+          ctx.rotate(Math.PI / 4 + t * 2);
+          fillRect(-4, -4, 8, 8, colors[i % colors.length]);
+          ctx.restore();
+        } else {
+          fillRect(px - 4, py - 4, 8, 8, colors[i % colors.length]);
+        }
+      }
+      if (reaction.kind === "flavor") {
+        strokeRect(x - 45, y - 82, 90, 108, COLORS.berry, 3);
+        strokeRect(x - 35, y - 72, 70, 88, COLORS.yellow, 2);
       }
     }
     ctx.restore();
-    if (reaction) drawPlayerReactionCallout(x, y, reaction);
   }
 
   function drawPlayerReactionCallout(x, y, reaction) {
@@ -2432,6 +2764,33 @@
     }
   }
 
+  function drawFlavorRushOverlay() {
+    const countdown = state.flavorCountdown > 0;
+    const alpha = countdown ? 0.18 + Math.sin(state.time * 28) * 0.06 : 0.1 + Math.sin(state.time * 18) * 0.04;
+    const label = countdown ? state.flavorPending?.label || "自搭配" : state.flavorComboLabel;
+    const centerX = state.width * 0.5;
+    const top = state.width < 520 ? 300 : 138;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    fillRect(0, 0, state.width, state.height, countdown ? COLORS.yellow : COLORS.berry);
+    ctx.globalAlpha = countdown ? 0.72 : 0.46;
+    for (let i = 0; i < 18; i += 1) {
+      const x = (i * 83 + state.time * (countdown ? 520 : 720)) % (state.width + 160) - 80;
+      const y = top + ((i * 47 + state.time * 260) % Math.max(180, state.height - top - 120));
+      fillRect(x, y, 44 + (i % 4) * 16, i % 2 ? 8 : 5, i % 3 ? "#ffffff" : COLORS.yellow);
+    }
+    ctx.globalAlpha = 1;
+    const w = clamp((label || "").length * 15 + 138, 190, state.width - 34);
+    const h = countdown ? 54 : 46;
+    const y = top + (countdown ? 38 : 22);
+    fillRect(centerX - w / 2, y - h / 2, w, h, "rgba(255,255,255,.94)");
+    strokeRect(centerX - w / 2, y - h / 2, w, h, countdown ? COLORS.yellow : COLORS.berry, 4);
+    fillRect(centerX - w / 2 + 8, y - h / 2 + 8, 12, h - 16, countdown ? COLORS.yellow : COLORS.berry);
+    drawText(countdown ? "JUICY READY" : `JUICY x${state.flavorMultiplier.toFixed(1)}`, centerX, y - 4, countdown ? 18 : 17, countdown ? COLORS.orange : COLORS.berry, "center");
+    if (label) drawText(label, centerX, y + 18, 15, COLORS.ink, "center");
+    ctx.restore();
+  }
+
   function drawSpeedLines() {
     if (state.speedLineTime <= 0 && state.comboSurge <= 0) return;
     const alpha = clamp(state.speedLineTime * 2.6 + state.comboSurge * 0.16, 0, 0.72);
@@ -2571,6 +2930,59 @@
 
   function impactCenter(entity) {
     return { x: entity.x + entity.w / 2, y: entity.y - entity.h * 0.7 };
+  }
+
+  function emitFlavorPreview(x, y, color) {
+    emitRingBurst(x, y, COLORS.yellow, 3, 30);
+    emitImpactBurst(x, y, color, "vortex", 1.15);
+    emitImpactParticles(x, y, [color, COLORS.yellow, COLORS.berry, "#ffffff"], 30, {
+      spread: Math.PI * 2,
+      speedMin: 70,
+      speedMax: 230,
+      friction: 0.92,
+      spin: 18,
+      shape: "line",
+      sizeMin: 4,
+      sizeMax: 12,
+      lifeMin: 0.42,
+      lifeMax: 0.9,
+    });
+    trimParticles();
+  }
+
+  function emitFlavorRushStart(x, y, color, firstKey, secondKey) {
+    const first = TYPES[firstKey]?.color || COLORS.berry;
+    const second = TYPES[secondKey]?.color || COLORS.yellow;
+    emitImpactBurst(x, y, color, "confetti", 1.75);
+    emitImpactBurst(x, y, COLORS.yellow, "vortex", 1.25);
+    emitImpactParticles(x, y, [first, second, COLORS.berry, COLORS.yellow, "#ffffff"], 58, {
+      start: Math.PI,
+      spread: Math.PI * 1.35,
+      speedMin: 190,
+      speedMax: 520,
+      friction: 0.975,
+      gravity: 80,
+      spin: 22,
+      shape: "confetti",
+      sizeMin: 5,
+      sizeMax: 13,
+      lifeMin: 0.55,
+      lifeMax: 1.15,
+      jitter: 34,
+    });
+    emitImpactParticles(x, y, [first, second, "#ffffff"], 34, {
+      spread: Math.PI * 2,
+      speedMin: 120,
+      speedMax: 360,
+      friction: 0.9,
+      spin: 28,
+      shape: "spark",
+      sizeMin: 4,
+      sizeMax: 10,
+      lifeMin: 0.44,
+      lifeMax: 0.82,
+    });
+    trimParticles();
   }
 
   function emitElementImpact(key, entity, color, perfect) {
@@ -2908,10 +3320,11 @@
       const missionText = missionProgressText();
       const pressureText = modifier.id === "standard" ? diff.name : `${diff.name}｜${modifier.label}`;
       const featureText = `${def.feature}會觸發「${def.effect}」`;
+      const idleText = state.idleTime > 1 ? "紅色危險物正在追線，滑動躲開" : "主動接好料，紅色添加物要閃開";
       dom.fact.textContent =
         current.mode === "work"
-          ? `${pressureText} / 挑戰：${missionText} / ${featureText}，甜點區處理「${def.label}」。`
-          : `${pressureText} / 挑戰：${missionText} / ${featureText}，甜點區接「${def.label}」。`;
+          ? `${pressureText} / ${idleText} / 挑戰：${missionText} / ${featureText}，處理「${def.label}」。`
+          : `${pressureText} / ${idleText} / 挑戰：${missionText} / ${featureText}，接「${def.label}」。`;
     }
   }
 
@@ -3021,7 +3434,7 @@
     if (audio.bgmGain && audio.context) {
       audio.bgmGain.gain.cancelScheduledValues(audio.context.currentTime);
       audio.bgmGain.gain.setValueAtTime(audio.bgmGain.gain.value, audio.context.currentTime);
-      audio.bgmGain.gain.linearRampToValueAtTime(audio.muted ? 0 : 0.056, audio.context.currentTime + 0.18);
+      audio.bgmGain.gain.linearRampToValueAtTime(audio.muted ? 0 : 0.095, audio.context.currentTime + 0.18);
     }
     if (!audio.muted) {
       ensureAudio();
@@ -3043,7 +3456,7 @@
     audio.context = new AudioContext();
     audio.sfxGain = audio.context.createGain();
     audio.bgmGain = audio.context.createGain();
-    audio.sfxGain.gain.value = 0.72;
+    audio.sfxGain.gain.value = 0.64;
     audio.bgmGain.gain.value = 0;
     audio.sfxGain.connect(audio.context.destination);
     audio.bgmGain.connect(audio.context.destination);
@@ -3081,7 +3494,7 @@
       audio.bgmNextTime = audio.context.currentTime + 0.05;
     }
     const now = audio.context.currentTime;
-    const volume = state.openingMode ? 0.066 : 0.056;
+    const volume = state.openingMode ? 0.108 : 0.095;
     audio.bgmGain.gain.cancelScheduledValues(now);
     audio.bgmGain.gain.setValueAtTime(audio.bgmGain.gain.value, now);
     audio.bgmGain.gain.linearRampToValueAtTime(volume, now + 0.35);
@@ -3105,7 +3518,7 @@
 
   function scheduleBgm() {
     if (audio.muted || !audio.context || !audio.bgmGain || state.phase !== "playing") return;
-    const tempo = BGM.bpm + Math.min(14, Math.max(0, state.level - 1) * 0.72) + (state.flavorRushTime > 0 ? 8 : 0) + (state.feverTime > 0 ? 8 : 0);
+    const tempo = BGM.bpm + Math.min(10, Math.max(0, state.level - 1) * 0.45) + (state.flavorRushTime > 0 ? 6 : 0) + (state.feverTime > 0 ? 5 : 0);
     const stepSeconds = 60 / tempo / 4;
     while (audio.bgmNextTime < audio.context.currentTime + 0.32) {
       scheduleBgmStep(audio.bgmStep, audio.bgmNextTime, stepSeconds);
@@ -3118,19 +3531,19 @@
     const beat = step % 4;
     const barStep = step % 16;
     const fever = state.feverTime > 0;
-    if (barStep === 0) {
+    if (barStep === 0 || barStep === 8) {
       const chord = BGM.chords[Math.floor(step / 8) % BGM.chords.length];
-      for (const note of chord) playTone(noteToFrequency(note), time, stepSeconds * 11.5, "sine", 0.026, 0.18, 1200);
+      for (const note of chord) playTone(noteToFrequency(note), time, stepSeconds * 7.5, "sine", 0.034, 0.16, 1400);
     }
-    if (beat === 0) playPerc(time, fever ? 0.012 : 0.008, 95, 0.04);
-    if (barStep === 10 || fever && barStep === 6) playPerc(time + stepSeconds * 0.48, 0.006, 520, 0.018);
+    if (beat === 0) playPerc(time, fever ? 0.012 : 0.008, 82, 0.045);
+    if (barStep === 10 || fever && barStep === 6 || state.flavorRushTime > 0 && barStep === 14) playPerc(time + stepSeconds * 0.5, 0.006, 430, 0.02);
 
     const bass = BGM.bass[step];
-    if (bass) playTone(noteToFrequency(bass), time, stepSeconds * 2.8, "sine", 0.075, 0.04, 760);
+    if (bass) playTone(noteToFrequency(bass), time, stepSeconds * 2.8, "sine", 0.09, 0.035, 820);
 
     const melody = BGM.melody[step];
     if (melody) {
-      playTone(noteToFrequency(melody), time, stepSeconds * 2.2, "triangle", fever ? 0.102 : 0.082, 0.035, 2100);
+      playTone(noteToFrequency(melody), time, stepSeconds * 2.35, "triangle", fever ? 0.125 : 0.104, 0.03, 2300);
       if (fever && (step % 8 === 2 || step % 8 === 4)) {
         playTone(noteToFrequency(melody) * 1.5, time + stepSeconds * 0.06, stepSeconds * 1.4, "sine", 0.03, 0.025, 2400);
       }
@@ -3138,12 +3551,12 @@
 
     const hook = BGM.hook[step];
     if (hook && (barStep === 2 || barStep === 6 || barStep === 10 || barStep === 14 || state.flavorRushTime > 0)) {
-      playTone(noteToFrequency(hook), time + stepSeconds * 0.5, stepSeconds * 1.3, "sine", state.flavorRushTime > 0 ? 0.044 : 0.026, 0.02, 2800);
+      playTone(noteToFrequency(hook), time + stepSeconds * 0.5, stepSeconds * 1.3, "sine", state.flavorRushTime > 0 ? 0.062 : 0.038, 0.018, 3000);
     }
 
     const sparkle = BGM.sparkle[step];
     if (sparkle && (fever || state.flavorRushTime > 0 || step % 8 === 7 || state.combo >= 10)) {
-      playTone(noteToFrequency(sparkle), time + stepSeconds * 0.22, stepSeconds * 1.2, "sine", state.flavorRushTime > 0 ? 0.042 : 0.032, 0.025, 3200);
+      playTone(noteToFrequency(sparkle), time + stepSeconds * 0.22, stepSeconds * 1.2, "sine", state.flavorRushTime > 0 ? 0.058 : 0.04, 0.022, 3400);
     }
   }
 

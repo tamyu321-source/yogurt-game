@@ -74,7 +74,7 @@ input {
 .game-panel,
 .dialog {
   border: 3px solid var(--pixel-border);
-  border-radius: 0;
+  border-radius: 8px;
   background: var(--panel);
   box-shadow: var(--shadow);
 }
@@ -199,6 +199,7 @@ input {
   height: 13px;
   overflow: hidden;
   border: 3px solid var(--pixel-border);
+  border-radius: 8px;
   background: #e9eef2;
 }
 
@@ -422,7 +423,7 @@ input {
   color: var(--ink);
   font-weight: 900;
   border: 3px solid var(--pixel-border);
-  border-radius: 0;
+  border-radius: 8px;
   background: rgba(255, 255, 255, 0.86);
   outline: none;
 }
@@ -466,7 +467,7 @@ input {
   padding: 0 18px;
   font-weight: 900;
   border: 3px solid var(--pixel-border);
-  border-radius: 0;
+  border-radius: 8px;
   cursor: pointer;
 }
 
@@ -563,64 +564,111 @@ input {
     min-height: 100svh;
   }
 
+  .overlay {
+    padding: 16px;
+  }
+
+  .dialog {
+    width: min(360px, calc(100vw - 32px));
+    padding: 22px 18px;
+  }
+
+  .dialog-logo {
+    width: 132px;
+    margin-bottom: 10px;
+  }
+
+  .eyebrow {
+    font-size: 12px;
+    line-height: 1.35;
+    letter-spacing: 0.08em;
+  }
+
+  .dialog h1,
+  .dialog h2 {
+    font-size: clamp(25px, 7vw, 30px);
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+  }
+
+  .dialog-copy,
+  .result-copy {
+    max-width: 100%;
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .name-field {
+    width: 100%;
+    max-width: 300px;
+    margin-top: 16px;
+  }
+
+  .primary-button {
+    margin-top: 18px;
+  }
+
   .topbar {
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    grid-template-columns: 1fr 42px;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    grid-template-columns: 74px 1fr 34px;
+    gap: 4px;
+    align-items: stretch;
   }
 
   .brand-lockup {
-    min-height: 46px;
-    padding: 5px 7px;
-    gap: 8px;
+    min-height: 38px;
+    padding: 4px 5px;
+    justify-content: center;
+    gap: 0;
     border-width: 2px;
   }
 
   .brand-lockup img {
-    width: 54px;
-    max-height: 34px;
+    width: 56px;
+    max-height: 28px;
   }
 
-  .brand-lockup strong {
-    font-size: 14px;
-  }
-
-  .brand-lockup span {
-    font-size: 9px;
+  .brand-lockup > div {
+    display: none;
   }
 
   .icon-button {
-    width: 42px;
-    height: 42px;
+    width: 34px;
+    height: 38px;
     border-width: 2px;
   }
 
   .score-grid {
-    gap: 5px;
+    grid-column: auto;
+    grid-row: auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 3px;
   }
 
   .metric {
-    min-height: 43px;
-    padding: 5px 7px;
+    min-height: 38px;
+    padding: 4px 4px;
     border-width: 2px;
   }
 
   .metric span {
-    font-size: 10px;
+    font-size: 9px;
   }
 
   .metric strong {
-    font-size: 20px;
+    margin-top: 0;
+    font-size: 16px;
   }
 
   .game-panel {
-    top: 110px;
-    left: 8px;
-    right: 8px;
-    max-height: 148px;
+    top: 50px;
+    left: 6px;
+    right: 6px;
+    max-height: 102px;
     overflow: hidden;
-    padding: 6px;
+    padding: 5px;
     border-width: 2px;
   }
 
@@ -630,9 +678,9 @@ input {
 
   .progress-block {
     display: grid;
-    grid-template-columns: 48px 1fr;
+    grid-template-columns: 54px 1fr;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
   }
 
   .progress-label {
@@ -643,11 +691,16 @@ input {
   .progress-label strong {
     display: block;
     margin-top: 1px;
-    font-size: 11px;
+    font-size: 10px;
+  }
+
+  .progress-label span {
+    font-size: 9px;
+    line-height: 1.1;
   }
 
   .bar {
-    height: 10px;
+    height: 8px;
     border-width: 2px;
   }
 
@@ -661,11 +714,12 @@ input {
   }
 
   .panel-title {
-    margin-bottom: 5px;
+    margin-bottom: 3px;
   }
 
   .panel-title strong {
-    max-width: 170px;
+    max-width: 210px;
+    font-size: 12px;
   }
 
   .carry-line {
@@ -675,30 +729,31 @@ input {
   }
 
   .order-card {
-    padding-top: 6px;
+    padding-top: 4px;
+    border-top-width: 2px;
   }
 
   .recipe-list {
-    grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 4px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 3px;
   }
 
-  .recipe-row {
-    grid-template-columns: 1fr;
-    justify-items: center;
-    min-height: 37px;
-    gap: 2px;
-    padding: 3px 2px;
-    font-size: 10px;
-  }
-
-  .recipe-row > span:not(.recipe-token) {
+  .recipe-row:not(.current) {
     display: none;
   }
 
+  .recipe-row {
+    grid-template-columns: 24px 1fr auto;
+    justify-items: stretch;
+    min-height: 28px;
+    gap: 4px;
+    padding: 2px 3px;
+    font-size: 11px;
+  }
+
   .recipe-token {
-    width: 22px;
-    height: 22px;
+    width: 21px;
+    height: 21px;
     font-size: 11px;
     border-width: 2px;
   }
