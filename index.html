@@ -26,15 +26,15 @@
 
         <div class="score-grid">
           <div class="metric">
-            <span>關卡</span>
-            <strong id="levelValue">1</strong>
+            <span>體重kg</span>
+            <strong id="levelValue">52.0</strong>
           </div>
           <div class="metric">
-            <span>分數</span>
+            <span>積分</span>
             <strong id="scoreValue">0</strong>
           </div>
           <div class="metric">
-            <span>連線</span>
+            <span>連吃</span>
             <strong id="comboValue">0</strong>
           </div>
           <div class="metric">
@@ -43,9 +43,14 @@
           </div>
         </div>
 
-        <button class="icon-button" id="muteButton" type="button" aria-label="切換音效">
-          <span id="muteIcon" aria-hidden="true">音</span>
-        </button>
+        <div class="quick-actions" aria-label="遊戲控制">
+          <button class="icon-button" id="muteButton" type="button" aria-label="切換音效">
+            <span id="muteIcon" aria-hidden="true">音</span>
+          </button>
+          <button class="icon-button" id="pauseButton" type="button" aria-label="暫停遊戲">
+            <span id="pauseIcon" aria-hidden="true">Ⅱ</span>
+          </button>
+        </div>
       </header>
 
       <aside class="game-panel" aria-label="訂單與排行榜">
@@ -81,13 +86,13 @@
 
         <div class="order-card">
           <div class="panel-title">
-            <span>品牌訂單</span>
-            <strong id="orderName">鮮奶優格</strong>
+            <span>臺南快線</span>
+            <strong id="orderName">已做 0 杯優格</strong>
           </div>
           <div id="recipeList" class="recipe-list"></div>
         </div>
 
-        <div class="fact-line" id="factText">純粹優格多一點，健康多一點。持續滑動守住新鮮節奏。</div>
+        <div class="fact-line" id="factText">官方純粹優格不增重，紅色添加物會增重，70kg 失敗。</div>
 
         <section class="leaderboard" aria-label="本地排行榜">
           <div class="panel-title">
@@ -105,12 +110,12 @@
           <img class="dialog-logo" src="./assets/ugoodays-logo.png" alt="純粹好食" />
           <p class="eyebrow">純粹優格多一點 健康多一點!</p>
           <h1>多一點健康優格快線</h1>
-          <p class="dialog-copy">接鮮奶、養益菌、做熟成、封杯出貨。主動吃好料拿爽感，躲開紅色添加物守住純淨。</p>
+          <p class="dialog-copy">在臺南街景中接鮮奶、益菌與工序道具，做出純粹好食在售優格。官方純粹優格不增重，連吃還能減重；紅色添加物會增重，70kg 就失敗。</p>
           <label class="name-field">
             <span>玩家名稱</span>
             <input id="nameInput" maxlength="16" autocomplete="nickname" placeholder="輸入暱稱" />
           </label>
-          <button class="primary-button" id="startButton" type="button">開始接單</button>
+          <button class="primary-button" id="startButton" type="button">開始開吃</button>
         </div>
       </section>
 
@@ -118,20 +123,20 @@
         <div class="dialog">
           <img class="dialog-logo" src="./assets/ugoodays-logo.png" alt="純粹好食" />
           <p class="eyebrow">生產結算</p>
-          <h2 id="resultTitle">完成 0 批</h2>
-          <p class="result-copy" id="resultCopy">再衝一輪，把純淨率守住。</p>
+          <h2 id="resultTitle">做出 0 杯優格</h2>
+          <div class="result-copy" id="resultCopy">再衝一輪，把純淨率守住。</div>
           <div class="result-stats">
             <div>
-              <span>總分</span>
+              <span>總積分</span>
               <strong id="finalScore">0</strong>
             </div>
             <div>
-              <span>最高連線</span>
+              <span>最高連吃</span>
               <strong id="finalCombo">0</strong>
             </div>
             <div>
-              <span>最高關卡</span>
-              <strong id="finalLevel">1</strong>
+              <span>體重</span>
+              <strong id="finalLevel">52.0kg</strong>
             </div>
           </div>
           <div class="dialog-actions">

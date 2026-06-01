@@ -27,6 +27,8 @@
     shareButton: document.getElementById("shareButton"),
     muteButton: document.getElementById("muteButton"),
     muteIcon: document.getElementById("muteIcon"),
+    pauseButton: document.getElementById("pauseButton"),
+    pauseIcon: document.getElementById("pauseIcon"),
     nameInput: document.getElementById("nameInput"),
     resultTitle: document.getElementById("resultTitle"),
     resultCopy: document.getElementById("resultCopy"),
@@ -41,8 +43,8 @@
   };
 
   const NAME_KEY = "ugoodays-pixel-player";
-  const SCORE_KEY = "ugoodays-pixel-leaderboard";
-  const HIGH_KEY = "ugoodays-pixel-high-score";
+  const SCORE_KEY = "ugoodays-arcade-leaderboard";
+  const HIGH_KEY = "ugoodays-arcade-high-score";
   const AUDIO_KEY = "ugoodays-pixel-muted";
 
   const COLORS = {
@@ -62,7 +64,7 @@
   const TYPES = {
     milk: { label: "鮮奶", short: "奶", color: "#7fc3de", bg: "#dff6ff", hold: "鮮奶", feature: "純淨基底", effect: "純淨+", verb: "補純" },
     culture: { label: "益菌", short: "菌", color: "#268aa1", bg: "#caeef6", hold: "益菌", feature: "8 種益菌", effect: "牽引", verb: "牽引" },
-    protein: { label: "高蛋白", short: "蛋", color: "#ef8b53", bg: "#ffe0cc", hold: "蛋白", feature: "厚實飽足", effect: "分數+", verb: "加分" },
+    protein: { label: "高蛋白", short: "蛋", color: "#ef8b53", bg: "#ffe0cc", hold: "蛋白", feature: "厚實飽足", effect: "積分+", verb: "加分" },
     calcium: { label: "鈣", short: "鈣", color: "#4b91b6", bg: "#dceffc", hold: "鈣", feature: "鈣力守護", effect: "慢拍", verb: "慢拍" },
     fruit: { label: "水果", short: "果", color: "#b44966", bg: "#f4d7df", hold: "水果", feature: "果香層次", effect: "能量+", verb: "提香" },
     honey: { label: "蜂蜜", short: "蜜", color: "#c58b27", bg: "#fff2b8", hold: "蜂蜜", feature: "自然甜感", effect: "秒數+", verb: "回甘" },
@@ -105,6 +107,101 @@
   const FLAVOR_REWARD_NAMES = ["果香蜂蜜", "抹茶海鹽", "可可脆粒", "燕麥蜜香", "莓果可可", "鹹甜脆脆"];
 
   const STATION_KEYS = ["mix", "ferment", "strain", "qc", "texture", "chill", "swirl", "pack", "ship"];
+  const LANE_RULES = [
+    { label: "純淨基底", hint: "鮮奶 / 益菌 / 營養", keys: ["milk", "culture", "protein", "calcium"], hazards: ["dirty", "ice"] },
+    { label: "風味自搭", hint: "水果 / 蜂蜜 / 燕麥 / 可可", keys: ["fruit", "honey", "oat", "matcha", "cocoa", "salt", "crunch"], hazards: ["sugar", "flavor", "coloring"] },
+    { label: "工序加速", hint: "混乳 / 熟成 / 封杯 / 冷藏", keys: ["mix", "ferment", "strain", "qc", "texture", "chill", "swirl", "pack", "ship"], hazards: ["sticky", "sour", "dirty"] },
+  ];
+
+  const ITEM_POINTS = {
+    milk: 1,
+    culture: 2,
+    protein: 2,
+    calcium: 2,
+    fruit: 2,
+    honey: 2,
+    oat: 2,
+    matcha: 3,
+    cocoa: 3,
+    salt: 2,
+    crunch: 2,
+    mix: 2,
+    ferment: 3,
+    strain: 3,
+    qc: 3,
+    texture: 3,
+    chill: 2,
+    swirl: 3,
+    pack: 2,
+    ship: 2,
+  };
+
+  const YOGURT_RECIPES = [
+    { id: "greek480", label: "希臘優格 480g", points: 46, color: "#ef8b53", needs: { milk: 2, culture: 2, protein: 1, ferment: 1, strain: 2, qc: 1, pack: 1 } },
+    { id: "fresh480", label: "鮮奶優格 480g", points: 38, color: "#7fc3de", needs: { milk: 2, culture: 2, mix: 1, ferment: 1, qc: 1, pack: 1 } },
+    { id: "greek160", label: "希臘優格 160g", points: 31, color: "#ef8b53", needs: { milk: 1, culture: 1, protein: 1, strain: 1, pack: 1 } },
+    { id: "drink", label: "原味優格飲", points: 28, color: "#f4d16f", needs: { milk: 1, culture: 1, calcium: 1, mix: 1, chill: 1 } },
+    { id: "fresh160", label: "鮮奶優格 160g", points: 24, color: "#7fc3de", needs: { milk: 1, culture: 1, mix: 1, pack: 1 } },
+    { id: "fruitHoney", label: "蜂蜜水果特調", points: 11, color: "#b44966", needs: { milk: 1, culture: 1, fruit: 1, honey: 1, swirl: 1 } },
+    { id: "oatCrunch", label: "燕麥脆粒特調", points: 10, color: "#a47b42", needs: { milk: 1, culture: 1, oat: 1, crunch: 1, texture: 1 } },
+    { id: "matchaSalt", label: "抹茶海鹽特調", points: 9, color: "#4f9a4b", needs: { milk: 1, culture: 1, matcha: 1, salt: 1, qc: 1 } },
+    { id: "cocoaCrunch", label: "可可脆脆特調", points: 9, color: "#7a4b35", needs: { milk: 1, culture: 1, cocoa: 1, crunch: 1, pack: 1 } },
+  ];
+
+  const WEIGHT_LIMIT_KG = 70;
+  const WEIGHT_ALERT_KG = 67.5;
+  const PURITY_ALERT_PERCENT = 18;
+  const MOBILE_CONTROL_LIFT = 118;
+  const MOBILE_SCENE_SCALE = 0.78;
+  const OFFICIAL_YOGURT_IDS = new Set(["greek480", "fresh480", "greek160", "drink", "fresh160"]);
+  const PURE_BASE_KEYS = new Set(["milk", "culture", "protein", "calcium", "mix", "ferment", "strain", "qc", "texture", "chill", "pack", "ship"]);
+  const FLAVOR_WEIGHT_KEYS = new Set(["fruit", "honey", "oat", "matcha", "cocoa", "salt", "crunch", "swirl"]);
+  const KCAL_PER_WEIGHT_KG = 7000;
+  const ARCADE_KCAL_SCALE = 22;
+  const GAME_DAY_SECONDS = 300;
+  const NORMAL_DAILY_BURN_PER_KG = 30;
+  const ITEM_KCAL = {
+    milk: 70,
+    culture: 8,
+    protein: 58,
+    calcium: 4,
+    fruit: 46,
+    honey: 64,
+    oat: 82,
+    matcha: 16,
+    cocoa: 72,
+    salt: 0,
+    crunch: 88,
+    swirl: 55,
+  };
+  const BONUS_KCAL = {
+    rushBoost: 96,
+    comboBoost: 82,
+    cleanBoost: -38,
+    probioticBoost: -42,
+    calciumBoost: -32,
+    timeBurst: -18,
+  };
+  const HAZARD_KCAL = {
+    flavor: 420,
+    coloring: 360,
+    sugar: 440,
+    dirty: 310,
+    sour: 280,
+    ice: 260,
+    sticky: 300,
+  };
+  const RECIPE_NUTRITION = {
+    greek480: { kcal: 310, credit: 560, craft: "鮮乳發酵後慢工濾乳，做成高蛋白低碳水的濃厚口感。" },
+    fresh480: { kcal: 300, credit: 480, craft: "鮮乳和八大益菌低溫熟成，保留清爽奶香。" },
+    greek160: { kcal: 105, credit: 260, craft: "小份希臘優格，濾出扎實口感，補足飽足感。" },
+    drink: { kcal: 170, credit: 300, craft: "原味優格飲用冷鏈鎖住乳香，輕鬆補給。" },
+    fresh160: { kcal: 100, credit: 240, craft: "小杯鮮奶優格，鮮乳發酵後封杯冷藏。" },
+    fruitHoney: { kcal: 190, credit: 80, craft: "水果和蜂蜜做香氣點綴，爽感高但熱量也更明顯。" },
+    oatCrunch: { kcal: 220, credit: 70, craft: "燕麥和脆粒堆出口感，咀嚼感強、熱量也偏高。" },
+    matchaSalt: { kcal: 150, credit: 70, craft: "抹茶和海鹽做鹹甜平衡，適合偶爾自搭配。" },
+    cocoaCrunch: { kcal: 235, credit: 60, craft: "可可加脆粒做甜點感，分數低一些也更容易累積熱量。" },
+  };
 
   const DIFFICULTY_TIERS = [
     { min: 1, name: "鮮奶新手線", speed: 202, sameLane: 0.9, required: 1.58, decoy: true, hazard: false, decoyMin: 1.55, decoyMax: 2.25, hazardMin: 9.5, hazardMax: 11.5, timeCap: 72, orderTime: 13, missPurity: 5, missTime: 0.8, timerDrain: 0.98, hazardTarget: 0, bonusChance: 0.46 },
@@ -134,22 +231,12 @@
   ];
 
   const MISSION_RULES = [
-    { id: "noMiss", unlock: 1, label: "本批不碰添加物", points: 900, kind: "orderPerfect" },
-    { id: "starterCombo4", unlock: 1, label: "4 連線完成手感", points: 980, target: 4, counter: "combo" },
-    { id: "brandHeat3", unlock: 1, label: "集 3 個品牌亮點", points: 1100, target: 3, counter: "brandFeatures" },
-    { id: "perfect3", unlock: 2, label: "連續 3 次 PERFECT", points: 1200, target: 3, counter: "perfectStreak" },
-    { id: "collectPerfect2", unlock: 3, label: "原料 2 次 PERFECT", points: 1350, target: 2, counter: "collectPerfects" },
-    { id: "bonus1", unlock: 4, label: "吃到 1 個營養道具", points: 1250, target: 1, counter: "bonuses" },
-    { id: "lane4", unlock: 5, label: "換軌 4 次完成本批", points: 1550, target: 4, counter: "laneChanges", completeOnOrder: true },
-    { id: "perfect5", unlock: 5, label: "累積 5 次 PERFECT", points: 1700, target: 5, counter: "perfectTotal" },
-    { id: "workPerfect2", unlock: 6, label: "設備 2 次 PERFECT", points: 1850, target: 2, counter: "workPerfects" },
-    { id: "combo12", unlock: 7, label: "12 連線不中斷", points: 2200, target: 12, counter: "combo" },
-    { id: "goodBatch", unlock: 8, label: "整批 GOOD 以上", points: 2350, kind: "orderNoOk" },
-    { id: "bonus3", unlock: 9, label: "吃到 3 個營養道具", points: 2600, target: 3, counter: "bonuses" },
-    { id: "pure95", unlock: 10, label: "純淨率 95% 以上出貨", points: 2800, kind: "purityOrder", threshold: 95 },
-    { id: "shieldBlock", unlock: 11, label: "純淨盾擋 1 次添加物", points: 3200, target: 1, counter: "shieldBlocks" },
-    { id: "pureRush", unlock: 12, label: "打出 1 次 PURE RUSH", points: 3400, target: 1, counter: "pureRushes" },
-    { id: "combo24", unlock: 14, label: "24 連線不中斷", points: 4200, target: 24, counter: "combo" },
+    { id: "combo12", unlock: 1, label: "連吃 12 個好料", points: 8, target: 12, counter: "combo" },
+    { id: "bonus2", unlock: 2, label: "吃到 2 個營養道具", points: 10, target: 2, counter: "bonuses" },
+    { id: "lane4", unlock: 3, label: "換軌 4 次躲紅色", points: 12, target: 4, counter: "laneChanges" },
+    { id: "shieldBlock", unlock: 5, label: "純淨盾擋 1 次添加物", points: 14, target: 1, counter: "shieldBlocks" },
+    { id: "pureRush", unlock: 8, label: "打出 1 次 PURE RUSH", points: 16, target: 1, counter: "pureRushes" },
+    { id: "combo30", unlock: 10, label: "連吃 30 個好料", points: 20, target: 30, counter: "combo" },
   ];
 
   const ORDERS = [
@@ -236,8 +323,12 @@
 
   const state = {
     phase: "ready",
+    paused: false,
     width: 0,
     height: 0,
+    viewportWidth: 0,
+    viewportHeight: 0,
+    sceneScale: 1,
     dpr: 1,
     lanes: [0, 0, 0],
     time: 0,
@@ -298,6 +389,23 @@
     flavorPending: null,
     flavorCueTime: 0,
     customFlavors: 0,
+    weightKg: 52,
+    weightDisplayKg: 52,
+    weightPulse: 0,
+    officialYogurtStreak: 0,
+    weightLossCount: 0,
+    weightGainSources: {},
+    weightGainTotal: 0,
+    weightLossTotal: 0,
+    calorieIntakeKcal: 0,
+    calorieBurnKcal: 0,
+    gameOverKind: "",
+    inventory: {},
+    yogurts: {},
+    totalYogurts: 0,
+    survivalTime: 0,
+    settlementReveal: 0,
+    sceneryOffset: 0,
     idleTime: 0,
     idleToastCooldown: 0,
     hazardPressure: 0,
@@ -342,6 +450,8 @@
     lastY: 0,
     laneY: 0,
     targetX: null,
+    basePlayerX: 0,
+    indirect: false,
     startedAt: 0,
     startedInPlay: false,
     dragging: false,
@@ -352,18 +462,62 @@
     context: null,
     sfxGain: null,
     bgmGain: null,
+    bgmCompressor: null,
+    bgmDelay: null,
+    bgmDelayGain: null,
     bgmTimer: null,
     bgmStep: 0,
     bgmNextTime: 0,
   };
 
   const BGM = {
-    bpm: 88,
-    melody: ["C5", null, "E5", "G5", null, "E5", "D5", null, "C5", null, "G4", "C5", "E5", null, "D5", null, "E5", null, "G5", "C6", null, "G5", "E5", null, "D5", null, "E5", "G5", "C5", null, null, null],
-    hook: ["G5", null, null, "E5", null, "C5", null, null, "A5", null, "G5", null, "E5", null, "C5", null, "C6", null, null, "G5", null, "E5", null, null, "G5", null, "E5", null, "C5", null, null, null],
-    bass: ["C3", null, "C3", null, "G2", null, "G2", null, "A2", null, "A2", null, "F2", null, "G2", null, "C3", null, "C3", null, "E3", null, "E3", null, "A2", null, "A2", null, "F2", null, "G2", null],
-    sparkle: ["G6", null, "E6", null, "C6", null, "G6", null, "A6", null, "G6", null, "E6", null, "C6", null, "E6", null, "G6", null, "C7", null, "G6", null, "A6", null, "G6", null, "E6", null, "C6", null],
-    chords: [["C4", "E4", "G4"], ["G3", "B3", "D4"], ["A3", "C4", "E4"], ["F3", "A3", "C4"], ["C4", "E4", "G4"], ["E3", "G3", "B3"], ["A3", "C4", "E4"], ["F3", "A3", "C4"]],
+    bpm: 82,
+    melody: [
+      "E5", null, "G5", "A5", null, "G5", "E5", null, "D5", null, "E5", "G5", null, "E5", null, null,
+      "E5", null, "G5", "A5", "C6", null, "A5", "G5", "E5", null, "D5", null, "C5", null, null, null,
+      "G5", null, "A5", "C6", "D6", null, "C6", "A5", "G5", null, "E5", "G5", "A5", null, "G5", null,
+      "E5", null, "G5", "A5", "C6", null, "A5", "G5", "E5", null, "D5", null, "C5", null, null, null,
+    ],
+    harmony: [
+      null, null, "E5", null, null, "E5", null, null, null, null, "C5", null, null, "C5", null, null,
+      null, null, "E5", null, "G5", null, "F5", null, null, null, "B4", null, "G4", null, null, null,
+      null, null, "F5", null, "A5", null, "A5", null, null, null, "C5", null, "F5", null, "E5", null,
+      null, null, "E5", null, "G5", null, "F5", null, null, null, "B4", null, "G4", null, null, null,
+    ],
+    hook: [
+      null, null, "C6", null, null, null, "B5", null, null, null, "G5", null, null, "E5", null, null,
+      null, null, "C6", null, "E6", null, "D6", null, null, null, "B5", null, "G5", null, null, null,
+      "E6", null, null, "D6", null, "C6", null, null, "A5", null, null, "G5", null, "E5", null, null,
+      null, null, "C6", null, "E6", null, "D6", null, null, null, "B5", null, "C6", null, null, null,
+    ],
+    bass: [
+      "C3", null, null, null, "G2", null, null, null, "A2", null, null, null, "F2", null, "G2", null,
+      "C3", null, null, null, "G2", null, null, null, "A2", null, null, null, "F2", null, "G2", null,
+      "D3", null, null, null, "G2", null, null, null, "E3", null, null, null, "F2", null, "G2", null,
+      "C3", null, null, null, "G2", null, null, null, "A2", null, null, null, "F2", null, "C3", null,
+    ],
+    arpeggio: [
+      "C5", null, "G5", null, "D5", null, "B4", null, "C5", null, "E5", null, "A4", null, "C5", null,
+      "C5", null, "G5", null, "D5", null, "B4", null, "C5", null, "E5", null, "A4", null, "D5", null,
+      "F5", null, "A5", null, "D5", null, "G5", null, "E5", null, "B4", null, "F5", null, "G5", null,
+      "C5", null, "G5", null, "D5", null, "B4", null, "C5", null, "E5", null, "G4", null, "C5", null,
+    ],
+    sparkle: [
+      null, null, null, null, "E6", null, null, "G6", null, null, "C6", null, null, null, "G6", null,
+      null, null, null, "E6", null, null, "A6", null, null, "G6", null, null, "E6", null, null, null,
+      null, null, "A6", null, null, "C7", null, null, "G6", null, null, "E6", null, null, "C6", null,
+      null, null, null, "E6", null, null, "A6", null, null, "G6", null, null, "E6", null, null, null,
+    ],
+    chords: [
+      ["C4", "E4", "G4", "D5"],
+      ["G3", "D4", "G4", "B4"],
+      ["A3", "E4", "G4", "C5"],
+      ["F3", "C4", "E4", "A4"],
+      ["D3", "A3", "C4", "F4"],
+      ["G3", "D4", "E4", "B4"],
+      ["E3", "B3", "D4", "G4"],
+      ["F3", "C4", "E4", "G4"],
+    ],
   };
 
   const logo = new Image();
@@ -398,24 +552,25 @@
     const openingDrain = opening?.timerDrain || 1;
     const openingHazardTarget = opening?.hazardTarget || 0;
     const flavorSpeed = state.flavorRushTime > 0 ? 1.2 + Math.min(0.34, state.customFlavors * 0.018 + state.combo * 0.002) : 1;
-    const comboSpeed = 1 + Math.min(0.42, state.combo * 0.008 + state.completedOrders * 0.018);
+    const arcadePressure = Math.max(0, state.survivalTime / 16 + state.totalYogurts * 0.35);
+    const comboSpeed = 1 + Math.min(0.5, state.combo * 0.006 + state.totalYogurts * 0.014 + arcadePressure * 0.012);
     const idleThreat = state.flavorRushTime > 0 ? 0 : clamp((state.idleTime - 0.85) * 0.34 + state.hazardPressure * 0.12, 0, 0.72);
     return {
       ...tier,
-      speed: (tier.speed + pressure * 22 + latePressure * 13.5 + Math.max(0, state.level - 18) * 20 + state.completedOrders * 7.4) * modifier.speed * openingSpeed * flavorSpeed * comboSpeed,
-      hazard: tier.hazard || state.completedOrders >= 1 || idleThreat > 0.18,
+      speed: (tier.speed + pressure * 18 + latePressure * 12 + Math.max(0, state.level - 18) * 18 + state.totalYogurts * 5.2 + arcadePressure * 5.5) * modifier.speed * openingSpeed * flavorSpeed * comboSpeed,
+      hazard: tier.hazard || state.survivalTime > 5 || state.completedOrders >= 1 || idleThreat > 0.18,
       sameLane: clamp(tier.sameLane - 0.36 - pressure * 0.02 + (modifier.sameLane || 0), 0.16, 0.64),
-      required: Math.max(0.3, (tier.required - pressure * 0.044 - latePressure * 0.018 - state.combo * 0.0016) * modifier.requiredRate),
-      decoyMin: Math.max(0.26, tier.decoyMin - pressure * 0.05 - latePressure * 0.018),
-      decoyMax: Math.max(0.42, tier.decoyMax - pressure * 0.05 - latePressure * 0.018),
-      hazardMin: Math.max(0.24, (tier.hazardMin - pressure * 0.085 - latePressure * 0.05) * modifier.hazardRate - idleThreat * 1.25),
-      hazardMax: Math.max(0.42, (tier.hazardMax - pressure * 0.085 - latePressure * 0.05) * modifier.hazardRate - idleThreat * 1.55),
+      required: Math.max(0.34, (0.84 - arcadePressure * 0.018 - state.combo * 0.0011) * modifier.requiredRate),
+      decoyMin: Math.max(0.42, 1.05 - arcadePressure * 0.018),
+      decoyMax: Math.max(0.62, 1.55 - arcadePressure * 0.022),
+      hazardMin: Math.max(0.38, (2.95 - arcadePressure * 0.045 - latePressure * 0.035) * modifier.hazardRate - idleThreat * 1.15),
+      hazardMax: Math.max(0.58, (4.35 - arcadePressure * 0.055 - latePressure * 0.04) * modifier.hazardRate - idleThreat * 1.4),
       orderTime: Math.max(2.2, tier.orderTime * modifier.orderTime),
-      missPurity: Math.ceil(tier.missPurity * modifier.purityPenalty),
-      missTime: tier.missTime * modifier.purityPenalty,
-      timerDrain: tier.timerDrain * modifier.timerDrain * openingDrain * (1 + Math.min(0.36, state.completedOrders * 0.018 + state.combo * 0.004)),
+      missPurity: Math.ceil((11 + Math.min(16, arcadePressure * 0.95)) * modifier.purityPenalty),
+      missTime: (1.25 + Math.min(2.2, arcadePressure * 0.08)) * modifier.purityPenalty,
+      timerDrain: (0.72 + Math.min(0.68, arcadePressure * 0.018)) * modifier.timerDrain * openingDrain,
       hazardTarget: clamp(tier.hazardTarget + modifier.hazardTarget + openingHazardTarget + idleThreat, 0, 0.98),
-      bonusChance: clamp(tier.bonusChance + modifier.bonusChance, 0.12, 0.72),
+      bonusChance: clamp(0.16 + state.combo * 0.002 + modifier.bonusChance, 0.12, 0.42),
     };
   }
 
@@ -539,11 +694,11 @@
   }
 
   function getHitQuality(entity) {
-    if (entity.required) return { grade: "perfect", label: "PERFECT", mult: 1.66, color: COLORS.berry, fever: 8, time: 0.55 };
+    if (entity.required) return { grade: "good", label: "JUICY", mult: 1.24, color: COLORS.aquaDeep, fever: 4, time: 0.22 };
     const center = entity.x + entity.w / 2;
     const distance = Math.abs(center - player.x);
     const arcadeBonus = (state.width < 620 ? 9 : 0) + Math.min(12, Math.floor(state.combo / 5) * 2);
-    if (distance <= 24 + arcadeBonus) return { grade: "perfect", label: "PERFECT", mult: 1.58, color: COLORS.berry, fever: 7, time: 0.5 };
+    if (distance <= 24 + arcadeBonus) return { grade: "good", label: "JUICY", mult: 1.24, color: COLORS.aquaDeep, fever: 4, time: 0.22 };
     if (distance <= 54 + arcadeBonus) return { grade: "good", label: "GOOD", mult: 1.24, color: COLORS.aquaDeep, fever: 4, time: 0.22 };
     return { grade: "ok", label: "OK", mult: 1, color: COLORS.ink, fever: 0, time: 0 };
   }
@@ -596,6 +751,7 @@
     dom.restartButton.addEventListener("click", startGame);
     dom.shareButton.addEventListener("click", copyResult);
     dom.muteButton.addEventListener("click", toggleMute);
+    dom.pauseButton?.addEventListener("click", togglePause);
     window.addEventListener("pointerdown", primeAudio, { passive: true });
     window.addEventListener("resize", resize);
     window.addEventListener("keydown", handleKeyDown);
@@ -611,13 +767,14 @@
   function primeAudio() {
     if (audio.muted) return;
     ensureAudio();
-    if (state.phase === "playing" && !audio.bgmTimer) startBgm(false);
+    if (state.phase === "playing" && !state.paused && !audio.bgmTimer) startBgm(false);
   }
 
   function bindHold(button, key) {
     if (!button) return;
     const down = (event) => {
       event.preventDefault();
+      if (state.phase !== "playing" || state.paused) return;
       controls[key] = true;
     };
     const up = (event) => {
@@ -634,6 +791,7 @@
     if (!button) return;
     const down = (event) => {
       event.preventDefault();
+      if (state.phase !== "playing" || state.paused) return;
       controls[key] = true;
       changeLane(delta);
       player.laneRepeat = 0.16;
@@ -661,6 +819,7 @@
       "pointerdown",
       (event) => {
         if (event.pointerType === "mouse" || state.phase !== "playing") return;
+        if (state.paused) return;
         if (!isGameplayPointer(event)) return;
         event.preventDefault();
         touch.id = event.pointerId;
@@ -668,12 +827,14 @@
         touch.startY = event.clientY;
         touch.lastX = event.clientX;
         touch.lastY = event.clientY;
-        touch.laneY = event.clientY;
+        touch.indirect = isMobileLayout();
+        touch.basePlayerX = player.x;
+        touch.laneY = pointerToLaneControlY(event.clientY);
         touch.targetX = pointerToPlayerX(event.clientX);
         touch.startedAt = performance.now();
         touch.startedInPlay = true;
         touch.dragging = false;
-        followPointerLane(event.clientY);
+        followPointerLane(touch.laneY);
         canvas.setPointerCapture?.(event.pointerId);
       },
       { passive: false }
@@ -685,12 +846,13 @@
         if (event.pointerId !== touch.id) return;
         event.preventDefault();
         const dx = event.clientX - touch.startX;
-        const dy = event.clientY - touch.laneY;
+        const controlY = pointerToLaneControlY(event.clientY);
+        const dy = controlY - touch.laneY;
         touch.targetX = pointerToPlayerX(event.clientX);
-        followPointerLane(event.clientY);
+        followPointerLane(controlY);
         if (Math.abs(dy) > 30) {
           changeLane(dy > 0 ? 1 : -1);
-          touch.laneY = event.clientY;
+          touch.laneY = controlY;
           touch.dragging = true;
         }
         if (Math.abs(dx) > 12) touch.dragging = true;
@@ -723,16 +885,42 @@
   function resetPointerControl() {
     touch.id = null;
     touch.targetX = null;
+    touch.basePlayerX = 0;
+    touch.indirect = false;
     touch.startedInPlay = false;
     touch.dragging = false;
   }
 
   function isGameplayPointer(event) {
+    if (isMobileLayout()) return event.clientY >= Math.max(120, state.lanes[0] * getSceneScale() - MOBILE_CONTROL_LIFT - 120);
     return event.clientY >= Math.max(120, state.lanes[0] - 150);
   }
 
   function pointerToPlayerX(x) {
-    return clamp(x, 86, state.width * 0.58);
+    if (touch.indirect) {
+      return clamp(touch.basePlayerX + (x - touch.startX) / getSceneScale() * 1.12, 86, state.width * 0.58);
+    }
+    return clamp(screenToWorldX(x), 86, state.width * 0.58);
+  }
+
+  function pointerToLaneControlY(y) {
+    return isMobileLayout() ? screenToWorldY(y - MOBILE_CONTROL_LIFT) : screenToWorldY(y);
+  }
+
+  function isMobileLayout() {
+    return state.viewportWidth < 520;
+  }
+
+  function getSceneScale() {
+    return state.sceneScale || 1;
+  }
+
+  function screenToWorldX(x) {
+    return x / getSceneScale();
+  }
+
+  function screenToWorldY(y) {
+    return y / getSceneScale();
   }
 
   function followPointerLane(y) {
@@ -755,19 +943,24 @@
   }
 
   function resize() {
-    state.width = window.innerWidth;
-    state.height = window.innerHeight;
+    state.viewportWidth = window.innerWidth;
+    state.viewportHeight = window.innerHeight;
+    state.sceneScale = state.viewportWidth < 520 ? MOBILE_SCENE_SCALE : 1;
+    state.width = state.viewportWidth / state.sceneScale;
+    state.height = state.viewportHeight / state.sceneScale;
     state.dpr = Math.min(window.devicePixelRatio || 1, 2);
-    canvas.width = Math.floor(state.width * state.dpr);
-    canvas.height = Math.floor(state.height * state.dpr);
-    canvas.style.width = `${state.width}px`;
-    canvas.style.height = `${state.height}px`;
-    ctx.setTransform(state.dpr, 0, 0, state.dpr, 0, 0);
+    canvas.width = Math.floor(state.viewportWidth * state.dpr);
+    canvas.height = Math.floor(state.viewportHeight * state.dpr);
+    canvas.style.width = `${state.viewportWidth}px`;
+    canvas.style.height = `${state.viewportHeight}px`;
+    ctx.setTransform(state.dpr * state.sceneScale, 0, 0, state.dpr * state.sceneScale, 0, 0);
     ctx.imageSmoothingEnabled = false;
 
-    const safeBottom = state.height - (state.width < 520 ? 74 : 76);
-    const safeTop = state.width < 520 ? 226 : 188;
-    const gap = Math.max(68, Math.min(96, (safeBottom - safeTop) / 3));
+    const scale = getSceneScale();
+    const mobile = isMobileLayout();
+    const safeBottom = state.height - (mobile ? 154 / scale : 76);
+    const safeTop = mobile ? 226 / scale : 188;
+    const gap = Math.max(mobile ? 66 / scale : 68, Math.min(mobile ? 88 / scale : 96, (safeBottom - safeTop) / 3));
     state.lanes = [safeBottom - gap * 2, safeBottom - gap, safeBottom];
     player.x = clamp(player.x || state.width * 0.22, 92, state.width * 0.5);
     player.y = state.lanes[player.lane];
@@ -797,17 +990,19 @@
     state.shield = 0;
     state.slowTime = 0;
     state.magnetTime = 0;
-    state.openingMode = createOpeningMode();
+    state.openingMode = null;
     state.recentMissionIds = [];
     state.mission = null;
-    state.modifier = null;
+    state.modifier = { ...MODIFIERS[0] };
+    state.order = null;
+    state.stepIndex = 0;
     state.speed = 188;
-    state.level = state.openingMode?.level || 1;
-    state.purity = state.openingMode?.purity || 100;
-    state.timeRemaining = state.openingMode?.timeRemaining || 64;
-    state.requiredTimer = state.openingMode?.requiredTimer || 0.34;
-    state.decoyTimer = state.openingMode?.decoyTimer || 1.25;
-    state.hazardTimer = state.openingMode?.hazardTimer || 9;
+    state.level = 1;
+    state.purity = 100;
+    state.timeRemaining = 64;
+    state.requiredTimer = 0.24;
+    state.decoyTimer = 0.95;
+    state.hazardTimer = 2.25;
     state.batchLaneChanges = 0;
     state.batchBonuses = 0;
     state.batchShieldBlocks = 0;
@@ -830,6 +1025,23 @@
     state.flavorPending = null;
     state.flavorCueTime = 0;
     state.customFlavors = 0;
+    state.weightKg = 52;
+    state.weightDisplayKg = 52;
+    state.weightPulse = 0;
+    state.officialYogurtStreak = 0;
+    state.weightLossCount = 0;
+    state.weightGainSources = {};
+    state.weightGainTotal = 0;
+    state.weightLossTotal = 0;
+    state.calorieIntakeKcal = 0;
+    state.calorieBurnKcal = 0;
+    state.gameOverKind = "";
+    state.inventory = {};
+    state.yogurts = {};
+    state.totalYogurts = 0;
+    state.survivalTime = 0;
+    state.settlementReveal = 0;
+    state.sceneryOffset = 0;
     state.idleTime = 0;
     state.idleToastCooldown = 0;
     state.hazardPressure = 0;
@@ -852,10 +1064,13 @@
     player.reactionTimer = 0;
     player.reactionKey = null;
     resetPointerControl();
-    spawnOrder(!state.openingMode);
+    state.paused = false;
+    updatePauseUi();
     dom.startOverlay.classList.add("hidden");
     dom.gameOverOverlay.classList.add("hidden");
-    showToast(state.openingMode ? `${state.openingMode.label}：${state.openingMode.desc}` : "開工！先穩穩完成鮮奶線");
+    renderRecipe();
+    updateHud();
+    showToast("上中下三路開吃：好料全收，紅色全躲");
     startBgm(true);
     beep(560, 0.055, "square", 0.04);
   }
@@ -895,8 +1110,8 @@
   function loop(now) {
     const dt = Math.min(0.04, (now - (state.last || now)) / 1000);
     state.last = now;
-    if (state.phase !== "over") state.time += dt;
-    if (state.phase === "playing") update(dt);
+    if (state.phase !== "over" && !state.paused) state.time += dt;
+    if (state.phase === "playing" && !state.paused) update(dt);
     draw();
     requestAnimationFrame(loop);
   }
@@ -911,6 +1126,8 @@
     state.speedLineTime = Math.max(0, state.speedLineTime - fxDt);
     state.comboSurge = Math.max(0, state.comboSurge - fxDt * 2.4);
     state.flavorCueTime = Math.max(0, state.flavorCueTime - fxDt);
+    state.weightPulse = Math.max(0, state.weightPulse - fxDt * 3.2);
+    state.weightDisplayKg += (state.weightKg - state.weightDisplayKg) * Math.min(1, fxDt * 7.5);
     if (state.flavorCountdown > 0) {
       state.flavorCountdown = Math.max(0, state.flavorCountdown - fxDt);
       state.speedLineTime = Math.max(state.speedLineTime, 0.35);
@@ -926,6 +1143,9 @@
         state.flavorComboLabel = "";
       }
     }
+    state.survivalTime += worldDt;
+    applyDailyCalorieBurn(worldDt);
+    state.level = Math.max(1, 1 + Math.floor(state.survivalTime / 15) + Math.floor(state.totalYogurts / 4));
     state.timeRemaining -= worldDt * diff.timerDrain;
     if (state.timeRemaining <= 0) {
       endGame("時間歸零");
@@ -955,24 +1175,26 @@
     processLaneControls(fxDt);
     const move = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
     const maxX = state.width * 0.58;
+    const weightMove = 1 - getWeightBurden();
     if (touch.id !== null && Number.isFinite(touch.targetX)) {
       const dx = touch.targetX - player.x;
-      const followSpeed = state.feverTime > 0 ? 620 : 520;
+      const followSpeed = (state.feverTime > 0 ? 620 : 520) * weightMove;
       player.x = clamp(player.x + clamp(dx * 9, -followSpeed, followSpeed) * fxDt, 86, maxX);
       if (Math.abs(dx) < 2) player.x = clamp(touch.targetX, 86, maxX);
     } else {
-      player.x = clamp(player.x + move * (state.feverTime > 0 ? 330 : 260) * fxDt, 86, maxX);
+      player.x = clamp(player.x + move * (state.feverTime > 0 ? 330 : 260) * weightMove * fxDt, 86, maxX);
     }
+    state.sceneryOffset += state.speed * worldDt * 0.34;
     player.y += (state.lanes[player.lane] - player.y) * Math.min(1, fxDt * 13);
     player.stepBob += fxDt * (8 + Math.abs(move) * 6 + state.speed / 95 + state.comboSurge * 4);
     updateActivityPressure(worldDt, fxDt, move);
 
     if (state.requiredTimer <= 0) {
-      spawnRequired();
+      spawnArcadePositive();
       state.requiredTimer = diff.required;
     }
     if (diff.decoy && state.decoyTimer <= 0) {
-      spawnDecoy();
+      spawnArcadeExtra();
       state.decoyTimer = random(diff.decoyMin, diff.decoyMax);
     }
     if (diff.hazard && state.hazardTimer <= 0) {
@@ -989,9 +1211,7 @@
         emitEntityTrail(entity);
         entity.trailTimer = entity.type === "hazard" ? 0.1 : entity.type === "bonus" ? 0.07 : entity.required ? 0.12 : 0.18;
       }
-      if (entity.required && !entity.done && entity.x + entity.w < player.x - 46) {
-        skipRequired(entity);
-      }
+      if (entity.type !== "hazard" && !entity.done && entity.x + entity.w < player.x - 46) missPositive(entity);
     }
 
     for (const entity of state.entities) {
@@ -1045,7 +1265,7 @@
   }
 
   function updateActivityPressure(worldDt, fxDt, move) {
-    const pointerActive = touch.id !== null && Number.isFinite(touch.targetX) && Math.abs(touch.targetX - player.x) > 2;
+    const pointerActive = touch.id !== null && Number.isFinite(touch.targetX) && (isMobileLayout() || Math.abs(touch.targetX - player.x) > 2);
     const keyActive = Boolean(controls.left || controls.right || controls.up || controls.down || controls.action || move);
     const moved = Math.abs(player.x - state.lastPlayerX) > 0.8 || player.lane !== state.lastPlayerLane;
     const active = pointerActive || keyActive || moved;
@@ -1090,24 +1310,39 @@
   }
 
   function currentStep() {
-    return state.order?.steps[state.stepIndex] || null;
+    return null;
   }
 
   function isNextTargetEntity(entity) {
-    const step = currentStep();
-    return Boolean(step && entity.required && entity.key === step.key && ((step.mode === "work") === (entity.type === "station")));
+    return false;
   }
 
-  function spawnRequired() {
-    const step = currentStep();
-    if (!step) return;
+  function spawnArcadePositive(forceLane = null) {
+    const lane = forceLane ?? chooseArcadeLane();
+    const rule = LANE_RULES[lane];
+    const key = pickLaneKey(rule, state.flavorRushTime > 0);
+    const asStation = STATION_KEYS.includes(key);
     spawnEntity({
-      type: step.mode === "work" ? "station" : "item",
-      key: step.key,
-      required: true,
-      lane: chooseTargetLane(),
-      label: step.label,
+      type: asStation ? "station" : "item",
+      key,
+      required: false,
+      lane,
+      label: TYPES[key].label,
+      speedOffset: state.flavorRushTime > 0 ? random(-18, 8) : random(-10, 24),
     });
+  }
+
+  function chooseArcadeLane() {
+    if (state.magnetTime > 0 && Math.random() < 0.52) return player.lane;
+    const pressureLane = state.combo > 10 && Math.random() < 0.42 ? differentLane(player.lane) : randomInt(0, 2);
+    return pressureLane;
+  }
+
+  function pickLaneKey(rule, rush = false) {
+    const keys = rush && rule.keys.some((key) => FLAVOR_REWARD_KEYS.includes(key))
+      ? rule.keys.filter((key) => FLAVOR_REWARD_KEYS.includes(key))
+      : rule.keys;
+    return keys[randomInt(0, keys.length - 1)];
   }
 
   function chooseTargetLane() {
@@ -1124,29 +1359,27 @@
     return options[randomInt(0, options.length - 1)];
   }
 
-  function spawnDecoy() {
-    const step = currentStep();
+  function spawnArcadeExtra() {
     const diff = getDifficulty();
-    const keys = Object.keys(TYPES).filter((key) => key !== step?.key && (state.level >= 4 || !STATION_KEYS.includes(key)));
-    const key = keys[randomInt(0, keys.length - 1)];
-    const asStation = STATION_KEYS.includes(key);
     const bonusChance = state.flavorRushTime > 0 ? Math.min(0.86, diff.bonusChance + 0.38) : diff.bonusChance;
     if (Math.random() < bonusChance) {
       const bonus = BONUS[randomInt(0, BONUS.length - 1)];
       spawnEntity({ type: "bonus", key: bonus.key, lane: randomInt(0, 2), bonus });
     } else {
-      spawnEntity({ type: asStation ? "station" : "item", key, lane: randomInt(0, 2), required: false });
+      spawnArcadePositive(randomInt(0, 2));
     }
   }
 
   function spawnHazard() {
     const idleThreat = state.idleTime > 1.05 || state.hazardPressure > 0.5;
-    if (!idleThreat && !activeOpeningMode() && state.completedOrders === 0 && state.stepIndex < 2) return;
+    if (!idleThreat && state.survivalTime <= 5 && !activeOpeningMode() && state.completedOrders === 0) return;
     if (state.flavorCountdown > 0 || state.flavorRushTime > 0) return;
     const diff = getDifficulty();
-    const hazard = HAZARDS[randomInt(0, HAZARDS.length - 1)];
     const chaseChance = clamp(diff.hazardTarget + state.hazardPressure * 0.18 + (idleThreat ? 0.18 : 0), 0, 0.98);
     const lane = Math.random() < chaseChance ? player.lane : randomInt(0, 2);
+    const hazardPool = LANE_RULES[lane].hazards;
+    const hazardKey = hazardPool[randomInt(0, hazardPool.length - 1)];
+    const hazard = HAZARDS.find((item) => item.key === hazardKey) || HAZARDS[randomInt(0, HAZARDS.length - 1)];
     const speedOffset = random(18, 46) + Math.min(95, state.hazardPressure * 32 + Math.max(0, state.idleTime - 1) * 22);
     spawnEntity({ type: "hazard", key: hazard.key, lane, hazard, speedOffset });
     if (lane === player.lane) emitLaneFlash(lane, hazard.color);
@@ -1190,7 +1423,7 @@
       entity.remove = true;
       emitHazardImpact(entity);
       setPlayerReaction(entity.key, entity.color, 1.35);
-      registerMistake(`${entity.label}混進來了`);
+      registerMistake(`${entity.label}混進來了`, entity);
       return;
     }
 
@@ -1201,28 +1434,17 @@
       return;
     }
 
-    const step = currentStep();
-    const match = step && entity.key === step.key && ((step.mode === "work") === (entity.type === "station"));
-
     if (entity.type === "station") {
-      if (match) {
-        if (player.actionTimer <= 0) triggerAction();
-        entity.done = true;
-        entity.remove = true;
-        completeStep(entity);
-      } else {
-        dismissNeutral(entity);
-      }
+      if (player.actionTimer <= 0) triggerAction();
+      entity.done = true;
+      entity.remove = true;
+      collectArcadeItem(entity);
       return;
     }
 
-    if (match) {
-      entity.done = true;
-      entity.remove = true;
-      completeStep(entity);
-    } else {
-      dismissNeutral(entity);
-    }
+    entity.done = true;
+    entity.remove = true;
+    collectArcadeItem(entity);
   }
 
   function setPlayerReaction(key, color, power = 1) {
@@ -1243,6 +1465,346 @@
     state.comboSurge = Math.max(state.comboSurge, 0.3 + power * 0.38);
     emitImpactBurst(x, y, color, options.style || "spark", 0.8 + power * 0.35);
     if (power >= 0.9) emitScreenSparks(x, y, color, Math.round(10 + power * 10));
+  }
+
+  function collectArcadeItem(entity) {
+    const def = TYPES[entity.key];
+    const fever = state.feverTime > 0;
+    const rushMult = state.flavorRushTime > 0 ? state.flavorMultiplier : 1;
+    const comboBonus = Math.min(4, Math.floor(state.combo / 12));
+    const base = ITEM_POINTS[entity.key] || 1;
+    const value = Math.max(1, Math.round((base + comboBonus) * rushMult * (fever ? 1.35 : 1)));
+
+    noteActivePlay(1.15);
+    state.inventory[entity.key] = (state.inventory[entity.key] || 0) + 1;
+    state.score += value;
+    state.combo += 1;
+    state.maxCombo = Math.max(state.maxCombo, state.combo);
+    state.fever = clamp(state.fever + 5 + Math.min(6, state.combo * 0.045), 0, 100);
+    state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 0.16);
+    state.carry = def.hold || def.stage || def.label;
+    applyItemWeightEffect(entity.key, entity.x + entity.w / 2, entity.y - 98);
+    if (state.phase === "over") return;
+
+    applyArcadeFeature(entity.key, def, entity);
+    const crafted = craftYogurts(entity, def);
+    addFlavorChargeArcade(entity, def, crafted);
+    handleComboPrize();
+    if (state.fever >= 100 && state.feverTime <= 0 && state.combo >= 24 && state.totalYogurts >= 3) activateFever();
+
+    emitPop(entity.x + entity.w / 2, entity.y - 28, def.color, 14);
+    emitElementImpact(entity.key, entity, def.color, false);
+    emitRingBurst(entity.x + entity.w / 2, entity.y - 34, def.color, 1, 20);
+    emitLaneFlash(entity.lane, def.color);
+    setPlayerReaction(entity.key, def.color, 0.9);
+    triggerJuice(def.color, state.flavorRushTime > 0 ? 1.28 : 0.9, {
+      x: entity.x + entity.w / 2,
+      y: entity.y - 48,
+      style: state.flavorRushTime > 0 ? "confetti" : "spark",
+      hitStop: state.flavorRushTime > 0 ? 0.085 : 0.055,
+    });
+    floatText(`+${value}`, entity.x + entity.w / 2, entity.y - 70, def.color);
+    beep(500 + Math.min(520, state.combo * 12), 0.04, "square", 0.028);
+    updateHud();
+  }
+
+  function missPositive(entity) {
+    entity.done = true;
+    entity.required = false;
+    state.combo = 0;
+    state.lastComboPrize = 0;
+    state.multiplier = 1;
+    state.fever = Math.max(0, state.fever - 3);
+    state.hazardPressure = clamp(state.hazardPressure + 0.12, 0, 3.2);
+  }
+
+  function applyItemWeightEffect(key, x = player.x, y = player.y - 110) {
+    if (PURE_BASE_KEYS.has(key)) {
+      if (state.combo > 0 && state.combo % 20 === 0) floatText("0負擔", x, y, COLORS.aquaDeep);
+      return;
+    }
+    state.officialYogurtStreak = 0;
+    const kcal = ITEM_KCAL[key] ?? (FLAVOR_WEIGHT_KEYS.has(key) ? 60 : 30);
+    const def = TYPES[key] || {};
+    adjustCalories(kcal, x, y, COLORS.berry, {
+      sourceKey: `item:${key}`,
+      sourceLabel: def.label || key,
+      sourceKind: "風味加料",
+      sourceColor: def.color || COLORS.berry,
+    });
+  }
+
+  function applyRecipeWeightEffect(recipe, x = player.x, y = player.y - 110) {
+    const nutrition = RECIPE_NUTRITION[recipe.id] || { kcal: 160, credit: 80 };
+    const netKcal = nutrition.kcal - nutrition.credit;
+    if (OFFICIAL_YOGURT_IDS.has(recipe.id)) {
+      state.officialYogurtStreak += 1;
+      const streakKcal = state.officialYogurtStreak >= 3 ? 110 + Math.min(80, state.weightLossCount * 12) : 0;
+      adjustCalories(netKcal - streakKcal, x, y, COLORS.leaf, {
+        sourceKey: `recipe:${recipe.id}`,
+        sourceLabel: recipe.label,
+        sourceKind: "官方優格合成",
+        sourceColor: recipe.color,
+        kcalIntake: nutrition.kcal,
+        kcalBurn: nutrition.credit + streakKcal,
+      });
+      if (streakKcal > 0) {
+        state.weightLossCount += 1;
+        state.officialYogurtStreak = 0;
+        floatText("連吃減重", x, y - 24, COLORS.leaf);
+      } else {
+        floatText("合成減重", x, y, COLORS.aquaDeep);
+      }
+      return;
+    }
+    state.officialYogurtStreak = 0;
+    adjustCalories(netKcal, x, y, COLORS.berry, {
+      sourceKey: `recipe:${recipe.id}`,
+      sourceLabel: recipe.label,
+      sourceKind: "自搭配口味",
+      sourceColor: recipe.color,
+      kcalIntake: nutrition.kcal,
+      kcalBurn: nutrition.credit,
+    });
+  }
+
+  function applyBonusWeightEffect(key, x = player.x, y = player.y - 110) {
+    const kcal = BONUS_KCAL[key] ?? 60;
+    if (kcal <= 0) {
+      adjustCalories(kcal, x, y, COLORS.leaf, {
+        sourceKey: `bonus:${key}`,
+        sourceLabel: (BONUS.find((item) => item.key === key) || {}).label || key,
+        sourceKind: "輕盈道具",
+        sourceColor: COLORS.leaf,
+      });
+      return;
+    }
+    const bonus = BONUS.find((item) => item.key === key) || {};
+    adjustCalories(kcal, x, y, COLORS.berry, {
+      sourceKey: `bonus:${key}`,
+      sourceLabel: bonus.label || key,
+      sourceKind: "爽感道具",
+      sourceColor: bonus.color || COLORS.berry,
+    });
+  }
+
+  function gainHazardWeight(entity) {
+    const kcal = HAZARD_KCAL[entity.key] ?? 300;
+    adjustCalories(kcal, player.x + 22, player.y - 112, entity.color || COLORS.berry, {
+      sourceKey: `hazard:${entity.key}`,
+      sourceLabel: entity.label || "紅色危險物",
+      sourceKind: "紅色危險物",
+      sourceColor: entity.color || COLORS.berry,
+    });
+  }
+
+  function applyDailyCalorieBurn(dt) {
+    if (dt <= 0 || state.phase !== "playing") return;
+    const burnKcal = getDailyBurnKcal() / GAME_DAY_SECONDS * dt;
+    const loss = kcalToWeightDelta(-burnKcal);
+    const before = state.weightKg;
+    state.weightKg = clamp(state.weightKg + loss, 48, WEIGHT_LIMIT_KG);
+    const actualLoss = Math.max(0, before - state.weightKg);
+    if (actualLoss > 0) {
+      state.weightLossTotal += actualLoss;
+      state.calorieBurnKcal += burnKcal;
+    }
+  }
+
+  function getDailyBurnKcal() {
+    return Math.max(1320, state.weightKg * NORMAL_DAILY_BURN_PER_KG);
+  }
+
+  function kcalToWeightDelta(kcal) {
+    return kcal / KCAL_PER_WEIGHT_KG * ARCADE_KCAL_SCALE;
+  }
+
+  function weightDeltaToKcal(delta) {
+    return Math.abs(delta) * KCAL_PER_WEIGHT_KG / ARCADE_KCAL_SCALE;
+  }
+
+  function adjustCalories(kcal, x = player.x, y = player.y - 110, color = COLORS.berry, options = {}) {
+    adjustWeight(kcalToWeightDelta(kcal), x, y, color, {
+      ...options,
+      kcal,
+      kcalIntake: options.kcalIntake ?? (kcal > 0 ? kcal : 0),
+      kcalBurn: options.kcalBurn ?? (kcal < 0 ? Math.abs(kcal) : 0),
+    });
+  }
+
+  function adjustWeight(amount, x = player.x, y = player.y - 110, color = COLORS.berry, options = {}) {
+    if (state.phase === "over" || amount === 0) return;
+    const opts = typeof options === "object" && options ? options : { forceFail: Boolean(options) };
+    const delta = amount;
+    state.weightKg = clamp(state.weightKg + delta, 48, WEIGHT_LIMIT_KG);
+    state.weightPulse = Math.min(1.5, state.weightPulse + Math.max(0.18, Math.abs(delta) * 0.45));
+    recordWeightChange(delta, opts);
+    const label = `${delta > 0 ? "+" : ""}${delta.toFixed(1)}kg`;
+    if (Math.abs(delta) >= 0.08) floatText(label, x, y, color);
+    if (opts.forceFail || state.weightKg >= WEIGHT_LIMIT_KG) {
+      triggerWeightFail();
+    }
+  }
+
+  function recordWeightChange(delta, opts) {
+    const intake = Math.max(0, opts.kcalIntake || 0);
+    const burn = Math.max(0, opts.kcalBurn || 0);
+    state.calorieIntakeKcal += intake;
+    state.calorieBurnKcal += burn;
+    if (delta > 0 && opts.sourceKey) {
+      const source = state.weightGainSources[opts.sourceKey] || {
+        label: opts.sourceLabel || "未知來源",
+        kind: opts.sourceKind || "增重來源",
+        color: opts.sourceColor || COLORS.berry,
+        amount: 0,
+        kcal: 0,
+        count: 0,
+      };
+      source.amount += delta;
+      source.kcal += Math.max(0, opts.kcal ?? weightDeltaToKcal(delta));
+      source.count += 1;
+      state.weightGainSources[opts.sourceKey] = source;
+      state.weightGainTotal += delta;
+    } else if (delta < 0) {
+      state.weightLossTotal += Math.abs(delta);
+    }
+  }
+
+  function triggerWeightFail() {
+    if (state.phase === "over") return;
+    state.weightKg = WEIGHT_LIMIT_KG;
+    state.weightDisplayKg = WEIGHT_LIMIT_KG;
+    state.weightPulse = 1.5;
+    state.gameOverKind = "weight";
+    endGame("體重衝到 70kg");
+  }
+
+  function getWeightBurden() {
+    return Math.min(0.18, Math.max(0, state.weightKg - 52) * 0.012);
+  }
+
+  function getPlayerWeightScale() {
+    const delta = state.weightDisplayKg - 52;
+    const bodyShift = delta >= 0 ? Math.min(0.42, delta * 0.022) : Math.max(-0.08, delta * 0.012);
+    return 1 + bodyShift + state.weightPulse * 0.025;
+  }
+
+  function getWeightStage(weight = state.weightDisplayKg) {
+    if (weight >= 68) return "danger";
+    if (weight >= 64) return "heavy";
+    if (weight >= 58) return "warning";
+    return "normal";
+  }
+
+  function applyArcadeFeature(key, def, entity) {
+    let text = def.effect;
+    let purity = 0;
+    let fever = 0;
+    let time = 0;
+
+    if (key === "milk") {
+      purity = 1;
+      text = "鮮甜";
+    } else if (key === "culture") {
+      state.magnetTime = Math.max(state.magnetTime, 2.2);
+      fever = 2;
+      text = "輕盈";
+    } else if (key === "protein") {
+      fever = 3;
+      text = "飽足";
+    } else if (key === "calcium") {
+      state.slowTime = Math.max(state.slowTime, 1.8);
+      text = "穩住";
+    } else if (key === "honey" || key === "oat" || key === "ship") {
+      time = 0.35;
+    } else if (key === "fruit" || key === "matcha" || key === "cocoa" || key === "swirl") {
+      fever = 3;
+    } else if (key === "qc") {
+      purity = 2;
+      if (state.combo >= 16 && state.shield < 2) state.shield += 1;
+    } else if (key === "chill") {
+      state.slowTime = Math.max(state.slowTime, 1.6);
+      time = 0.25;
+    } else if (key === "pack") {
+      purity = 1;
+    }
+
+    if (purity > 0) state.purity = clamp(state.purity + purity, 0, 100);
+    if (fever > 0) state.fever = clamp(state.fever + fever, 0, 100);
+    if (time > 0) state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + time);
+    state.brandHeat += 1;
+    if (text) {
+      emitFeatureSpark(entity.x + entity.w / 2, entity.y - 42, def.color, 6);
+      emitBadgeBurst(entity.x + entity.w / 2, entity.y - 52, def.color, def.short);
+    }
+  }
+
+  function craftYogurts(entity, sourceDef) {
+    let crafted = 0;
+    const recipes = [...YOGURT_RECIPES].sort((a, b) => b.points - a.points);
+    let made = true;
+    while (made) {
+      made = false;
+      for (const recipe of recipes) {
+        if (!canCraft(recipe)) continue;
+        consumeRecipe(recipe);
+        const rushMult = state.flavorRushTime > 0 ? state.flavorMultiplier : 1;
+        const points = Math.round(recipe.points * rushMult);
+        state.yogurts[recipe.id] = (state.yogurts[recipe.id] || 0) + 1;
+        state.totalYogurts += 1;
+        state.completedOrders = state.totalYogurts;
+        state.score += points;
+        applyRecipeWeightEffect(recipe, player.x + 92, player.y - 122 - crafted * 18);
+        if (state.phase === "over") return crafted;
+        state.fever = clamp(state.fever + 6, 0, 100);
+        state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 0.7);
+        state.packages.push({ x: player.x + 70, y: player.y - 20, color: recipe.color, bob: 0 });
+        floatText(`${recipe.label} +${points}`, player.x + 94, player.y - 96 - crafted * 20, recipe.color);
+        emitPop(player.x + 70, player.y - 38, recipe.color, 22);
+        emitRingBurst(player.x + 70, player.y - 48, recipe.color, 3, 30);
+        triggerJuice(recipe.color, state.flavorRushTime > 0 ? 1.8 : 1.35, { x: player.x + 70, y: player.y - 48, style: "stamp", hitStop: 0.09 });
+        crafted += 1;
+        made = true;
+        break;
+      }
+    }
+    if (crafted > 0) {
+      state.level = Math.max(state.level, 1 + Math.floor(state.survivalTime / 15) + Math.floor(state.totalYogurts / 4));
+      renderRecipe();
+      showToast(`做出 ${crafted} 杯優格，繼續自搭`);
+      beep(820, 0.07, "triangle", 0.035);
+    }
+    return crafted;
+  }
+
+  function canCraft(recipe) {
+    return Object.entries(recipe.needs).every(([key, count]) => (state.inventory[key] || 0) >= count);
+  }
+
+  function consumeRecipe(recipe) {
+    for (const [key, count] of Object.entries(recipe.needs)) {
+      state.inventory[key] = Math.max(0, (state.inventory[key] || 0) - count);
+    }
+  }
+
+  function addFlavorChargeArcade(entity, def, crafted) {
+    if (state.flavorCountdown > 0 || state.flavorRushTime > 0) return;
+    const charge = 0.62 + (crafted > 0 ? 1.15 + crafted * 0.35 : 0) + Math.min(0.45, state.combo * 0.008);
+    state.flavorCharge += charge;
+    const threshold = 15 + state.customFlavors * 3.5 + Math.min(8, state.level * 0.45);
+    const fill = clamp(state.flavorCharge / threshold, 0, 1);
+    const rushReady = state.combo >= 14 && state.totalYogurts >= 2;
+    if (fill >= 0.76 && rushReady && state.flavorCueTime <= 0) {
+      state.flavorCueTime = 1.2;
+      emitFlavorPreview(entity.x + entity.w / 2, entity.y - 76, def.color);
+      showToast("自搭口味快爆發了，保持連吃別碰紅色");
+    }
+    if (fill < 1 || !rushReady) {
+      if (fill < 1) emitFeatureSpark(entity.x + entity.w / 2, entity.y - 82, def.color, 3);
+      return;
+    }
+    state.flavorCharge -= threshold;
+    prepareFlavorCombo(entity, def);
   }
 
   function dismissNeutral(entity) {
@@ -1455,9 +2017,9 @@
     const second = FLAVOR_REWARD_KEYS[(state.customFlavors * 2 + state.completedOrders + 3) % FLAVOR_REWARD_KEYS.length];
     const fallback = FLAVOR_REWARD_NAMES[state.customFlavors % FLAVOR_REWARD_NAMES.length];
     const label = first === second ? fallback : `${TYPES[first].label}${TYPES[second].label}`;
-    const multiplier = Math.min(4.2, 2.0 + state.level * 0.055 + state.combo * 0.026 + state.customFlavors * 0.05);
-    const duration = 5.0 + Math.min(2.8, state.level * 0.07);
-    const bonus = Math.round((520 + state.level * 95 + state.combo * 32) * multiplier);
+    const multiplier = Math.min(2.6, 1.55 + state.level * 0.025 + state.combo * 0.012 + state.customFlavors * 0.04);
+    const duration = 4.6 + Math.min(2.2, state.level * 0.055);
+    const bonus = Math.round((8 + state.level + Math.min(18, Math.floor(state.combo / 2))) * multiplier);
     const x = entity?.x + entity?.w / 2 || player.x + 56;
     const y = entity?.y - 56 || player.y - 62;
 
@@ -1572,43 +2134,47 @@
   function collectBonus(entity) {
     const bonus = entity.bonus;
     let text = "";
-    let value = Math.round((180 + state.combo * 12) * state.multiplier);
+    let value = 4 + Math.min(5, Math.floor(state.combo / 12));
     noteActivePlay(1);
     if (bonus.key === "cleanBoost") {
       state.shield = Math.min(3, state.shield + 1);
       state.purity = clamp(state.purity + 6, 0, 100);
-      value = 220;
+      value = 5;
       text = `純淨盾x${state.shield}`;
     } else if (bonus.key === "probioticBoost") {
-      state.magnetTime = Math.max(state.magnetTime, 6.5);
-      state.requiredTimer = Math.min(state.requiredTimer, 0.16);
+      state.magnetTime = Math.max(state.magnetTime, 4.2);
+      state.requiredTimer = Math.min(state.requiredTimer, 0.22);
       text = "益菌磁吸";
     } else if (bonus.key === "calciumBoost") {
-      state.slowTime = Math.max(state.slowTime, 5.5);
+      state.slowTime = Math.max(state.slowTime, 3.6);
       state.purity = clamp(state.purity + 3, 0, 100);
       text = "鈣力慢拍";
     } else if (bonus.key === "rushBoost") {
-      state.fever = clamp(state.fever + 24, 0, 100);
+      state.fever = clamp(state.fever + 16, 0, 100);
       state.speedLineTime = Math.max(state.speedLineTime, 1.0);
-      value = 420 + state.level * 30;
+      value = 7;
       text = "爽感爆發";
     } else if (bonus.key === "comboBoost") {
       state.combo += 3;
-      value = 260 + state.combo * 20;
+      value = 6;
       text = "連擊+4";
     } else if (bonus.key === "timeBurst") {
-      state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 3.5);
-      value = 180;
+      state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 2.2);
+      value = 4;
       text = "秒數++";
     }
     if (state.flavorRushTime > 0) value = Math.round(value * state.flavorMultiplier);
     state.score += value;
+    applyBonusWeightEffect(bonus.key, entity.x + entity.w / 2, entity.y - 96);
+    if (state.phase === "over") return;
     state.fever = clamp(state.fever + 11, 0, 100);
     state.combo += 1;
     state.batchBonuses += 1;
     state.maxCombo = Math.max(state.maxCombo, state.combo);
     bumpMission("bonuses");
+    addFlavorChargeArcade(entity, bonus, 0);
     handleComboPrize();
+    if (state.fever >= 100 && state.feverTime <= 0 && state.combo >= 24 && state.totalYogurts >= 3) activateFever();
     emitPop(entity.x, entity.y - 20, bonus.color, 12);
     emitRingBurst(entity.x + entity.w / 2, entity.y - 34, bonus.color, 2, 28);
     emitLaneFlash(entity.lane, bonus.color);
@@ -1623,13 +2189,13 @@
     const milestone = Math.floor(state.combo / 10) * 10;
     if (milestone < 10 || milestone === state.lastComboPrize) return;
     state.lastComboPrize = milestone;
-    const prize = milestone * 90 + state.level * 120;
+    const prize = Math.min(40, 6 + Math.floor(milestone / 10) * 3 + state.level);
     state.score += prize;
-    state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 1.4);
+    state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 0.65);
     state.fever = clamp(state.fever + 10, 0, 100);
-    if (milestone % 20 === 0) state.shield = Math.min(3, state.shield + 1);
-    floatText(`${milestone}連線！`, player.x + 62, player.y - 136, COLORS.berry);
-    floatText(`+${formatNumber(prize)}`, player.x + 62, player.y - 112, COLORS.leaf);
+    if (milestone % 30 === 0) state.shield = Math.min(3, state.shield + 1);
+    floatText(`${milestone}連吃!`, player.x + 62, player.y - 136, COLORS.berry);
+    floatText(`+${prize}`, player.x + 62, player.y - 112, COLORS.leaf);
     emitPop(player.x + 56, player.y - 42, COLORS.yellow, 24);
     emitRingBurst(player.x + 56, player.y - 48, COLORS.yellow, 3, 34);
     emitLaneFlash(player.lane, COLORS.yellow);
@@ -1637,7 +2203,7 @@
     beep(880 + Math.min(420, milestone * 4), 0.07, "square", 0.035);
   }
 
-  function registerMistake(reason) {
+  function registerMistake(reason, entity = null) {
     if (player.invuln > 0 || state.feverTime > 0) {
       floatText("擋下", player.x + 22, player.y - 88, COLORS.leaf);
       return;
@@ -1669,6 +2235,10 @@
     state.fever = Math.max(0, state.fever - 8);
     state.shake = 0.65;
     player.invuln = 0.7;
+    if (entity) {
+      gainHazardWeight(entity);
+      if (state.phase === "over") return;
+    }
     showToast(reason);
     floatText("純淨-", player.x + 22, player.y - 86, COLORS.berry);
     emitPop(player.x + 20, player.y - 30, COLORS.berry, 16);
@@ -1692,7 +2262,7 @@
   }
 
   function triggerAction() {
-    if (state.phase !== "playing") return;
+    if (state.phase !== "playing" || state.paused) return;
     ensureAudio();
     controls.action = true;
     player.actionTimer = 0.22;
@@ -1716,12 +2286,12 @@
   }
 
   function changeLane(delta) {
-    if (state.phase !== "playing") return;
+    if (state.phase !== "playing" || state.paused) return;
     setLane(player.lane + delta);
   }
 
   function setLane(lane) {
-    if (state.phase !== "playing") return;
+    if (state.phase !== "playing" || state.paused) return;
     const nextLane = clamp(Math.round(lane), 0, 2);
     if (nextLane === player.lane) return;
     player.lane = nextLane;
@@ -1738,6 +2308,12 @@
       return;
     }
     const key = event.key.toLowerCase();
+    if ((key === "p" || key === "escape") && !event.repeat) {
+      event.preventDefault();
+      togglePause();
+      return;
+    }
+    if (state.paused) return;
     if (key === "arrowleft" || key === "a") controls.left = true;
     if (key === "arrowright" || key === "d") controls.right = true;
     if (key === "arrowup" || key === "w") {
@@ -1796,7 +2372,85 @@
     if (state.feverTime > 0) drawFeverOverlay();
     if (state.flavorCountdown > 0 || state.flavorRushTime > 0) drawFlavorRushOverlay();
     ctx.restore();
+    drawDangerAlertOverlay();
+    drawPauseOverlay();
     drawScreenFlash();
+  }
+
+  function drawDangerAlertOverlay() {
+    if (state.phase !== "playing" || state.paused) return;
+    const weightRisk = state.weightKg >= WEIGHT_ALERT_KG;
+    const purityRisk = state.purity <= PURITY_ALERT_PERCENT;
+    if (!weightRisk && !purityRisk) return;
+
+    const w = state.width;
+    const h = state.height;
+    const critical = state.weightKg >= 69 || state.purity <= 8;
+    const pulse = 0.5 + Math.sin(state.time * (critical ? 15 : 9)) * 0.5;
+    const color = critical ? "#d8243c" : COLORS.orange;
+    const title = weightRisk && purityRisk
+      ? "雙重警戒"
+      : weightRisk
+        ? "70kg 快到了"
+        : "純淨率快歸零";
+    const subtitle = weightRisk && purityRisk
+      ? "紅色先躲開，立刻改吃官方純粹優格"
+      : weightRisk
+        ? "換吃純粹好食優格，別再碰紅色添加物"
+        : "連吃好料補純淨，紅色危險物全躲";
+    const stat = weightRisk && purityRisk
+      ? `${state.weightKg.toFixed(1)}kg / 純淨 ${Math.round(state.purity)}%`
+      : weightRisk
+        ? `剩 ${(WEIGHT_LIMIT_KG - state.weightKg).toFixed(1)}kg 就失敗`
+        : `純淨只剩 ${Math.round(state.purity)}%`;
+    const cardW = Math.min(w - 28, isMobileLayout() ? 344 : 520);
+    const cardH = isMobileLayout() ? 82 : 92;
+    const x = (w - cardW) / 2;
+    const y = isMobileLayout() ? 168 : Math.max(150, h * 0.23);
+
+    ctx.save();
+    const edge = 8 + pulse * 6;
+    fillRect(0, 0, w, edge, `rgba(216,36,60,${0.22 + pulse * 0.22})`);
+    fillRect(0, h - edge, w, edge, `rgba(216,36,60,${0.22 + pulse * 0.22})`);
+    fillRect(0, 0, edge, h, `rgba(216,36,60,${0.18 + pulse * 0.18})`);
+    fillRect(w - edge, 0, edge, h, `rgba(216,36,60,${0.18 + pulse * 0.18})`);
+    fillRect(x + 7, y + 7, cardW, cardH, "rgba(36,50,58,.22)");
+    fillRect(x, y, cardW, cardH, critical ? "rgba(255,235,238,.96)" : "rgba(255,244,220,.96)");
+    strokeRect(x, y, cardW, cardH, color, 4);
+    fillRect(x + 14, y + 16, 26, 26, color);
+    fillRect(x + 23, y + 22, 8, 25, "#ffffff");
+    fillRect(x + 23, y + 52, 8, 8, "#ffffff");
+    drawText(title, x + 54, y + 27, isMobileLayout() ? 22 : 28, color, "left");
+    drawText(stat, x + cardW - 18, y + 27, isMobileLayout() ? 14 : 18, COLORS.ink, "right");
+    drawText(subtitle, x + 54, y + 60, isMobileLayout() ? 13 : 16, COLORS.ink, "left");
+    ctx.globalAlpha = 0.25 + pulse * 0.25;
+    for (let i = 0; i < 6; i += 1) {
+      const xx = x + 16 + i * (cardW - 32) / 5;
+      fillRect(xx, y - 12, 16, 6, color);
+      fillRect(xx + 8, y + cardH + 8, 16, 6, color);
+    }
+    ctx.restore();
+  }
+
+  function drawPauseOverlay() {
+    if (!state.paused || state.phase !== "playing") return;
+    const w = state.width;
+    const h = state.height;
+    ctx.save();
+    fillRect(0, 0, w, h, "rgba(36,50,58,.28)");
+    const cardW = Math.min(360, w - 40);
+    const cardH = 144;
+    const x = (w - cardW) / 2;
+    const y = Math.max(118, h * 0.34);
+    fillRect(x + 8, y + 8, cardW, cardH, "rgba(36,50,58,.18)");
+    fillRect(x, y, cardW, cardH, "rgba(255,255,255,.94)");
+    strokeRect(x, y, cardW, cardH, COLORS.ink, 4);
+    fillRect(x + 24, y + 28, 18, 58, COLORS.aquaDeep);
+    fillRect(x + 54, y + 28, 18, 58, COLORS.aquaDeep);
+    drawText("已暫停", x + cardW / 2 + 24, y + 54, 34, COLORS.ink, "center");
+    drawText("按 P 或點右上角繼續", x + cardW / 2, y + 101, 16, COLORS.aquaDeep, "center");
+    drawText("紅色危險物先放一邊，回來繼續躲。", x + cardW / 2, y + 126, 14, "#60717b", "center");
+    ctx.restore();
   }
 
   function drawBackground() {
@@ -1814,16 +2468,17 @@
     const wallTop = Math.max(100, h * 0.14);
     fillRect(0, wallTop, w, h * 0.34, "#e8fbff");
     for (let x = -60 - (t * 28) % 64; x < w + 80; x += 64) {
-      fillRect(x, wallTop, 4, h * 0.34, "rgba(38,138,161,.12)");
+      fillRect(x, wallTop, 4, h * 0.34, "rgba(38,138,161,.08)");
     }
     for (let y = wallTop; y < wallTop + h * 0.34; y += 42) {
-      fillRect(0, y, w, 4, "rgba(38,138,161,.10)");
+      fillRect(0, y, w, 4, "rgba(38,138,161,.07)");
     }
 
-    drawPixelSign(w * 0.5 - ((t * 34) % 460), wallTop + 34, "純粹優格多一點", COLORS.aquaDeep, 156);
-    drawPixelSign(w * 0.82 - ((t * 34) % 560), wallTop + 84, "健康多一點", COLORS.leaf, 126);
-    drawPixelSign(w * 0.28 - ((t * 30) % 620), wallTop + 126, "UGOODAYS", COLORS.berry, 112);
+    drawPixelSign(w * 0.5 - ((t * 34) % 460), wallTop + 28, "純粹優格多一點", COLORS.aquaDeep, 156);
+    drawPixelSign(w * 0.82 - ((t * 34) % 560), wallTop + 74, "健康多一點", COLORS.leaf, 126);
+    drawPixelSign(w * 0.28 - ((t * 30) % 620), wallTop + 118, "UGOODAYS", COLORS.berry, 112);
     drawCuteBrandDecals(w, wallTop, t);
+    drawTainanBackdrop(w, h, wallTop, t);
 
     const floorY = state.lanes[0] - 78;
     fillRect(0, floorY, w, h - floorY, "#fff4dc");
@@ -1845,6 +2500,575 @@
     drawConveyor(w, h, t);
   }
 
+  function drawTainanBackdrop(w, h, wallTop, t) {
+    const mobile = isMobileLayout();
+    const landmarkScale = mobile ? 0.68 : w < 920 ? 0.82 : 1;
+    const scenicBandBottom = mobile ? state.lanes[0] - 150 / getSceneScale() : state.lanes[0] - 94;
+    const baseY = wallTop + Math.min(mobile ? 282 : w < 920 ? 276 : 214, h * (mobile ? 0.29 : w < 920 ? 0.32 : 0.25));
+    const y = mobile ? Math.min(baseY, scenicBandBottom) : baseY;
+    const cycle = 5380 * landmarkScale;
+    const offset = positiveModulo(state.sceneryOffset, cycle);
+    const start = -120 * landmarkScale;
+    const anchors = [start - offset, cycle + start - offset, cycle * 2 + start - offset];
+    const landmarks = [
+      [20, 2, drawChihkanTower],
+      [176, 18, drawBlueprintWall],
+      [332, 24, drawUgoodaysStore],
+      [590, 16, drawNanfangMall],
+      [784, 18, drawShanhuaStation],
+      [960, 26, drawFunongStreet],
+      [1138, 18, drawTainanStation],
+      [1320, 30, drawHelePlaza],
+      [1498, 28, drawBigFishBlessing],
+      [1672, 8, drawAnpingFort],
+      [1840, 20, drawEternalGoldenCastle],
+      [2028, 24, drawTaitMerchantHouse],
+      [2210, 18, drawHayashiDepartment],
+      [2378, 18, drawJudicialMuseum],
+      [2560, 12, drawTempleGate],
+      [2728, 24, drawGovernorResidence],
+      [2902, 28, drawShennongStreet],
+      [3072, 28, drawShuixianMarket],
+      [3242, 18, drawMazuTemple],
+      [3416, 30, drawGuohuaStreet],
+      [3592, 24, drawChimeiMuseum],
+      [3784, 26, drawSicaoTunnel],
+      [3966, 24, drawTainanArtMuseum],
+      [4148, 28, drawYuguangIsland],
+      [4318, 30, drawGardenNightMarket],
+      [4496, 24, drawAnpingBattery],
+      [4666, 28, drawAnpingTreeHouse],
+      [4840, 28, drawTainanFoodStall, "牛肉湯"],
+      [4944, 30, drawTainanFoodStall, "蝦捲"],
+      [5048, 30, drawTainanFoodStall, "碗粿"],
+      [5152, 30, drawTainanFoodStall, "虱目魚粥"],
+    ];
+    ctx.save();
+    ctx.globalAlpha = 0.98;
+    drawTainanSkyline(w, wallTop, y, t, offset);
+    for (const base of anchors) {
+      for (const [x, dy, drawer, label] of landmarks) {
+        drawLandmark(drawer, base + x * landmarkScale, y + dy * landmarkScale, landmarkScale, label);
+      }
+    }
+    drawLanternString(w, wallTop + 54, t);
+    ctx.restore();
+  }
+
+  function drawLandmark(drawer, x, y, scale, label) {
+    if (scale === 1) {
+      drawer(x, y, label);
+      return;
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.scale(scale, scale);
+    drawer(0, 0, label);
+    ctx.restore();
+  }
+
+  function drawTainanSkyline(w, wallTop, y, t, offset = 0) {
+    fillRect(0, wallTop + 26, w, 7, "rgba(180,73,102,.22)");
+    fillRect(0, y + 46, w, 5, "rgba(38,138,161,.20)");
+    for (let x = -120 - positiveModulo(t * 2.5 + offset * 0.18, 180); x < w + 160; x += 180) {
+      drawCircle(x + 38, wallTop + 48, 8, "rgba(244,209,111,.38)");
+      drawCircle(x + 62, wallTop + 66, 5, "rgba(255,255,255,.58)");
+      fillRect(x + 86, y + 12, 42, 38, "rgba(255,247,222,.52)");
+      fillRect(x + 96, y + 2, 25, 12, "rgba(200,95,69,.45)");
+      fillRect(x + 130, y + 20, 66, 30, "rgba(127,195,222,.26)");
+    }
+  }
+
+  function drawChihkanTower(x, y) {
+    fillRect(x + 8, y - 62, 168, 90, "#ffe9bd");
+    fillRect(x + 18, y - 48, 148, 75, "#fff4dc");
+    fillRect(x - 2, y - 69, 188, 12, "#8f3550");
+    fillRect(x + 8, y - 82, 168, 15, "#c85f45");
+    fillRect(x + 25, y - 96, 134, 16, "#e0794f");
+    fillRect(x + 47, y - 110, 90, 17, "#b44966");
+    fillRect(x + 68, y - 123, 48, 15, "#c85f45");
+    for (let i = 0; i < 4; i += 1) {
+      const px = x + 30 + i * 36;
+      fillRect(px, y - 38, 15, 66, "#a85d3b");
+      fillRect(px + 6, y - 54, 5, 16, "#d6a845");
+    }
+    fillRect(x + 78, y - 35, 35, 63, "#d99b5c");
+    fillRect(x + 84, y - 25, 23, 45, "#f4c37c");
+    drawBrickPattern(x + 18, y - 48, 148, 74, "#d7a66e");
+    strokeRect(x + 8, y - 62, 168, 90, "rgba(36,50,58,.42)", 3);
+    drawText("赤崁樓", x + 92, y - 7, 18, "#8b3c3d", "center");
+  }
+
+  function drawAnpingFort(x, y) {
+    fillRect(x + 0, y - 44, 152, 72, "#b55f44");
+    fillRect(x + 8, y - 36, 136, 64, "#d07a50");
+    drawBrickPattern(x + 8, y - 36, 136, 64, "#8f4d3c");
+    fillRect(x + 52, y - 105, 50, 76, "#f4e0bf");
+    fillRect(x + 58, y - 99, 38, 64, "#fff1cf");
+    fillRect(x + 48, y - 112, 58, 11, "#b44966");
+    fillRect(x + 62, y - 126, 30, 15, "#d97a57");
+    fillRect(x + 69, y - 142, 16, 18, "#8f3550");
+    fillRect(x + 65, y - 77, 25, 12, "#8fcfe0");
+    fillRect(x + 65, y - 55, 25, 12, "#8fcfe0");
+    strokeRect(x + 52, y - 105, 50, 76, "rgba(36,50,58,.42)", 3);
+    strokeRect(x + 0, y - 44, 152, 72, "rgba(36,50,58,.38)", 3);
+    drawText("安平古堡", x + 76, y + 4, 17, "#fff4dc", "center");
+  }
+
+  function drawBlueprintWall(x, y) {
+    fillRect(x + 0, y - 78, 126, 105, "#197fa5");
+    fillRect(x + 8, y - 70, 110, 90, "#2499c0");
+    strokeRect(x + 17, y - 58, 78, 62, "#dff6ff", 4);
+    strokeRect(x + 30, y - 45, 34, 36, "#dff6ff", 3);
+    fillRect(x + 71, y - 43, 25, 5, "#dff6ff");
+    fillRect(x + 88, y - 58, 5, 54, "#dff6ff");
+    fillRect(x + 32, y - 30, 30, 4, "#dff6ff");
+    fillRect(x + 48, y - 45, 4, 36, "#dff6ff");
+    drawCircle(x + 102, y - 54, 6, "#dff6ff");
+    drawCircle(x + 103, y - 36, 4, "#dff6ff");
+    strokeRect(x + 0, y - 78, 126, 105, "rgba(36,50,58,.32)", 3);
+    drawText("藍晒圖", x + 63, y + 4, 18, "#ffffff", "center");
+  }
+
+  function drawUgoodaysStore(x, y) {
+    fillRect(x + 0, y - 132, 228, 38, "#f7fdff");
+    fillRect(x + 0, y - 94, 228, 122, "#f2eadf");
+    fillRect(x + 0, y - 74, 228, 18, "#8fcfe0");
+    fillRect(x + 0, y - 58, 228, 8, "#6caec0");
+    for (let i = 0; i < 11; i += 1) {
+      fillRect(x + 8 + i * 20, y - 132, 4, 38, "rgba(36,50,58,.18)");
+      fillRect(x + 4 + i * 22, y - 136, 15, 5, i % 2 ? "#ffffff" : "#d8e9ef");
+    }
+
+    fillRect(x + 10, y - 121, 208, 50, "#ffffff");
+    strokeRect(x + 10, y - 121, 208, 50, "rgba(36,50,58,.22)", 3);
+    fillRect(x + 24, y - 113, 48, 34, "#d8f2fb");
+    strokeRect(x + 24, y - 113, 48, 34, COLORS.aquaDeep, 2);
+    drawText("優格", x + 48, y - 103, 16, COLORS.aquaDeep, "center");
+    drawText("專賣", x + 48, y - 88, 16, COLORS.aquaDeep, "center");
+    drawCircle(x + 96, y - 96, 24, "#7fc3de");
+    drawCircle(x + 89, y - 91, 6, "#f7fdff");
+    drawCircle(x + 106, y - 91, 6, "#f7fdff");
+    fillRect(x + 107, y - 112, 44, 9, "#7fc3de");
+    drawText("純粹好食", x + 167, y - 94, 24, COLORS.aquaDeep, "center");
+    drawText("UGOODAYS", x + 167, y - 76, 10, COLORS.aquaDeep, "center");
+
+    fillRect(x + 12, y - 49, 86, 70, "#5e554d");
+    for (let i = 0; i < 7; i += 1) fillRect(x + 16, y - 43 + i * 9, 78, 3, "#2f2c29");
+    fillRect(x + 103, y - 50, 46, 76, "#e9fbff");
+    fillRect(x + 110, y - 43, 32, 53, "#bfeef8");
+    strokeRect(x + 103, y - 50, 46, 76, "rgba(36,50,58,.32)", 3);
+    fillRect(x + 155, y - 55, 50, 82, "#dff6ff");
+    fillRect(x + 161, y - 48, 38, 66, "#ffffff");
+    drawCircle(x + 180, y - 18, 18, "#f19aa0");
+    drawText("徵求", x + 180, y - 37, 10, COLORS.berry, "center");
+    drawText("294", x + 213, y - 49, 10, "#ffffff", "center");
+    fillRect(x + 205, y - 56, 19, 17, "#268aa1");
+
+    fillRect(x + 182, y + 9, 36, 17, "#3d4b53");
+    fillRect(x + 174, y - 3, 42, 19, "#e86b89");
+    fillRect(x + 205, y - 5, 13, 31, "#3d4b53");
+    drawCircle(x + 181, y + 25, 8, "#3d4b53");
+    drawCircle(x + 211, y + 25, 8, "#3d4b53");
+    drawText("純粹好食門市", x + 114, y + 13, 18, COLORS.aquaDeep, "center");
+    strokeRect(x + 0, y - 132, 228, 160, "rgba(36,50,58,.24)", 3);
+  }
+
+  function drawHayashiDepartment(x, y) {
+    fillRect(x + 12, y - 96, 116, 124, "#e9d8bd");
+    fillRect(x + 24, y - 110, 90, 18, "#c8945e");
+    fillRect(x + 42, y - 132, 54, 28, "#fff4dc");
+    fillRect(x + 54, y - 151, 30, 22, "#c8945e");
+    for (let i = 0; i < 3; i += 1) {
+      for (let j = 0; j < 3; j += 1) {
+        fillRect(x + 28 + i * 32, y - 70 + j * 28, 16, 14, "#fff6d8");
+        strokeRect(x + 28 + i * 32, y - 70 + j * 28, 16, 14, "rgba(36,50,58,.18)", 2);
+      }
+    }
+    fillRect(x + 58, y - 12, 26, 40, "#9ec7d4");
+    strokeRect(x + 12, y - 96, 116, 124, "rgba(36,50,58,.32)", 3);
+    drawText("林百貨", x + 70, y + 6, 18, "#8b5d3c", "center");
+  }
+
+  function drawTempleGate(x, y) {
+    fillRect(x + 8, y - 64, 130, 90, "#ffe6b3");
+    fillRect(x - 2, y - 74, 150, 13, "#b44966");
+    fillRect(x + 12, y - 88, 122, 15, "#d97a57");
+    fillRect(x + 32, y - 101, 82, 15, "#8f3550");
+    fillRect(x + 16, y - 46, 18, 72, "#a85d3b");
+    fillRect(x + 104, y - 46, 18, 72, "#a85d3b");
+    fillRect(x + 45, y - 34, 48, 60, "#f7c678");
+    strokeRect(x + 8, y - 64, 130, 90, "rgba(36,50,58,.36)", 3);
+    drawText("孔廟", x + 73, y - 1, 18, "#8b3c3d", "center");
+  }
+
+  function drawShennongStreet(x, y) {
+    const colors = ["#f1d0ad", "#d9ebee", "#f7dfc2", "#d8c1a3"];
+    for (let i = 0; i < 4; i += 1) {
+      const bx = x + i * 35;
+      fillRect(bx, y - 66 - (i % 2) * 10, 36, 92 + (i % 2) * 10, colors[i]);
+      fillRect(bx - 2, y - 72 - (i % 2) * 10, 40, 9, i % 2 ? "#b44966" : "#8f5f42");
+      fillRect(bx + 8, y - 44, 18, 18, "#fff4dc");
+      fillRect(bx + 10, y - 12, 15, 38, "#8fcfe0");
+      strokeRect(bx, y - 66 - (i % 2) * 10, 36, 92 + (i % 2) * 10, "rgba(36,50,58,.22)", 2);
+    }
+    for (let i = 0; i < 5; i += 1) {
+      drawCircle(x + 14 + i * 25, y - 78 + (i % 2) * 7, 7, i % 2 ? "#f4d16f" : "#d8484f");
+    }
+    drawText("神農街", x + 70, y + 8, 17, "#8b3c3d", "center");
+  }
+
+  function drawMazuTemple(x, y) {
+    fillRect(x + 12, y - 70, 140, 98, "#ffe3ad");
+    fillRect(x - 2, y - 78, 168, 12, "#8f3550");
+    fillRect(x + 15, y - 95, 138, 18, "#d97a57");
+    fillRect(x + 38, y - 110, 90, 17, "#b44966");
+    fillRect(x + 18, y - 52, 22, 80, "#a85d3b");
+    fillRect(x + 124, y - 52, 22, 80, "#a85d3b");
+    fillRect(x + 56, y - 33, 50, 61, "#f4c37c");
+    drawCircle(x + 81, y - 47, 17, "#f4d16f");
+    strokeRect(x + 12, y - 70, 140, 98, "rgba(36,50,58,.30)", 3);
+    drawText("大天后宮", x + 82, y + 2, 17, "#8b3c3d", "center");
+  }
+
+  function drawNanfangMall(x, y) {
+    fillRect(x + 0, y - 96, 166, 124, "#e9f6f8");
+    fillRect(x + 10, y - 108, 72, 28, "#82c6d8");
+    fillRect(x + 88, y - 122, 62, 42, "#bfeef8");
+    fillRect(x + 18, y - 78, 132, 78, "#f7fdff");
+    for (let i = 0; i < 4; i += 1) {
+      fillRect(x + 28 + i * 29, y - 63, 17, 18, i % 2 ? "#f4d16f" : "#8fcfe0");
+      fillRect(x + 28 + i * 29, y - 34, 17, 18, i % 2 ? "#8fcfe0" : "#f4d16f");
+    }
+    fillRect(x + 58, y - 7, 48, 35, "#86c6d6");
+    strokeRect(x + 0, y - 96, 166, 124, "rgba(36,50,58,.30)", 3);
+    strokeRect(x + 88, y - 122, 62, 42, "rgba(36,50,58,.22)", 2);
+    drawText("南紡購物中心", x + 83, y + 7, 15, COLORS.aquaDeep, "center");
+  }
+
+  function drawShanhuaStation(x, y) {
+    fillRect(x + 0, y - 72, 156, 100, "#f3e0bd");
+    fillRect(x - 6, y - 84, 168, 16, "#6f9fb0");
+    fillRect(x + 18, y - 108, 120, 24, "#dff6ff");
+    strokeRect(x + 18, y - 108, 120, 24, "rgba(36,50,58,.28)", 3);
+    drawText("善化", x + 78, y - 96, 18, COLORS.aquaDeep, "center");
+    drawCircle(x + 78, y - 53, 15, "#fff4dc");
+    strokeCircle(x + 78, y - 53, 15, "#6f9fb0", 3);
+    fillRect(x + 77, y - 64, 3, 11, "#6f9fb0");
+    fillRect(x + 78, y - 53, 9, 3, "#6f9fb0");
+    for (let i = 0; i < 3; i += 1) {
+      fillRect(x + 17 + i * 45, y - 30, 28, 22, "#dff6ff");
+      strokeRect(x + 17 + i * 45, y - 30, 28, 22, "rgba(36,50,58,.20)", 2);
+    }
+    fillRect(x - 14, y + 18, 184, 8, "#4a5b62");
+    for (let i = 0; i < 5; i += 1) fillRect(x - 4 + i * 38, y + 20, 18, 4, "#d7edf4");
+    strokeRect(x + 0, y - 72, 156, 100, "rgba(36,50,58,.30)", 3);
+    drawText("善化車站", x + 78, y + 7, 17, "#4a5b62", "center");
+  }
+
+  function drawFunongStreet(x, y) {
+    const fronts = ["#ffe2b8", "#d8f1f2", "#f4d7df", "#fff4dc", "#dbe8c9"];
+    for (let i = 0; i < 5; i += 1) {
+      const bx = x + i * 31;
+      fillRect(bx, y - 62 - (i % 2) * 8, 32, 90 + (i % 2) * 8, fronts[i]);
+      fillRect(bx - 2, y - 72 - (i % 2) * 8, 36, 12, i % 2 ? "#268aa1" : "#c85f45");
+      fillRect(bx + 5, y - 42, 21, 14, "#f7fdff");
+      fillRect(bx + 9, y - 8, 15, 36, i % 2 ? "#a47b42" : "#8fcfe0");
+      strokeRect(bx, y - 62 - (i % 2) * 8, 32, 90 + (i % 2) * 8, "rgba(36,50,58,.20)", 2);
+    }
+    fillRect(x + 5, y - 85, 132, 4, "rgba(36,50,58,.26)");
+    for (let i = 0; i < 6; i += 1) drawCircle(x + 12 + i * 24, y - 82, 6, i % 2 ? "#f4d16f" : "#d8484f");
+    drawText("富農街", x + 76, y + 9, 18, "#8b3c3d", "center");
+  }
+
+  function drawChimeiMuseum(x, y) {
+    fillRect(x + 16, y - 70, 158, 98, "#f7fdff");
+    fillRect(x + 30, y - 90, 130, 24, "#e8f2f6");
+    drawCircle(x + 95, y - 96, 29, "#f7fdff");
+    fillRect(x + 66, y - 98, 58, 32, "#f7fdff");
+    for (let i = 0; i < 5; i += 1) {
+      const px = x + 38 + i * 24;
+      fillRect(px, y - 58, 12, 86, "#e5edf1");
+      strokeRect(px, y - 58, 12, 86, "rgba(36,50,58,.16)", 2);
+    }
+    fillRect(x + 0, y + 25, 190, 8, "#d9c19a");
+    drawCircle(x + 18, y + 18, 13, "#8fcfe0");
+    drawCircle(x + 172, y + 18, 13, "#8fcfe0");
+    strokeRect(x + 16, y - 70, 158, 98, "rgba(36,50,58,.26)", 3);
+    drawText("奇美博物館", x + 95, y + 5, 17, "#4a5b62", "center");
+  }
+
+  function drawTainanArtMuseum(x, y) {
+    fillRect(x + 8, y - 88, 142, 116, "#f7fdff");
+    fillRect(x + 8, y - 88, 142, 24, "#dfe8ea");
+    for (let i = 0; i < 4; i += 1) {
+      fillRect(x + 22 + i * 28, y - 52, 18, 20, "#dff6ff");
+      fillRect(x + 22 + i * 28, y - 21, 18, 20, "#fff4dc");
+    }
+    fillRect(x + 52, y - 4, 48, 32, "#bfeef8");
+    strokeRect(x + 8, y - 88, 142, 116, "rgba(36,50,58,.28)", 3);
+    fillRect(x - 4, y - 105, 166, 12, "#ffffff");
+    strokeRect(x - 4, y - 105, 166, 12, "rgba(36,50,58,.18)", 2);
+    drawText("臺南美術館", x + 79, y + 8, 16, "#4a5b62", "center");
+  }
+
+  function drawGardenNightMarket(x, y) {
+    fillRect(x + 0, y - 58, 154, 86, "#fff4dc");
+    fillRect(x - 6, y - 72, 166, 16, "#d8484f");
+    for (let i = 0; i < 9; i += 1) {
+      fillRect(x + i * 18, y - 72, 9, 16, i % 2 ? "#fff4dc" : "#d8484f");
+    }
+    for (let i = 0; i < 3; i += 1) {
+      fillRect(x + 12 + i * 45, y - 36, 32, 34, i % 2 ? "#dff6ff" : "#ffe2b8");
+      drawCircle(x + 28 + i * 45, y - 19, 9, i % 2 ? "#f4d16f" : "#ef8b53");
+    }
+    fillRect(x + 10, y + 14, 134, 9, "#a85d3b");
+    strokeRect(x + 0, y - 58, 154, 86, "rgba(36,50,58,.26)", 3);
+    drawText("花園夜市", x + 77, y + 3, 18, "#8b3c3d", "center");
+  }
+
+  function drawAnpingTreeHouse(x, y) {
+    fillRect(x + 8, y - 66, 138, 94, "#d7a66e");
+    drawBrickPattern(x + 8, y - 66, 138, 94, "#8f4d3c");
+    fillRect(x + 22, y - 40, 28, 24, "#5e554d");
+    fillRect(x + 82, y - 40, 28, 24, "#5e554d");
+    fillRect(x + 0, y - 78, 154, 13, "#8f5f42");
+    for (let i = 0; i < 7; i += 1) {
+      const rootX = x + 14 + i * 19;
+      fillRect(rootX, y - 83 + (i % 2) * 8, 8, 111 - (i % 2) * 10, "#5f7a45");
+      drawCircle(rootX + 4, y - 88 + (i % 3) * 6, 12, "rgba(101,168,95,.82)");
+    }
+    strokeRect(x + 8, y - 66, 138, 94, "rgba(36,50,58,.30)", 3);
+    drawText("安平樹屋", x + 77, y + 5, 17, "#5f7a45", "center");
+  }
+
+  function drawTainanFoodStall(x, y, label) {
+    fillRect(x + 0, y - 48, 88, 75, "#fff4dc");
+    fillRect(x - 4, y - 58, 96, 15, "#d8484f");
+    for (let i = 0; i < 5; i += 1) {
+      fillRect(x + i * 18, y - 58, 9, 15, i % 2 ? "#fff4dc" : "#d8484f");
+    }
+    fillRect(x + 10, y - 31, 68, 28, "#e8fbff");
+    fillRect(x + 15, y - 26, 22, 17, "#f4d16f");
+    fillRect(x + 46, y - 26, 22, 17, "#7fc3de");
+    fillRect(x + 12, y + 9, 62, 8, "#a85d3b");
+    strokeRect(x + 0, y - 48, 88, 75, "rgba(36,50,58,.30)", 3);
+    drawText(label, x + 44, y + 4, 15, "#8b3c3d", "center");
+  }
+
+  function drawTainanStation(x, y) {
+    fillRect(x + 8, y - 76, 154, 104, "#f1dcc2");
+    fillRect(x + 18, y - 88, 134, 18, "#8f3550");
+    fillRect(x + 52, y - 108, 68, 24, "#c85f45");
+    fillRect(x + 70, y - 129, 32, 26, "#fff4dc");
+    fillRect(x + 77, y - 143, 18, 16, "#8f3550");
+    drawCircle(x + 86, y - 118, 11, "#f7fdff");
+    strokeCircle(x + 86, y - 118, 11, "#6f9fb0", 3);
+    fillRect(x + 85, y - 126, 3, 9, "#6f9fb0");
+    fillRect(x + 86, y - 117, 8, 3, "#6f9fb0");
+    for (let i = 0; i < 5; i += 1) {
+      const wx = x + 22 + i * 28;
+      fillRect(wx, y - 48, 16, 22, "#dff6ff");
+      strokeRect(wx, y - 48, 16, 22, "rgba(36,50,58,.18)", 2);
+    }
+    fillRect(x + 65, y - 14, 42, 42, "#8fcfe0");
+    strokeRect(x + 8, y - 76, 154, 104, "rgba(36,50,58,.32)", 3);
+    drawText("臺南車站", x + 85, y + 6, 17, "#8b3c3d", "center");
+  }
+
+  function drawHelePlaza(x, y) {
+    fillRect(x + 2, y - 30, 170, 58, "#dff6ff");
+    fillRect(x + 14, y - 42, 146, 12, "#ffffff");
+    fillRect(x + 22, y - 58, 130, 17, "#eef8fa");
+    fillRect(x + 36, y - 76, 102, 18, "#ffffff");
+    fillRect(x + 48, y - 20, 78, 32, "#8fcfe0");
+    fillRect(x + 59, y - 12, 56, 18, "#bfeef8");
+    for (let i = 0; i < 5; i += 1) {
+      fillRect(x + 18 + i * 28, y - 52 + i % 2 * 7, 19, 5, "#9ccfd8");
+    }
+    drawCircle(x + 28, y + 8, 10, "rgba(255,255,255,.70)");
+    drawCircle(x + 144, y - 7, 12, "rgba(255,255,255,.70)");
+    strokeRect(x + 2, y - 30, 170, 58, "rgba(38,138,161,.26)", 3);
+    drawText("河樂廣場", x + 87, y + 8, 17, COLORS.aquaDeep, "center");
+  }
+
+  function drawBigFishBlessing(x, y) {
+    drawCircle(x + 82, y - 44, 48, "rgba(127,195,222,.22)");
+    strokeCircle(x + 82, y - 44, 48, "#7fc3de", 5);
+    fillRect(x + 40, y - 48, 80, 10, "#7fc3de");
+    fillRect(x + 54, y - 68, 58, 9, "#7fc3de");
+    fillRect(x + 55, y - 28, 54, 9, "#7fc3de");
+    drawTriangle(x + 124, y - 44, x + 162, y - 72, x + 158, y - 20, "#7fc3de");
+    drawTriangle(x + 26, y - 44, x + 0, y - 63, x + 4, y - 28, "#7fc3de");
+    for (let i = 0; i < 8; i += 1) {
+      drawCircle(x + 47 + i * 9, y - 45 + (i % 2) * 11, 5, i % 2 ? "#f4d16f" : "#f19aa0");
+    }
+    fillRect(x + 48, y + 4, 80, 7, "#9ccfd8");
+    drawText("大魚的祝福", x + 82, y + 8, 15, COLORS.aquaDeep, "center");
+  }
+
+  function drawEternalGoldenCastle(x, y) {
+    fillRect(x + 22, y - 62, 134, 90, "#b55f44");
+    fillRect(x + 0, y - 80, 48, 42, "#a74d3c");
+    fillRect(x + 132, y - 80, 48, 42, "#a74d3c");
+    fillRect(x + 0, y - 18, 48, 46, "#a74d3c");
+    fillRect(x + 132, y - 18, 48, 46, "#a74d3c");
+    drawBrickPattern(x + 4, y - 76, 172, 100, "#6e3b32");
+    fillRect(x + 66, y - 38, 48, 66, "#7b3f35");
+    fillRect(x + 74, y - 29, 32, 42, "#f4c37c");
+    fillRect(x + 124, y - 52, 30, 10, "#3d4b53");
+    fillRect(x + 145, y - 49, 18, 5, "#3d4b53");
+    strokeRect(x + 22, y - 62, 134, 90, "rgba(36,50,58,.34)", 3);
+    drawText("億載金城", x + 90, y + 4, 17, "#fff4dc", "center");
+  }
+
+  function drawTaitMerchantHouse(x, y) {
+    fillRect(x + 8, y - 78, 156, 106, "#f7fdff");
+    fillRect(x + 0, y - 91, 172, 16, "#8f5f42");
+    fillRect(x + 22, y - 108, 128, 18, "#c85f45");
+    for (let i = 0; i < 4; i += 1) {
+      const ax = x + 22 + i * 33;
+      fillRect(ax, y - 48, 24, 52, "#f1dcc2");
+      drawCircle(ax + 12, y - 49, 13, "#f1dcc2");
+      strokeRect(ax, y - 48, 24, 52, "rgba(36,50,58,.18)", 2);
+      fillRect(ax + 8, y - 22, 8, 28, "#8fcfe0");
+    }
+    fillRect(x + 128, y - 54, 9, 82, "#5f7a45");
+    for (let i = 0; i < 5; i += 1) drawCircle(x + 117 + i * 10, y - 63 + (i % 2) * 9, 14, "rgba(101,168,95,.78)");
+    strokeRect(x + 8, y - 78, 156, 106, "rgba(36,50,58,.26)", 3);
+    drawText("德記洋行", x + 86, y + 7, 17, "#8b5d3c", "center");
+  }
+
+  function drawJudicialMuseum(x, y) {
+    fillRect(x + 4, y - 78, 172, 106, "#b65f4b");
+    drawBrickPattern(x + 4, y - 78, 172, 106, "#743a32");
+    fillRect(x + 20, y - 98, 136, 22, "#8f3550");
+    drawCircle(x + 88, y - 104, 24, "#f3e0bd");
+    fillRect(x + 64, y - 104, 48, 30, "#f3e0bd");
+    for (let i = 0; i < 5; i += 1) {
+      const wx = x + 23 + i * 30;
+      drawCircle(wx + 9, y - 43, 9, "#fff1cf");
+      fillRect(wx, y - 43, 18, 34, "#fff1cf");
+      strokeRect(wx, y - 43, 18, 34, "rgba(36,50,58,.18)", 2);
+    }
+    fillRect(x + 73, y - 15, 30, 43, "#8fcfe0");
+    strokeRect(x + 4, y - 78, 172, 106, "rgba(36,50,58,.30)", 3);
+    drawText("司法博物館", x + 90, y + 6, 16, "#fff4dc", "center");
+  }
+
+  function drawGovernorResidence(x, y) {
+    fillRect(x + 12, y - 62, 150, 90, "#f3e4c8");
+    fillRect(x + 2, y - 78, 170, 20, "#4a5b62");
+    fillRect(x + 36, y - 96, 98, 22, "#5e554d");
+    fillRect(x + 26, y - 44, 24, 72, "#d7a66e");
+    fillRect(x + 122, y - 44, 24, 72, "#d7a66e");
+    for (let i = 0; i < 3; i += 1) {
+      fillRect(x + 57 + i * 23, y - 33, 14, 20, "#dff6ff");
+      strokeRect(x + 57 + i * 23, y - 33, 14, 20, "rgba(36,50,58,.16)", 2);
+    }
+    fillRect(x + 0, y + 18, 176, 10, "#7aa15f");
+    drawCircle(x + 21, y + 7, 13, "#6aa55e");
+    drawCircle(x + 151, y + 7, 13, "#6aa55e");
+    strokeRect(x + 12, y - 62, 150, 90, "rgba(36,50,58,.28)", 3);
+    drawText("知事官邸", x + 87, y + 7, 17, "#5e554d", "center");
+  }
+
+  function drawShuixianMarket(x, y) {
+    fillRect(x + 4, y - 66, 154, 94, "#fff4dc");
+    fillRect(x - 2, y - 84, 166, 20, "#2f9b8c");
+    for (let i = 0; i < 8; i += 1) {
+      fillRect(x + i * 20, y - 84, 10, 20, i % 2 ? "#f6d27a" : "#2f9b8c");
+    }
+    fillRect(x + 15, y - 47, 54, 28, "#e86b89");
+    fillRect(x + 84, y - 47, 54, 28, "#8fcfe0");
+    for (let i = 0; i < 5; i += 1) drawCircle(x + 24 + i * 24, y - 18, 8, i % 2 ? "#65a85f" : "#f4d16f");
+    fillRect(x + 21, y + 8, 122, 11, "#a85d3b");
+    strokeRect(x + 4, y - 66, 154, 94, "rgba(36,50,58,.28)", 3);
+    drawText("水仙宮市場", x + 81, y + 5, 16, "#2f7e73", "center");
+  }
+
+  function drawGuohuaStreet(x, y) {
+    const stalls = ["#ffe2b8", "#dff6ff", "#f4d7df", "#fff4dc"];
+    for (let i = 0; i < 4; i += 1) {
+      const bx = x + i * 38;
+      fillRect(bx, y - 58 - (i % 2) * 8, 40, 86 + (i % 2) * 8, stalls[i]);
+      fillRect(bx - 2, y - 72 - (i % 2) * 8, 44, 14, i % 2 ? "#b44966" : "#ef8b53");
+      fillRect(bx + 9, y - 36, 22, 16, "#f7fdff");
+      fillRect(bx + 12, y - 5, 16, 33, "#8fcfe0");
+      strokeRect(bx, y - 58 - (i % 2) * 8, 40, 86 + (i % 2) * 8, "rgba(36,50,58,.20)", 2);
+    }
+    fillRect(x + 144, y - 78, 22, 60, "#d8484f");
+    drawText("吃", x + 155, y - 51, 18, "#fff4dc", "center");
+    fillRect(x + 12, y + 17, 138, 8, "#a85d3b");
+    drawText("國華街", x + 82, y + 8, 18, "#8b3c3d", "center");
+  }
+
+  function drawSicaoTunnel(x, y) {
+    fillRect(x + 0, y - 20, 178, 48, "#8fcfe0");
+    for (let i = 0; i < 7; i += 1) {
+      const bx = x + 10 + i * 24;
+      fillRect(bx, y - 84 + (i % 2) * 8, 12, 104 - (i % 2) * 9, "#5f7a45");
+      drawCircle(bx + 6, y - 88 + (i % 3) * 7, 24, "rgba(77,138,76,.82)");
+      drawCircle(bx + 18, y - 70 + (i % 2) * 7, 19, "rgba(101,168,95,.68)");
+    }
+    fillRect(x + 53, y + 1, 72, 12, "#8b5d3c");
+    fillRect(x + 68, y - 8, 42, 10, "#fff4dc");
+    drawCircle(x + 47, y + 6, 6, "#8b5d3c");
+    drawCircle(x + 131, y + 6, 6, "#8b5d3c");
+    strokeRect(x + 0, y - 20, 178, 48, "rgba(38,138,161,.24)", 3);
+    drawText("四草綠隧", x + 89, y + 8, 16, "#4d8a4c", "center");
+  }
+
+  function drawYuguangIsland(x, y) {
+    fillRect(x + 0, y - 26, 172, 54, "#f2d4a8");
+    fillRect(x + 0, y - 50, 172, 25, "#8fcfe0");
+    for (let i = 0; i < 4; i += 1) fillRect(x + 16 + i * 39, y - 39 + (i % 2) * 5, 26, 5, "#dff6ff");
+    drawCircle(x + 34, y - 67, 18, "#f4d16f");
+    fillRect(x + 112, y - 84, 16, 58, "#f7fdff");
+    fillRect(x + 107, y - 91, 26, 8, "#d8484f");
+    fillRect(x + 113, y - 69, 14, 9, "#d8484f");
+    drawCircle(x + 125, y - 12, 16, "#7aa15f");
+    drawCircle(x + 141, y - 15, 14, "#7aa15f");
+    strokeRect(x + 0, y - 26, 172, 54, "rgba(36,50,58,.18)", 3);
+    drawText("漁光島", x + 86, y + 8, 17, "#2d879d", "center");
+  }
+
+  function drawAnpingBattery(x, y) {
+    fillRect(x + 10, y - 46, 150, 74, "#a85d3b");
+    drawBrickPattern(x + 10, y - 46, 150, 74, "#6e3b32");
+    fillRect(x + 0, y - 58, 170, 16, "#8f4d3c");
+    for (let i = 0; i < 5; i += 1) fillRect(x + 14 + i * 30, y - 66, 18, 12, "#8f4d3c");
+    fillRect(x + 51, y - 16, 48, 44, "#fff4dc");
+    fillRect(x + 109, y - 29, 28, 10, "#3d4b53");
+    fillRect(x + 130, y - 26, 28, 5, "#3d4b53");
+    drawCircle(x + 109, y - 16, 11, "#3d4b53");
+    strokeRect(x + 10, y - 46, 150, 74, "rgba(36,50,58,.32)", 3);
+    drawText("安平小砲臺", x + 85, y + 6, 16, "#fff4dc", "center");
+  }
+
+  function drawBrickPattern(x, y, w, h, color) {
+    ctx.save();
+    ctx.globalAlpha *= 0.28;
+    for (let row = 0; row < h; row += 12) {
+      for (let col = (row / 12) % 2 ? 8 : 0; col < w; col += 24) {
+        fillRect(x + col, y + row, 17, 3, color);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawLanternString(w, y, t) {
+    fillRect(0, y, w, 4, "rgba(180,73,102,.46)");
+    for (let i = 0; i < 14; i += 1) {
+      const x = ((i * 78 - t * 14) % (w + 120)) - 60;
+      fillRect(x + 7, y + 2, 3, 7, "#8f3550");
+      fillRect(x, y + 9, 19, 22, "#d8484f");
+      fillRect(x + 4, y + 11, 11, 18, "#f6a96d");
+      fillRect(x + 7, y + 31, 5, 7, "#b44966");
+      if (i % 3 === 0) drawText("福", x + 10, y + 25, 10, "#fff4dc", "center");
+    }
+  }
+
   function drawCuteBrandDecals(w, wallTop, t) {
     ctx.save();
     ctx.globalAlpha = 0.7;
@@ -1864,7 +3088,17 @@
   }
 
   function drawConveyor(w, h, t) {
-    const y = h - (state.width < 520 ? 74 : 44);
+    const scale = getSceneScale();
+    const y = h - (isMobileLayout() ? 74 / scale : 44);
+    if (isMobileLayout()) {
+      const padY = h - 146 / scale;
+      fillRect(0, padY, w, 72 / scale, "rgba(127,195,222,.16)");
+      fillRect(0, padY, w, 4, "rgba(38,138,161,.34)");
+      for (let x = -60; x < w + 80; x += 74) {
+        fillRect(x + 10, padY + 28, 26, 5, "rgba(255,255,255,.42)");
+        fillRect(x + 22, padY + 20, 5, 21, "rgba(255,255,255,.28)");
+      }
+    }
     fillRect(0, y, w, 34, "#334852");
     fillRect(0, y, w, 5, "#8fcfe0");
     for (let x = -80 - (t * state.speed * 0.85) % 72; x < w + 80; x += 72) {
@@ -1880,7 +3114,7 @@
     fillRect(x - 20, y - 88, 40, 112, `rgba(180,73,102,${0.08 + pulse * 0.04})`);
     strokeRect(x - 20, y - 88, 40, 112, "rgba(180,73,102,.46)", 3);
     fillRect(x - 3, y - 96, 6, 124, "rgba(38,138,161,.55)");
-    drawText("甜點區", x, y - 109, state.width < 520 ? 12 : 14, COLORS.berry, "center");
+    drawText("接料區", x, y - 109, isMobileLayout() ? 12 : 14, COLORS.berry, "center");
     const activeMult = state.multiplier * (state.flavorRushTime > 0 ? state.flavorMultiplier : 1);
     if (activeMult > 1) {
       drawText(`x${activeMult.toFixed(1)}`, x, y + 43, 18, COLORS.aquaDeep, "center");
@@ -1944,6 +3178,16 @@
     ctx.stroke();
   }
 
+  function drawTriangle(x1, y1, x2, y2, x3, y3, color) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+  }
+
   function drawCapsule(x, y, w, h, leftColor, rightColor, border = COLORS.ink) {
     const r = h / 2;
     drawCircle(x + r, y + r, r, leftColor);
@@ -1957,24 +3201,41 @@
 
   function drawStickerBase(x, y, def, required) {
     const pulse = required ? 0.12 + Math.sin(state.time * 16) * 0.04 : 0;
+    const cx = x + 34;
+    const cy = y + 38;
     ctx.save();
-    ctx.globalAlpha = 1;
-    fillRect(x + 2, y + 6, 64, 60, "rgba(255,255,255,.92)");
-    fillRect(x + 6, y + 10, 56, 52, def.bg || "#fff4dc");
-    fillRect(x + 10, y + 14, 48, 44, "#ffffff");
-    fillRect(x + 12, y + 16, 42, 8, `rgba(255,255,255,${0.56 + pulse})`);
-    strokeRect(x + 6, y + 10, 56, 52, def.color, required ? 4 : 3);
-    strokeRect(x + 10, y + 14, 48, 44, "rgba(36,50,58,.22)", 2);
+    ctx.globalAlpha = 0.9;
+    drawCircle(cx, cy, 31 + pulse * 10, def.bg || "#fff4dc");
+    ctx.globalAlpha = 0.7;
+    drawCircle(cx - 8, cy - 8, 16, "#ffffff");
+    drawCircle(cx + 13, cy + 10, 12, "#ffffff");
+    ctx.globalAlpha = required ? 0.95 : 0.55;
+    strokeCircle(cx, cy, 31 + pulse * 10, def.color, required ? 4 : 2);
+    if (required) {
+      fillRect(cx - 28, cy - 32, 10, 10, def.color);
+      fillRect(cx + 18, cy - 32, 10, 10, def.color);
+      fillRect(cx - 28, cy + 22, 10, 10, def.color);
+      fillRect(cx + 18, cy + 22, 10, 10, def.color);
+    }
     ctx.restore();
   }
 
   function drawTargetPips(x, y, color) {
+    const cx = x + 34;
+    const cy = y + 38;
     const pulse = Math.sin(state.time * 18) * 3;
-    fillRect(x - 3, y + 6, 9, 9, color);
-    fillRect(x + 62, y + 6, 9, 9, color);
-    fillRect(x - 3, y + 61, 9, 9, color);
-    fillRect(x + 62, y + 61, 9, 9, color);
-    strokeRect(x - 6 - pulse, y - 7 - pulse, 80 + pulse * 2, 80 + pulse * 2, color, 2);
+    ctx.save();
+    ctx.globalAlpha = 0.88;
+    strokeCircle(cx, cy, 42 + pulse * 0.5, color, 3);
+    ctx.globalAlpha = 0.46;
+    strokeCircle(cx, cy, 49 + Math.abs(pulse), "#ffffff", 2);
+    ctx.globalAlpha = 0.78;
+    for (let i = 0; i < 6; i += 1) {
+      const a = state.time * 4.8 + i * Math.PI / 3;
+      const r = 47 + Math.sin(state.time * 9 + i) * 3;
+      drawCircle(cx + Math.cos(a) * r, cy + Math.sin(a) * r * 0.74, i % 2 ? 4 : 5, i % 2 ? "#ffffff" : color);
+    }
+    ctx.restore();
   }
 
   function drawIngredientIcon(key, x, y, required) {
@@ -2237,7 +3498,7 @@
     const def = entity.bonus || entity.hazard || TYPES[entity.key];
     if (!def?.effect) return;
     const text = def.effect;
-    const compact = state.width < 520;
+    const compact = isMobileLayout();
     const width = clamp(text.length * (compact ? 10 : 13) + (compact ? 14 : 18), 46, compact ? 84 : 112);
     const height = compact ? 18 : 22;
     const pulse = entity.required || entity.type === "bonus" ? Math.sin(entity.anim * 7) * 0.08 : 0;
@@ -2354,7 +3615,7 @@
 
   function drawEntityLabel(entity, cx, y, mode = "plain") {
     const text = entity.label || entity.short;
-    const compact = state.width < 520;
+    const compact = isMobileLayout();
     if (mode !== "target") {
       const color = mode === "danger" ? COLORS.berry : mode === "bonus" ? COLORS.yellow : entity.color || COLORS.ink;
       ctx.save();
@@ -2425,24 +3686,39 @@
     const hairLight = "#5a3f45";
     const skin = "#ffd9bd";
     const blush = "#f19aa0";
-    const sweater = "#fff7ed";
-    const sweaterShadow = "#eadfd3";
     const silver = "#d9e4ea";
+    const weightStage = getWeightStage();
+    const weightStageLevel = weightStage === "danger" ? 3 : weightStage === "heavy" ? 2 : weightStage === "warning" ? 1 : 0;
+    const sweater = weightStage === "danger" ? "#fff0ef" : weightStage === "heavy" ? "#fff3e4" : "#fff7ed";
+    const sweaterShadow = weightStage === "danger" ? "#eec2bf" : weightStage === "heavy" ? "#ead1bd" : "#eadfd3";
+    const weightScale = getPlayerWeightScale();
+    const bodyW = 46 + Math.round((weightScale - 1) * 74) + weightStageLevel * 6;
+    const bodyX = x - bodyW / 2;
+    const bellyDrop = Math.round((weightScale - 1) * 28 + state.weightPulse * 2 + weightStageLevel * 7);
 
     ctx.save();
     ctx.translate(x, y + 99);
     ctx.rotate(reaction?.rot || 0);
-    ctx.scale(0.74 * (reaction?.sx || 1), 0.74 * (reaction?.sy || 1));
+    ctx.scale(0.74 * (reaction?.sx || 1), 0.74 * (reaction?.sy || 1) * (1 + Math.min(0.08, (weightScale - 1) * 0.28)));
     ctx.translate(-x, -(y + 99));
 
-    drawPixelShadow(x - 2, player.y - 10, 68);
+    drawPixelShadow(x - 2, player.y - 10, 68 + (weightScale - 1) * 64);
 
     // Oversized white knit sweater silhouette.
-    fillRect(x - 23, y + 32, 46, 40, sweater);
-    fillRect(x - 18, y + 69, 36, 8, sweaterShadow);
-    strokeRect(x - 23, y + 32, 46, 40, COLORS.ink, 3);
+    fillRect(bodyX, y + 32, bodyW, 40 + bellyDrop, sweater);
+    fillRect(x - 18 - (bodyW - 46) * 0.18, y + 69 + bellyDrop, 36 + (bodyW - 46) * 0.36, 8, sweaterShadow);
+    strokeRect(bodyX, y + 32, bodyW, 40 + bellyDrop, COLORS.ink, 3);
     for (let i = 0; i < 4; i += 1) {
-      fillRect(x - 18 + i * 11, y + 38, 4, 26, "rgba(213,199,186,.42)");
+      fillRect(bodyX + 6 + i * (bodyW - 12) / 4, y + 38, 4, 26 + bellyDrop, "rgba(213,199,186,.42)");
+    }
+    if (weightStageLevel > 0) {
+      const warnColor = weightStage === "danger" ? "#d8243c" : weightStage === "heavy" ? COLORS.orange : COLORS.yellow;
+      fillRect(bodyX + 5, y + 58 + Math.floor(bellyDrop * 0.44), bodyW - 10, 5 + weightStageLevel, warnColor);
+      fillRect(bodyX + 9, y + 65 + Math.floor(bellyDrop * 0.52), bodyW - 18, 3, "rgba(36,50,58,.22)");
+      for (let i = 0; i < weightStageLevel + 1; i += 1) {
+        fillRect(bodyX - 8 - i * 5, y + 49 + i * 10, 5, 12, warnColor);
+        fillRect(bodyX + bodyW + 3 + i * 5, y + 49 + i * 10, 5, 12, warnColor);
+      }
     }
 
     // Small UGOODAYS apron over the sweater.
@@ -2450,10 +3726,10 @@
     fillRect(x - 9, y + 51, 18, 8, "#dff6ff");
     drawText("UG", x, y + 58, 8, COLORS.aquaDeep, "center");
 
-    fillRect(x - 12, y + 75, 10, 15, "#3e6676");
-    fillRect(x + 6, y + 75, 10, 15, "#3e6676");
-    fillRect(x - 16, y + 89, 18, 8, COLORS.ink);
-    fillRect(x + 4, y + 89, 18, 8, COLORS.ink);
+    fillRect(x - 12, y + 75 + bellyDrop, 10, 15, "#3e6676");
+    fillRect(x + 6, y + 75 + bellyDrop, 10, 15, "#3e6676");
+    fillRect(x - 16, y + 89 + bellyDrop, 18, 8, COLORS.ink);
+    fillRect(x + 4, y + 89 + bellyDrop, 18, 8, COLORS.ink);
 
     // Rounded short bob, side part, and visible gold hair clip.
     fillRect(x - 22, y + 1, 44, 18, hair);
@@ -2462,6 +3738,9 @@
     fillRect(x - 17, y - 3, 24, 9, hairLight);
     fillRect(x - 9, y + 1, 18, 7, hair);
     fillRect(x - 20, y + 18, 7, 12, hairLight);
+    fillRect(x - 10, y - 12, 8, 8, COLORS.berry);
+    fillRect(x + 2, y - 12, 8, 8, COLORS.berry);
+    fillRect(x - 3, y - 8, 8, 8, "#f19aa0");
     fillRect(x + 13, y + 8, 17, 5, "#d6a845");
     fillRect(x + 18, y + 3, 5, 15, "#f2d37a");
     fillRect(x + 24, y + 7, 5, 8, "#f8e3a6");
@@ -2472,6 +3751,8 @@
     fillRect(x + 6, y + 22, 8, 8, "#ffffff");
     fillRect(x - 10, y + 24, 4, 5, COLORS.ink);
     fillRect(x + 9, y + 24, 4, 5, COLORS.ink);
+    fillRect(x - 8, y + 23, 2, 2, "#ffffff");
+    fillRect(x + 11, y + 23, 2, 2, "#ffffff");
     if (reaction?.hazard) {
       fillRect(x - 14, y + 22, 12, 3, COLORS.berry);
       fillRect(x - 12, y + 18, 3, 12, COLORS.berry);
@@ -2481,33 +3762,43 @@
       fillRect(x - 13, y + 25, 8, 3, player.reactionColor);
       fillRect(x + 6, y + 25, 8, 3, player.reactionColor);
     }
-    fillRect(x - 18, y + 31, 7, 4, blush);
-    fillRect(x + 11, y + 31, 7, 4, blush);
-    fillRect(x - 4, y + 34, 12, 4, COLORS.berry);
-    fillRect(x + 3, y + 38, 7, 7, "#e66f82");
+    const cheekSize = 9 + Math.min(5, Math.round((weightScale - 1) * 18));
+    fillRect(x - 20, y + 31, cheekSize, 5, blush);
+    fillRect(x + 20 - cheekSize, y + 31, cheekSize, 5, blush);
+    fillRect(x - 5, y + 34, 4, 4, COLORS.berry);
+    fillRect(x + 1, y + 36, 8, 4, COLORS.berry);
+    fillRect(x + 3, y + 40, 7, 6, "#e66f82");
     fillRect(x + 5, y + 43, 4, 2, "#ffd1d7");
+    if (weightStageLevel > 0) {
+      fillRect(x + 22, y + 20, 5, 9 + weightStageLevel * 2, "#7fc3de");
+      fillRect(x + 20, y + 29 + weightStageLevel * 2, 9, 5, "#7fc3de");
+    }
+    if (weightStage === "danger") {
+      drawText("!", x + 30, y - 10, 18, "#d8243c", "center");
+      drawText("!", x - 30, y - 7, 14, "#d8243c", "center");
+    }
 
-    // Left-handed tool arm: thick sweater sleeve, covered hand, and spoon.
-    fillRect(x - 45, y + 43 + armLift, 24, 12, sweater);
-    fillRect(x - 54, y + 38 + armLift, 16, 17, sweater);
-    fillRect(x - 54, y + 51 + armLift, 12, 4, sweaterShadow);
-    strokeRect(x - 45, y + 43 + armLift, 24, 12, COLORS.ink, 2);
-    fillRect(x - 63, y + 40 + armLift, 22, 5, "#cbd8dd");
-    fillRect(x - 72, y + 35 + armLift, 11, 11, "#e8f4f7");
+    // Relaxed left hand with tiny ring highlights.
+    const leftHandY = y + 45 - armLift * 0.3;
+    fillRect(x - 38, leftHandY, 19, 10, sweater);
+    fillRect(x - 49, leftHandY - 1, 15, 12, skin);
+    fillRect(x - 48, leftHandY - 6, 5, 10, skin);
+    fillRect(x - 40, leftHandY - 6, 5, 10, skin);
+    fillRect(x - 48, leftHandY - 2, 5, 3, silver);
+    fillRect(x - 40, leftHandY - 2, 5, 3, silver);
+    fillRect(x - 47, leftHandY - 2, 3, 1, "#ffffff");
+    fillRect(x - 39, leftHandY - 2, 3, 1, "#ffffff");
 
-    // Relaxed right hand with silver rings on index and ring fingers.
-    const rightHandY = y + 45 - armLift * 0.3;
-    fillRect(x + 19, rightHandY, 19, 10, sweater);
-    fillRect(x + 34, rightHandY - 1, 15, 12, skin);
-    fillRect(x + 35, rightHandY - 6, 5, 10, skin);
-    fillRect(x + 43, rightHandY - 6, 5, 10, skin);
-    fillRect(x + 35, rightHandY - 2, 5, 3, silver);
-    fillRect(x + 43, rightHandY - 2, 5, 3, silver);
-    fillRect(x + 36, rightHandY - 2, 3, 1, "#ffffff");
-    fillRect(x + 44, rightHandY - 2, 3, 1, "#ffffff");
+    // Right-handed tool arm: thick sweater sleeve, covered hand, and spoon.
+    fillRect(x + 21, y + 43 + armLift, 24, 12, sweater);
+    fillRect(x + 39, y + 38 + armLift, 16, 17, sweater);
+    fillRect(x + 42, y + 51 + armLift, 12, 4, sweaterShadow);
+    strokeRect(x + 21, y + 43 + armLift, 24, 12, COLORS.ink, 2);
+    fillRect(x + 42, y + 40 + armLift, 22, 5, "#cbd8dd");
+    fillRect(x + 63, y + 35 + armLift, 11, 11, "#e8f4f7");
 
     if (work) {
-      drawActionSlash(x - 76, y + 43 + armLift);
+      drawActionSlash(x + 76, y + 43 + armLift);
     }
     if (reaction) drawPlayerReactionGlyphs(x, y, reaction);
     ctx.restore();
@@ -2769,7 +4060,7 @@
     const alpha = countdown ? 0.18 + Math.sin(state.time * 28) * 0.06 : 0.1 + Math.sin(state.time * 18) * 0.04;
     const label = countdown ? state.flavorPending?.label || "自搭配" : state.flavorComboLabel;
     const centerX = state.width * 0.5;
-    const top = state.width < 520 ? 300 : 138;
+    const top = isMobileLayout() ? 300 / getSceneScale() : 138;
     ctx.save();
     ctx.globalAlpha = alpha;
     fillRect(0, 0, state.width, state.height, countdown ? COLORS.yellow : COLORS.berry);
@@ -2881,6 +4172,20 @@
     const y = state.lanes[player.lane];
     const pulse = 0.5 + Math.sin(state.time * 16) * 0.28;
     ctx.save();
+    if (isMobileLayout()) {
+      const scale = getSceneScale();
+      const touchWorldX = screenToWorldX(touch.lastX);
+      ctx.globalAlpha = 0.44 + pulse * 0.18;
+      strokeCircle(x, y - 42, 34 + pulse * 6, COLORS.aquaDeep, 3);
+      strokeCircle(x, y - 42, 20 + pulse * 4, "#ffffff", 2);
+      fillRect(x - 4, y - 86, 8, 18, "#ffffff");
+      fillRect(x - 4, y - 18, 8, 18, "#ffffff");
+      ctx.globalAlpha = 0.24;
+      fillRect(0, state.height - 126 / scale, state.width, 2 / scale, COLORS.aquaDeep);
+      fillRect(touchWorldX - 22 / scale, state.height - 56 / scale, 44 / scale, 6 / scale, COLORS.aquaDeep);
+      ctx.restore();
+      return;
+    }
     ctx.globalAlpha = 0.2 + pulse * 0.18;
     fillRect(x - 27, y - 105, 54, 132, COLORS.aquaDeep);
     ctx.globalAlpha = 0.76;
@@ -3265,7 +4570,11 @@
 
   function playerRect() {
     const arcadeReach = (state.width < 620 ? 8 : 0) + Math.min(12, Math.floor(state.combo / 4) * 2);
-    return { x: player.x - 23 - arcadeReach, y: player.y - 76, w: 46 + arcadeReach * 2, h: 78 };
+    const weightScale = getPlayerWeightScale();
+    const weightReach = Math.max(0, (weightScale - 1) * 18);
+    const width = 46 + arcadeReach * 2 + weightReach;
+    const height = 78 + Math.max(0, (weightScale - 1) * 18);
+    return { x: player.x - width / 2, y: player.y - 76, w: width, h: height };
   }
 
   function entityRect(entity) {
@@ -3277,55 +4586,38 @@
   }
 
   function renderRecipe() {
-    if (!state.order) return;
-    const modifier = state.modifier || MODIFIERS[0];
-    dom.orderName.textContent = modifier.id === "standard" ? state.order.name : `${state.order.name}｜${modifier.label}`;
-    const maxRows = state.width < 520 ? 5 : 8;
-    const start = Math.max(0, Math.min(state.stepIndex - 2, state.order.steps.length - maxRows));
-    const rows = state.order.steps.slice(start, start + maxRows);
-    dom.recipeList.innerHTML = rows
-      .map((step, offset) => {
-        const index = start + offset;
-        const def = TYPES[step.key];
-        const status = index < state.stepIndex ? "完成" : index === state.stepIndex ? (step.mode === "work" ? "碰做" : "接") : "待";
-        const rowClass = index < state.stepIndex ? "done" : index === state.stepIndex ? "current" : "pending";
-        return `
-          <div class="recipe-row ${rowClass}">
-            <span class="recipe-token" style="--token-bg:${def.bg};--token-accent:${def.color};--token-text:${def.color}">${escapeHtml(def.short)}</span>
-            <span>${escapeHtml(step.label)}</span>
-            <strong class="step-status">${status}</strong>
-          </div>
-        `;
-      })
-      .join("");
+    dom.orderName.textContent = `已做 ${state.totalYogurts} 杯優格`;
+    dom.recipeList.innerHTML = "";
   }
 
   function updateHud() {
-    const current = currentStep();
     const diff = getDifficulty();
-    const modifier = state.modifier || MODIFIERS[0];
-    dom.level.textContent = String(state.level);
+    const weightStage = getWeightStage();
+    dom.level.textContent = state.weightDisplayKg.toFixed(1);
+    dom.level.parentElement?.classList.toggle("weight-warning", weightStage === "warning" || weightStage === "heavy" || weightStage === "danger");
+    dom.level.parentElement?.classList.toggle("weight-heavy", weightStage === "heavy" || weightStage === "danger");
+    dom.level.parentElement?.classList.toggle("weight-danger", weightStage === "danger");
     dom.score.textContent = formatNumber(state.score);
     dom.combo.textContent = String(state.combo);
     dom.time.textContent = String(Math.max(0, Math.ceil(state.timeRemaining)));
     dom.highScore.textContent = formatNumber(Math.max(state.highScore, state.score));
     dom.purityText.textContent = `${Math.round(state.purity)}%`;
     dom.purityFill.style.width = `${clamp(state.purity, 0, 100)}%`;
+    dom.purityFill.classList.toggle("is-danger", state.purity <= PURITY_ALERT_PERCENT);
     dom.feverText.textContent = state.feverTime > 0 ? "PURE" : `${Math.round(state.fever)}%`;
     dom.feverFill.style.width = `${state.feverTime > 0 ? 100 : clamp(state.fever, 0, 100)}%`;
     dom.carry.textContent = buildCarryText();
     dom.playerName.textContent = state.playerName;
-    if (current) {
-      const def = TYPES[current.key];
-      const missionText = missionProgressText();
-      const pressureText = modifier.id === "standard" ? diff.name : `${diff.name}｜${modifier.label}`;
-      const featureText = `${def.feature}會觸發「${def.effect}」`;
-      const idleText = state.idleTime > 1 ? "紅色危險物正在追線，滑動躲開" : "主動接好料，紅色添加物要閃開";
-      dom.fact.textContent =
-        current.mode === "work"
-          ? `${pressureText} / ${idleText} / 挑戰：${missionText} / ${featureText}，處理「${def.label}」。`
-          : `${pressureText} / ${idleText} / 挑戰：${missionText} / ${featureText}，接「${def.label}」。`;
-    }
+    const rushNeed = 15 + state.customFlavors * 3.5 + Math.min(8, state.level * 0.45);
+    const rushPct = Math.round(clamp(state.flavorCharge / rushNeed, 0, 1) * 100);
+    const idleText = weightStage === "danger"
+      ? "體型警戒，下一個紅色可能直接爆掉"
+      : weightStage === "heavy"
+        ? "體型明顯變重，優先做官方純粹優格"
+        : weightStage === "warning"
+          ? "開始變重，少碰風味加料"
+          : state.idleTime > 1 ? "紅色危險物正在追線，滑動躲開" : "純粹優格不增重，紅色全躲";
+    dom.fact.textContent = `${diff.name} / 節奏 ${state.level} / 體重 ${state.weightDisplayKg.toFixed(1)}kg / ${idleText} / 已做 ${state.totalYogurts} 杯 / RUSH ${rushPct}%`;
   }
 
   function buildCarryText() {
@@ -3362,6 +4654,8 @@
   function endGame(reason) {
     if (state.phase === "over") return;
     state.phase = "over";
+    state.paused = false;
+    updatePauseUi();
     stopBgm(0.28);
     controls.left = false;
     controls.right = false;
@@ -3377,32 +4671,107 @@
       name: state.playerName,
       score: state.score,
       combo: state.maxCombo,
-      perfect: state.bestPrecisionStreak,
-      orders: state.completedOrders,
+      yogurts: state.totalYogurts,
+      orders: state.totalYogurts,
       level: state.level,
+      weight: Number(state.weightKg.toFixed(1)),
+      gameOverKind: state.gameOverKind,
       date: new Date().toISOString(),
     });
     renderLeaderboard();
     updateHud();
-    dom.resultTitle.textContent = `完成 ${state.completedOrders} 批`;
-    dom.resultCopy.textContent =
-      state.completedOrders >= 10
-        ? `連線很猛，最高 PERFECT 串到 ${state.bestPrecisionStreak}，${reason} 前已經像正式產線。`
-        : state.completedOrders >= 5
-          ? `手感有起來，最高 PERFECT ${state.bestPrecisionStreak}，${reason} 前差一點進入爆單節奏。`
-          : `甜點區時機還能再壓，最高 PERFECT ${state.bestPrecisionStreak}，${reason}。`;
+    dom.resultTitle.textContent = state.gameOverKind === "weight" ? "70kg 警戒！換吃純粹好食" : `做出 ${state.totalYogurts} 杯優格`;
+    dom.resultCopy.innerHTML = buildSettlementHtml(reason);
     dom.finalScore.textContent = formatNumber(state.score);
     dom.finalCombo.textContent = String(state.maxCombo);
-    dom.finalLevel.textContent = String(Math.max(1, state.level));
+    dom.finalLevel.textContent = `${state.weightKg.toFixed(1)}kg`;
     dom.gameOverOverlay.classList.remove("hidden");
   }
 
   function copyResult() {
-    const text = `我在純粹好食純淨優格快線完成 ${state.completedOrders} 批，分數 ${formatNumber(state.score)}，最高連線 ${state.maxCombo}，最高 PERFECT ${state.bestPrecisionStreak}。`;
-    navigator.clipboard?.writeText(text).then(
+    const text = `我在純粹好食多一點健康優格快線做出 ${state.totalYogurts} 杯優格，積分 ${formatNumber(state.score)}，最高連吃 ${state.maxCombo}。`;
+    const shareText = state.gameOverKind === "weight"
+      ? `${text} 紅色添加物讓體重衝到 70kg，下一把改吃純粹好食官方優格。`
+      : `${text} 最後體重 ${state.weightKg.toFixed(1)}kg`;
+    navigator.clipboard?.writeText(shareText).then(
       () => showToast("戰績已複製"),
-      () => showToast(text)
+      () => showToast(shareText)
     );
+  }
+
+  function buildSettlementHtml(reason) {
+    const rows = YOGURT_RECIPES
+      .map((recipe, index) => {
+        const count = state.yogurts[recipe.id] || 0;
+        const subtotal = count * recipe.points;
+        const nutrition = RECIPE_NUTRITION[recipe.id] || {};
+        const netKcal = (nutrition.kcal || 0) - (nutrition.credit || 0);
+        const kcalText = netKcal <= 0 ? `淨 ${netKcal} kcal` : `淨 +${netKcal} kcal`;
+        return `
+          <div class="settlement-row" style="--row-delay:${index * 70}ms;--recipe-color:${recipe.color}">
+            <span class="settlement-dot"></span>
+            <strong><span>${escapeHtml(recipe.label)}</span><small>${escapeHtml(nutrition.craft || "精心調配每一杯優格。")}</small></strong>
+            <em>${count} 杯</em>
+            <b>${recipe.points} 分/杯</b>
+            <u>${kcalText}</u>
+            <i>${subtotal} 分</i>
+          </div>
+        `;
+      })
+      .join("");
+    const weightHtml = buildWeightGainHtml();
+    const lead = state.totalYogurts > 0
+      ? `${escapeHtml(reason)}。這次一共做出 ${state.totalYogurts} 杯，最高連吃 ${state.maxCombo}。`
+      : `${escapeHtml(reason)}。這次還沒合成優格，先收鮮奶和益菌，再衝風味與工序。`;
+    if (state.gameOverKind === "weight") {
+      return `<span class="weight-fail-card">
+        <span class="weight-fail-avatar" aria-hidden="true">
+          <span class="avatar-head"></span>
+          <span class="avatar-body"></span>
+          <span class="avatar-belly"></span>
+          <span class="avatar-label">70kg</span>
+          <span class="avatar-alert alert-a"></span>
+          <span class="avatar-alert alert-b"></span>
+        </span>
+        <span class="weight-fail-copy">
+          <b>紅色添加物和重口味讓體重衝破警戒線。</b>
+          <span>改吃純粹好食在售的鮮奶優格、希臘優格與原味優格飲：官方純粹優格不增重，連續吃滿 3 杯會啟動減重獎勵。</span>
+        </span>
+      </span><span class="settlement-lead"><b class="weight-result">最後體重 70.0kg</b>${lead}</span>${weightHtml}<span class="settlement-list">${rows}</span>`;
+    }
+    return `<span class="settlement-lead"><b class="weight-result">最後體重 ${state.weightKg.toFixed(1)}kg</b>${lead}</span>${weightHtml}<span class="settlement-list">${rows}</span>`;
+  }
+
+  function buildWeightGainHtml() {
+    const sources = Object.values(state.weightGainSources || {}).sort((a, b) => b.amount - a.amount);
+    const rows = sources.length
+      ? sources
+          .slice(0, 8)
+          .map(
+            (source, index) => `
+              <span class="weight-gain-row" style="--row-delay:${index * 50}ms;--gain-color:${source.color}">
+                <i></i>
+                <strong>${escapeHtml(source.label)}</strong>
+                <em>${escapeHtml(source.kind)}</em>
+                <b>${source.count} 次</b>
+                <u>+${Math.round(source.kcal)} kcal</u>
+                <mark>+${source.amount.toFixed(1)}kg</mark>
+              </span>
+            `
+          )
+          .join("")
+      : `<span class="weight-gain-row empty"><strong>沒有增重來源</strong><em>純粹好食節奏保持得很穩</em><mark>+0.0kg</mark></span>`;
+    const netKcal = state.calorieIntakeKcal - state.calorieBurnKcal;
+    const loss = state.weightLossTotal > 0 ? ` / 消耗換算 -${state.weightLossTotal.toFixed(1)}kg` : "";
+    return `
+      <span class="weight-gain-block">
+        <span class="weight-gain-title">
+          <strong>體重來源</strong>
+          <em>攝取 ${Math.round(state.calorieIntakeKcal)} kcal / 日常消耗 ${Math.round(state.calorieBurnKcal)} kcal / 淨 ${netKcal >= 0 ? "+" : ""}${Math.round(netKcal)} kcal${loss}</em>
+        </span>
+        <span class="weight-gain-list">${rows}</span>
+      </span>
+    `;
   }
 
   function saveScore(entry) {
@@ -3434,15 +4803,41 @@
     if (audio.bgmGain && audio.context) {
       audio.bgmGain.gain.cancelScheduledValues(audio.context.currentTime);
       audio.bgmGain.gain.setValueAtTime(audio.bgmGain.gain.value, audio.context.currentTime);
-      audio.bgmGain.gain.linearRampToValueAtTime(audio.muted ? 0 : 0.095, audio.context.currentTime + 0.18);
+      audio.bgmGain.gain.linearRampToValueAtTime(audio.muted ? 0 : getBgmVolume(), audio.context.currentTime + 0.18);
     }
     if (!audio.muted) {
       ensureAudio();
-      if (state.phase === "playing") startBgm(false);
+      if (state.phase === "playing" && !state.paused) startBgm(false);
       beep(520, 0.05, "square", 0.025);
     } else {
       stopBgm(0.18);
     }
+  }
+
+  function togglePause() {
+    if (state.phase !== "playing") return;
+    state.paused = !state.paused;
+    controls.left = false;
+    controls.right = false;
+    controls.up = false;
+    controls.down = false;
+    controls.action = false;
+    resetPointerControl();
+    updatePauseUi();
+    if (state.paused) {
+      stopBgm(0.12);
+      showToast("已暫停");
+    } else {
+      showToast("繼續遊戲");
+      startBgm(false);
+    }
+  }
+
+  function updatePauseUi() {
+    if (!dom.pauseButton || !dom.pauseIcon) return;
+    dom.pauseIcon.textContent = state.paused ? "▶" : "Ⅱ";
+    dom.pauseButton.setAttribute("aria-label", state.paused ? "繼續遊戲" : "暫停遊戲");
+    dom.pauseButton.classList.toggle("is-paused", state.paused);
   }
 
   function ensureAudio() {
@@ -3456,10 +4851,24 @@
     audio.context = new AudioContext();
     audio.sfxGain = audio.context.createGain();
     audio.bgmGain = audio.context.createGain();
+    audio.bgmCompressor = audio.context.createDynamicsCompressor();
+    audio.bgmDelay = audio.context.createDelay(0.5);
+    audio.bgmDelayGain = audio.context.createGain();
     audio.sfxGain.gain.value = 0.64;
     audio.bgmGain.gain.value = 0;
+    audio.bgmCompressor.threshold.value = -24;
+    audio.bgmCompressor.knee.value = 18;
+    audio.bgmCompressor.ratio.value = 3;
+    audio.bgmCompressor.attack.value = 0.025;
+    audio.bgmCompressor.release.value = 0.26;
+    audio.bgmDelay.delayTime.value = 0.245;
+    audio.bgmDelayGain.gain.value = 0.16;
     audio.sfxGain.connect(audio.context.destination);
-    audio.bgmGain.connect(audio.context.destination);
+    audio.bgmGain.connect(audio.bgmCompressor);
+    audio.bgmGain.connect(audio.bgmDelay);
+    audio.bgmDelay.connect(audio.bgmDelayGain);
+    audio.bgmDelayGain.connect(audio.bgmCompressor);
+    audio.bgmCompressor.connect(audio.context.destination);
     if (audio.context.state === "suspended") return audio.context.resume?.();
     return null;
   }
@@ -3485,7 +4894,7 @@
     if (audio.muted || !audio.context || !audio.bgmGain) return;
     if (audio.context.state === "suspended") {
       Promise.resolve(resumed).then(() => {
-        if (!audio.muted && state.phase === "playing") startBgm(reset);
+        if (!audio.muted && state.phase === "playing" && !state.paused) startBgm(reset);
       });
       return;
     }
@@ -3494,7 +4903,7 @@
       audio.bgmNextTime = audio.context.currentTime + 0.05;
     }
     const now = audio.context.currentTime;
-    const volume = state.openingMode ? 0.108 : 0.095;
+    const volume = getBgmVolume();
     audio.bgmGain.gain.cancelScheduledValues(now);
     audio.bgmGain.gain.setValueAtTime(audio.bgmGain.gain.value, now);
     audio.bgmGain.gain.linearRampToValueAtTime(volume, now + 0.35);
@@ -3517,8 +4926,8 @@
   }
 
   function scheduleBgm() {
-    if (audio.muted || !audio.context || !audio.bgmGain || state.phase !== "playing") return;
-    const tempo = BGM.bpm + Math.min(10, Math.max(0, state.level - 1) * 0.45) + (state.flavorRushTime > 0 ? 6 : 0) + (state.feverTime > 0 ? 5 : 0);
+    if (audio.muted || !audio.context || !audio.bgmGain || state.phase !== "playing" || state.paused) return;
+    const tempo = BGM.bpm + Math.min(12, Math.max(0, state.level - 1) * 0.32) + (state.flavorRushTime > 0 ? 5 : 0) + (state.feverTime > 0 ? 3 : 0);
     const stepSeconds = 60 / tempo / 4;
     while (audio.bgmNextTime < audio.context.currentTime + 0.32) {
       scheduleBgmStep(audio.bgmStep, audio.bgmNextTime, stepSeconds);
@@ -3530,43 +4939,74 @@
   function scheduleBgmStep(step, time, stepSeconds) {
     const beat = step % 4;
     const barStep = step % 16;
+    const phraseStep = step % BGM.melody.length;
     const fever = state.feverTime > 0;
+    const rush = state.flavorRushTime > 0;
+    const chord = BGM.chords[Math.floor(step / 8) % BGM.chords.length];
     if (barStep === 0 || barStep === 8) {
-      const chord = BGM.chords[Math.floor(step / 8) % BGM.chords.length];
-      for (const note of chord) playTone(noteToFrequency(note), time, stepSeconds * 7.5, "sine", 0.034, 0.16, 1400);
+      playMusicChord(chord, time, stepSeconds * 8.7, rush ? 0.033 : 0.028);
     }
-    if (beat === 0) playPerc(time, fever ? 0.012 : 0.008, 82, 0.045);
-    if (barStep === 10 || fever && barStep === 6 || state.flavorRushTime > 0 && barStep === 14) playPerc(time + stepSeconds * 0.5, 0.006, 430, 0.02);
+    if (beat === 0) playPerc(time, fever ? 0.014 : 0.009, 76, 0.052);
+    if (barStep === 6 || barStep === 14 || rush && barStep === 10) playPerc(time + stepSeconds * 0.48, rush ? 0.007 : 0.0045, 520, 0.018);
 
-    const bass = BGM.bass[step];
-    if (bass) playTone(noteToFrequency(bass), time, stepSeconds * 2.8, "sine", 0.09, 0.035, 820);
+    const bass = BGM.bass[phraseStep];
+    if (bass) playTone(noteToFrequency(bass), time, stepSeconds * 3.5, "sine", rush ? 0.082 : 0.07, 0.05, 720);
 
-    const melody = BGM.melody[step];
+    const arpeggio = BGM.arpeggio[phraseStep];
+    if (arpeggio && (phraseStep % 4 === 0 || phraseStep % 4 === 2 || rush)) {
+      playBell(noteToFrequency(arpeggio), time + stepSeconds * 0.15, stepSeconds * 1.7, rush ? 0.052 : 0.036, 3000);
+    }
+
+    const melody = BGM.melody[phraseStep];
     if (melody) {
-      playTone(noteToFrequency(melody), time, stepSeconds * 2.35, "triangle", fever ? 0.125 : 0.104, 0.03, 2300);
-      if (fever && (step % 8 === 2 || step % 8 === 4)) {
-        playTone(noteToFrequency(melody) * 1.5, time + stepSeconds * 0.06, stepSeconds * 1.4, "sine", 0.03, 0.025, 2400);
+      playBell(noteToFrequency(melody), time, stepSeconds * 2.8, fever || rush ? 0.112 : 0.094, 2600);
+      const harmony = BGM.harmony[phraseStep];
+      if (harmony && (fever || rush || state.combo >= 8)) {
+        playBell(noteToFrequency(harmony), time + stepSeconds * 0.04, stepSeconds * 2.1, rush ? 0.052 : 0.034, 2400);
       }
     }
 
-    const hook = BGM.hook[step];
-    if (hook && (barStep === 2 || barStep === 6 || barStep === 10 || barStep === 14 || state.flavorRushTime > 0)) {
-      playTone(noteToFrequency(hook), time + stepSeconds * 0.5, stepSeconds * 1.3, "sine", state.flavorRushTime > 0 ? 0.062 : 0.038, 0.018, 3000);
+    const hook = BGM.hook[phraseStep];
+    if (hook && (barStep === 2 || barStep === 6 || barStep === 10 || barStep === 14 || rush)) {
+      playBell(noteToFrequency(hook), time + stepSeconds * 0.52, stepSeconds * 1.55, rush ? 0.066 : 0.04, 3600);
     }
 
-    const sparkle = BGM.sparkle[step];
-    if (sparkle && (fever || state.flavorRushTime > 0 || step % 8 === 7 || state.combo >= 10)) {
-      playTone(noteToFrequency(sparkle), time + stepSeconds * 0.22, stepSeconds * 1.2, "sine", state.flavorRushTime > 0 ? 0.058 : 0.04, 0.022, 3400);
+    const sparkle = BGM.sparkle[phraseStep];
+    if (sparkle && (fever || rush || step % 16 === 7 || state.combo >= 10)) {
+      playBell(noteToFrequency(sparkle), time + stepSeconds * 0.25, stepSeconds * 1.2, rush ? 0.058 : 0.034, 4200);
     }
   }
 
-  function playTone(frequency, time, duration, type, volume, attack, cutoff) {
+  function getBgmVolume() {
+    let volume = state.openingMode ? 0.148 : 0.132;
+    if (state.flavorRushTime > 0) volume += 0.014;
+    if (state.feverTime > 0) volume += 0.008;
+    return volume;
+  }
+
+  function playMusicChord(chord, time, duration, volume) {
+    chord.forEach((note, index) => {
+      const frequency = noteToFrequency(note);
+      playTone(frequency, time + index * 0.012, duration, index === 0 ? "sine" : "triangle", volume * (index === 0 ? 0.82 : 1), 0.22, 1500 + index * 220, {
+        detune: index % 2 ? 4 : -3,
+      });
+    });
+  }
+
+  function playBell(frequency, time, duration, volume, cutoff) {
+    if (!frequency) return;
+    playTone(frequency, time, duration, "triangle", volume, 0.022, cutoff, { detune: -2 });
+    playTone(frequency * 2, time + 0.006, duration * 0.62, "sine", volume * 0.22, 0.018, cutoff + 700, { detune: 3 });
+  }
+
+  function playTone(frequency, time, duration, type, volume, attack, cutoff, options = {}) {
     if (!audio.context || !audio.bgmGain || !frequency) return;
     const oscillator = audio.context.createOscillator();
     const filter = audio.context.createBiquadFilter();
     const gain = audio.context.createGain();
     oscillator.type = type;
     oscillator.frequency.setValueAtTime(frequency, time);
+    oscillator.detune.setValueAtTime(options.detune || 0, time);
     filter.type = "lowpass";
     filter.frequency.setValueAtTime(cutoff, time);
     filter.Q.setValueAtTime(0.8, time);
@@ -3584,7 +5024,7 @@
     if (!audio.context || !audio.bgmGain) return;
     const oscillator = audio.context.createOscillator();
     const gain = audio.context.createGain();
-    oscillator.type = "square";
+    oscillator.type = frequency > 200 ? "triangle" : "sine";
     oscillator.frequency.setValueAtTime(frequency, time);
     oscillator.frequency.exponentialRampToValueAtTime(Math.max(45, frequency * 0.35), time + duration);
     gain.gain.setValueAtTime(volume, time);
@@ -3653,6 +5093,10 @@
 
   function clamp(value, min, max) {
     return Math.min(max, Math.max(min, value));
+  }
+
+  function positiveModulo(value, divisor) {
+    return ((value % divisor) + divisor) % divisor;
   }
 
   function random(min, max) {
