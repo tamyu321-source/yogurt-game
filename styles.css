@@ -295,6 +295,108 @@ input {
   gap: 7px;
 }
 
+.recipe-hint {
+  display: grid;
+  gap: 5px;
+  padding: 7px 8px;
+  border: 3px solid rgba(38, 138, 161, 0.28);
+  background: rgba(255, 255, 255, 0.72);
+  color: #334652;
+}
+
+.recipe-hint.is-ready {
+  border-color: rgba(101, 168, 95, 0.55);
+  background: rgba(222, 243, 223, 0.78);
+}
+
+.recipe-hint-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.recipe-hint-top strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipe-hint-top span {
+  flex: 0 0 auto;
+  color: var(--aqua-deep);
+  font-size: 12px;
+}
+
+.recipe-progress {
+  position: relative;
+  height: 7px;
+  overflow: hidden;
+  border: 2px solid rgba(36, 50, 58, 0.18);
+  background: rgba(233, 238, 242, 0.95);
+}
+
+.recipe-progress span {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0;
+  background: linear-gradient(90deg, var(--aqua-deep), var(--leaf), var(--yellow));
+}
+
+.recipe-need-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.recipe-need-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  padding: 2px 6px 2px 2px;
+  border: 2px solid rgba(36, 50, 58, 0.16);
+  background: rgba(255, 255, 255, 0.82);
+  color: #43515b;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.recipe-need-chip.is-ready {
+  opacity: 0.72;
+}
+
+.recipe-need-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--need-color);
+  background: #ffffff;
+  color: var(--need-color);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.recipe-need-text {
+  overflow: hidden;
+  max-width: 72px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.recipe-missing {
+  overflow: hidden;
+  color: #526575;
+  font-size: 12px;
+  font-weight: 900;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .recipe-row {
   display: grid;
   grid-template-columns: 34px 1fr auto;
@@ -1019,9 +1121,53 @@ input {
 
   .fact-line,
   .leaderboard,
-  .carry-line,
-  .order-card {
+  .carry-line {
     display: none;
+  }
+
+  .order-card {
+    margin-top: 6px;
+    padding-top: 6px;
+  }
+
+  .order-card .panel-title {
+    margin-bottom: 4px;
+  }
+
+  .recipe-hint {
+    gap: 4px;
+    padding: 6px 7px;
+    border-width: 2px;
+  }
+
+  .recipe-hint-top {
+    font-size: 11px;
+  }
+
+  .recipe-hint-top span,
+  .recipe-missing {
+    font-size: 10px;
+  }
+
+  .recipe-need-list {
+    gap: 3px;
+  }
+
+  .recipe-need-chip {
+    gap: 3px;
+    padding: 2px 4px 2px 2px;
+    font-size: 9px;
+  }
+
+  .recipe-need-icon {
+    width: 16px;
+    height: 16px;
+    border-width: 1px;
+    font-size: 8px;
+  }
+
+  .recipe-need-text {
+    max-width: 52px;
   }
 
   .panel-head,
@@ -1274,7 +1420,7 @@ input {
     top: 92px;
     left: 6px;
     right: 6px;
-    max-height: 78px;
+    max-height: 142px;
     overflow: hidden;
     padding: 5px;
     border-width: 2px;
@@ -1339,17 +1485,51 @@ input {
   }
 
   .order-card {
-    display: none;
+    display: block;
     padding-top: 4px;
     border-top-width: 2px;
   }
 
   .recipe-list {
-    display: flex;
-    gap: 3px;
+    display: block;
+    gap: 0;
     width: 100%;
-    transform: scale(0.78);
-    transform-origin: left top;
+    transform: none;
+  }
+
+  .recipe-hint {
+    gap: 2px;
+    padding: 4px 6px;
+  }
+
+  .recipe-hint-top {
+    font-size: 10px;
+  }
+
+  .recipe-hint-top span {
+    font-size: 9px;
+  }
+
+  .recipe-progress {
+    height: 4px;
+    border-width: 1px;
+  }
+
+  .recipe-missing {
+    font-size: 9px;
+  }
+
+  .recipe-need-list {
+    flex-wrap: nowrap;
+    overflow: hidden;
+  }
+
+  .recipe-need-chip {
+    max-width: 82px;
+  }
+
+  .recipe-need-text {
+    max-width: 52px;
   }
 
   .recipe-list .recipe-row {

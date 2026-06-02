@@ -85,13 +85,13 @@
   };
 
   const HAZARDS = [
-    { key: "flavor", label: "香精", short: "香", color: "#d8243c", feature: "非純淨", effect: "扣純" },
-    { key: "coloring", label: "色素", short: "色", color: "#e22d48", feature: "人工色", effect: "扣秒" },
-    { key: "dirty", label: "髒汙", short: "髒", color: "#a91527", feature: "品管失守", effect: "重扣" },
-    { key: "sugar", label: "過糖", short: "糖", color: "#c91f33", feature: "甜感失衡", effect: "扣能" },
-    { key: "sour", label: "過酸", short: "酸", color: "#f0444f", feature: "酸度失控", effect: "倒牙" },
-    { key: "ice", label: "冰裂", short: "冰", color: "#b8122b", feature: "冷鏈裂杯", effect: "凍手" },
-    { key: "sticky", label: "黏勺", short: "黏", color: "#d9342f", feature: "節奏卡住", effect: "卡手" },
+    { key: "flavor", label: "香精", short: "香", color: "#d8243c", feature: "非天然香氣", effect: "扣純" },
+    { key: "coloring", label: "色素", short: "色", color: "#e22d48", feature: "人工色", effect: "扣純" },
+    { key: "dirty", label: "增稠劑", short: "稠", color: "#a91527", feature: "化學添加", effect: "重扣" },
+    { key: "sugar", label: "加糖", short: "糖", color: "#c91f33", feature: "額外添加糖", effect: "增重" },
+    { key: "sour", label: "過酸粉", short: "酸", color: "#f0444f", feature: "調味失衡", effect: "扣秒" },
+    { key: "ice", label: "鮮奶油", short: "油", color: "#b8122b", feature: "厚重油脂", effect: "增重" },
+    { key: "sticky", label: "膠感粉", short: "膠", color: "#d9342f", feature: "增黏添加", effect: "卡手" },
   ];
 
   const BONUS = [
@@ -101,6 +101,10 @@
     { key: "rushBoost", label: "爽感爆發", short: "爽", color: "#ef8b53", feature: "短暫爆速", effect: "全屏爆" },
     { key: "comboBoost", label: "連擊星糖", short: "連", color: "#f4d16f", feature: "連線補給", effect: "連擊+" },
     { key: "timeBurst", label: "冷鏈秒錶", short: "秒", color: "#7d5ba6", feature: "出貨加時", effect: "秒數++" },
+    { key: "roadSweep", label: "道路清場", short: "清", color: "#49a8b8", feature: "清出路線", effect: "掃紅色" },
+    { key: "streetGuard", label: "安心護欄", short: "欄", color: "#8bc46b", feature: "短暫護欄", effect: "免撞擊" },
+    { key: "yogurtMagnet", label: "優格磁場", short: "磁", color: "#ffb85c", feature: "好料牽引", effect: "優格靠近" },
+    { key: "pureWave", label: "純淨波", short: "波", color: "#61c7de", feature: "洗掉添加", effect: "純淨回升" },
   ];
 
   const FLAVOR_REWARD_KEYS = ["fruit", "honey", "matcha", "cocoa", "oat", "salt", "crunch"];
@@ -137,8 +141,6 @@
   };
 
   const YOGURT_RECIPES = [
-    { id: "greek480", label: "希臘優格 480g", points: 46, color: "#ef8b53", needs: { milk: 2, culture: 2, protein: 1, ferment: 1, strain: 2, qc: 1, pack: 1 } },
-    { id: "fresh480", label: "鮮奶優格 480g", points: 38, color: "#7fc3de", needs: { milk: 2, culture: 2, mix: 1, ferment: 1, qc: 1, pack: 1 } },
     { id: "greek160", label: "希臘優格 160g", points: 31, color: "#ef8b53", needs: { milk: 1, culture: 1, protein: 1, strain: 1, pack: 1 } },
     { id: "drink", label: "原味優格飲", points: 28, color: "#f4d16f", needs: { milk: 1, culture: 1, calcium: 1, mix: 1, chill: 1 } },
     { id: "fresh160", label: "鮮奶優格 160g", points: 24, color: "#7fc3de", needs: { milk: 1, culture: 1, mix: 1, pack: 1 } },
@@ -152,8 +154,16 @@
   const WEIGHT_ALERT_KG = 67.5;
   const PURITY_ALERT_PERCENT = 18;
   const MOBILE_CONTROL_LIFT = 118;
-  const MOBILE_SCENE_SCALE = 0.78;
-  const OFFICIAL_YOGURT_IDS = new Set(["greek480", "fresh480", "greek160", "drink", "fresh160"]);
+  const MOBILE_SCENE_SCALE = 0.68;
+  const ROUTE_FORK_CUE_SECONDS = 2.2;
+  const ROUTE_FORK_MIN_GAP = 12;
+  const ROUTE_FORK_MAX_GAP = 18;
+  const ROUTE_FORK_MIN_TIME = 8.2;
+  const ROUTE_FORK_MAX_TIME = 10.8;
+  const JUMP_DODGE_SECONDS = 1.05;
+  const SLIDE_DODGE_SECONDS = 0.95;
+  const PLAYER_VISUAL_SCALE = 0.66;
+  const OFFICIAL_YOGURT_IDS = new Set(["greek160", "drink", "fresh160"]);
   const PURE_BASE_KEYS = new Set(["milk", "culture", "protein", "calcium", "mix", "ferment", "strain", "qc", "texture", "chill", "pack", "ship"]);
   const FLAVOR_WEIGHT_KEYS = new Set(["fruit", "honey", "oat", "matcha", "cocoa", "salt", "crunch", "swirl"]);
   const KCAL_PER_WEIGHT_KG = 7000;
@@ -181,6 +191,10 @@
     probioticBoost: -42,
     calciumBoost: -32,
     timeBurst: -18,
+    roadSweep: -22,
+    streetGuard: -16,
+    yogurtMagnet: -24,
+    pureWave: -55,
   };
   const HAZARD_KCAL = {
     flavor: 420,
@@ -192,8 +206,6 @@
     sticky: 300,
   };
   const RECIPE_NUTRITION = {
-    greek480: { kcal: 310, credit: 560, craft: "鮮乳發酵後慢工濾乳，做成高蛋白低碳水的濃厚口感。" },
-    fresh480: { kcal: 300, credit: 480, craft: "鮮乳和八大益菌低溫熟成，保留清爽奶香。" },
     greek160: { kcal: 105, credit: 260, craft: "小份希臘優格，濾出扎實口感，補足飽足感。" },
     drink: { kcal: 170, credit: 300, craft: "原味優格飲用冷鏈鎖住乳香，輕鬆補給。" },
     fresh160: { kcal: 100, credit: 240, craft: "小杯鮮奶優格，鮮乳發酵後封杯冷藏。" },
@@ -331,6 +343,10 @@
     sceneScale: 1,
     dpr: 1,
     lanes: [0, 0, 0],
+    routeForkTimer: 0,
+    routeForkCueTimer: 0,
+    nextForkTimer: 7.5,
+    routeForkCount: 0,
     time: 0,
     last: 0,
     level: 1,
@@ -429,6 +445,10 @@
     invuln: 0,
     stepBob: 0,
     laneRepeat: 0,
+    jumpTimer: 0,
+    slideTimer: 0,
+    jumpDodgeBuffer: 0,
+    slideDodgeBuffer: 0,
     reactionTimer: 0,
     reactionKey: null,
     reactionColor: COLORS.berry,
@@ -455,6 +475,7 @@
     startedAt: 0,
     startedInPlay: false,
     dragging: false,
+    gestureDone: false,
   };
 
   const audio = {
@@ -551,26 +572,26 @@
     const openingSpeed = opening?.speed || 1;
     const openingDrain = opening?.timerDrain || 1;
     const openingHazardTarget = opening?.hazardTarget || 0;
-    const flavorSpeed = state.flavorRushTime > 0 ? 1.2 + Math.min(0.34, state.customFlavors * 0.018 + state.combo * 0.002) : 1;
+    const flavorSpeed = state.flavorRushTime > 0 ? 1.14 + Math.min(0.26, state.customFlavors * 0.014 + state.combo * 0.0016) : 1;
     const arcadePressure = Math.max(0, state.survivalTime / 16 + state.totalYogurts * 0.35);
-    const comboSpeed = 1 + Math.min(0.5, state.combo * 0.006 + state.totalYogurts * 0.014 + arcadePressure * 0.012);
+    const comboSpeed = 1 + Math.min(0.32, state.combo * 0.0035 + state.totalYogurts * 0.01 + arcadePressure * 0.008);
     const idleThreat = state.flavorRushTime > 0 ? 0 : clamp((state.idleTime - 0.85) * 0.34 + state.hazardPressure * 0.12, 0, 0.72);
     return {
       ...tier,
-      speed: (tier.speed + pressure * 18 + latePressure * 12 + Math.max(0, state.level - 18) * 18 + state.totalYogurts * 5.2 + arcadePressure * 5.5) * modifier.speed * openingSpeed * flavorSpeed * comboSpeed,
-      hazard: tier.hazard || state.survivalTime > 5 || state.completedOrders >= 1 || idleThreat > 0.18,
+      speed: (tier.speed * 0.86 + pressure * 10 + latePressure * 7 + Math.max(0, state.level - 18) * 11 + state.totalYogurts * 3.2 + arcadePressure * 3.4) * modifier.speed * openingSpeed * flavorSpeed * comboSpeed,
+      hazard: state.survivalTime > 3.2 || idleThreat > 0.18,
       sameLane: clamp(tier.sameLane - 0.36 - pressure * 0.02 + (modifier.sameLane || 0), 0.16, 0.64),
-      required: Math.max(0.34, (0.84 - arcadePressure * 0.018 - state.combo * 0.0011) * modifier.requiredRate),
-      decoyMin: Math.max(0.42, 1.05 - arcadePressure * 0.018),
-      decoyMax: Math.max(0.62, 1.55 - arcadePressure * 0.022),
-      hazardMin: Math.max(0.38, (2.95 - arcadePressure * 0.045 - latePressure * 0.035) * modifier.hazardRate - idleThreat * 1.15),
-      hazardMax: Math.max(0.58, (4.35 - arcadePressure * 0.055 - latePressure * 0.04) * modifier.hazardRate - idleThreat * 1.4),
+      required: Math.max(1.25, (2.55 - arcadePressure * 0.024 - state.combo * 0.0022) * modifier.requiredRate),
+      decoyMin: Math.max(1.15, 2.05 - arcadePressure * 0.022),
+      decoyMax: Math.max(1.58, 3.2 - arcadePressure * 0.028),
+      hazardMin: Math.max(1.46, (2.75 - arcadePressure * 0.016 - latePressure * 0.01) * modifier.hazardRate - idleThreat * 0.22),
+      hazardMax: Math.max(1.95, (4.05 - arcadePressure * 0.022 - latePressure * 0.014) * modifier.hazardRate - idleThreat * 0.34),
       orderTime: Math.max(2.2, tier.orderTime * modifier.orderTime),
-      missPurity: Math.ceil((11 + Math.min(16, arcadePressure * 0.95)) * modifier.purityPenalty),
+      missPurity: Math.ceil((9 + Math.min(18, arcadePressure * 0.92)) * modifier.purityPenalty),
       missTime: (1.25 + Math.min(2.2, arcadePressure * 0.08)) * modifier.purityPenalty,
       timerDrain: (0.72 + Math.min(0.68, arcadePressure * 0.018)) * modifier.timerDrain * openingDrain,
       hazardTarget: clamp(tier.hazardTarget + modifier.hazardTarget + openingHazardTarget + idleThreat, 0, 0.98),
-      bonusChance: clamp(0.16 + state.combo * 0.002 + modifier.bonusChance, 0.12, 0.42),
+      bonusChance: clamp(0.12 + state.combo * 0.0012 + modifier.bonusChance * 0.45, 0.08, 0.28),
     };
   }
 
@@ -759,8 +780,8 @@
     bindCanvasTouch();
     bindHold(dom.leftButton, "left");
     bindHold(dom.rightButton, "right");
-    bindLaneHold(dom.upButton, "up", -1);
-    bindLaneHold(dom.downButton, "down", 1);
+    bindTap(dom.upButton, () => setLane(1));
+    bindTap(dom.downButton, () => setLane(1));
     bindTap(dom.actionButton, triggerAction);
   }
 
@@ -830,12 +851,17 @@
         touch.indirect = isMobileLayout();
         touch.basePlayerX = player.x;
         touch.laneY = pointerToLaneControlY(event.clientY);
-        touch.targetX = pointerToPlayerX(event.clientX);
+        touch.targetX = touch.indirect ? null : pointerToPlayerX(event.clientX);
         touch.startedAt = performance.now();
         touch.startedInPlay = true;
         touch.dragging = false;
-        followPointerLane(touch.laneY);
-        canvas.setPointerCapture?.(event.pointerId);
+        touch.gestureDone = false;
+        if (!touch.indirect) followPointerLane(touch.targetX);
+        try {
+          canvas.setPointerCapture?.(event.pointerId);
+        } catch {
+          // Synthetic touch events used by some test runners do not own a captureable pointer.
+        }
       },
       { passive: false }
     );
@@ -846,16 +872,27 @@
         if (event.pointerId !== touch.id) return;
         event.preventDefault();
         const dx = event.clientX - touch.startX;
-        const controlY = pointerToLaneControlY(event.clientY);
-        const dy = controlY - touch.laneY;
-        touch.targetX = pointerToPlayerX(event.clientX);
-        followPointerLane(controlY);
-        if (Math.abs(dy) > 30) {
-          changeLane(dy > 0 ? 1 : -1);
-          touch.laneY = controlY;
-          touch.dragging = true;
+        const rawDy = event.clientY - touch.startY;
+        if (touch.indirect) {
+          if (!touch.gestureDone && Math.max(Math.abs(dx), Math.abs(rawDy)) > 42) {
+            if (Math.abs(dx) >= Math.abs(rawDy)) {
+              runDodge(dx > 0 ? "right" : "left");
+              touch.gestureDone = true;
+              touch.dragging = true;
+            }
+          }
+        } else {
+          const controlY = pointerToLaneControlY(event.clientY);
+          const dy = controlY - touch.laneY;
+          touch.targetX = pointerToPlayerX(event.clientX);
+          followPointerLane(touch.targetX);
+          if (Math.abs(dy) > 30) {
+            setLane(nearestLane(touch.targetX) ?? player.lane);
+            touch.laneY = controlY;
+            touch.dragging = true;
+          }
+          if (Math.abs(dx) > 12) touch.dragging = true;
         }
-        if (Math.abs(dx) > 12) touch.dragging = true;
         touch.lastX = event.clientX;
         touch.lastY = event.clientY;
       },
@@ -889,18 +926,21 @@
     touch.indirect = false;
     touch.startedInPlay = false;
     touch.dragging = false;
+    touch.gestureDone = false;
   }
 
   function isGameplayPointer(event) {
-    if (isMobileLayout()) return event.clientY >= Math.max(120, state.lanes[0] * getSceneScale() - MOBILE_CONTROL_LIFT - 120);
-    return event.clientY >= Math.max(120, state.lanes[0] - 150);
+    const road = getRoadMetrics();
+    const threshold = road.horizonY * getSceneScale() - (isMobileLayout() ? 42 : 20);
+    return event.clientY >= Math.max(120, threshold);
   }
 
   function pointerToPlayerX(x) {
+    const bounds = getPlayerRoadBounds();
     if (touch.indirect) {
-      return clamp(touch.basePlayerX + (x - touch.startX) / getSceneScale() * 1.12, 86, state.width * 0.58);
+      return clamp(touch.basePlayerX + (x - touch.startX) / getSceneScale() * 1.12, bounds.left, bounds.right);
     }
-    return clamp(screenToWorldX(x), 86, state.width * 0.58);
+    return clamp(screenToWorldX(x), bounds.left, bounds.right);
   }
 
   function pointerToLaneControlY(y) {
@@ -923,23 +963,102 @@
     return y / getSceneScale();
   }
 
-  function followPointerLane(y) {
-    const lane = nearestLane(y);
-    if (lane !== null) setLane(lane);
+  function isForkRouteOpen() {
+    return true;
   }
 
-  function nearestLane(y) {
-    if (!state.lanes.length || y < state.lanes[0] - 120) return null;
+  function getForkVisualAmount() {
+    return 1;
+  }
+
+  function getPlayableLanes() {
+    return [0, 1, 2];
+  }
+
+  function isLaneOpen(lane) {
+    return getPlayableLanes().includes(clamp(Math.round(lane), 0, 2));
+  }
+
+  function normalizePlayableLane(lane) {
+    const nextLane = clamp(Math.round(lane), 0, 2);
+    return isLaneOpen(nextLane) ? nextLane : 1;
+  }
+
+  function randomPlayableLane() {
+    const lanes = getPlayableLanes();
+    return lanes[randomInt(0, lanes.length - 1)] ?? 1;
+  }
+
+  function getRoadMetrics() {
+    const mobile = isMobileLayout();
+    const scale = getSceneScale();
+    const fork = getForkVisualAmount();
+    const horizonY = mobile ? 250 / scale : Math.max(172, state.height * 0.22);
+    const nearY = state.height - (mobile ? 138 / scale : 58);
+    const centerX = state.width * 0.5;
+    const singleNear = Math.min(state.width * (mobile ? 0.42 : 0.6), mobile ? 330 / scale : 660);
+    const forkNear = Math.min(state.width * (mobile ? 0.56 : 0.8), mobile ? 430 / scale : 900);
+    const nearWidth = singleNear + (forkNear - singleNear) * fork;
+    const singleFar = Math.max(mobile ? 58 : 84, singleNear * (mobile ? 0.22 : 0.2));
+    const forkFar = Math.max(mobile ? 76 : 108, forkNear * (mobile ? 0.24 : 0.22));
+    const farWidth = singleFar + (forkFar - singleFar) * fork;
+    return { horizonY, nearY, centerX, nearWidth, farWidth };
+  }
+
+  function roadDepthAtY(y) {
+    const road = getRoadMetrics();
+    return clamp((y - road.horizonY) / Math.max(1, road.nearY - road.horizonY), 0, 1);
+  }
+
+  function roadWidthAtDepth(depth) {
+    const road = getRoadMetrics();
+    const eased = depth ** 1.18;
+    return road.farWidth + (road.nearWidth - road.farWidth) * eased;
+  }
+
+  function roadLaneCenter(lane, y = getRoadMetrics().nearY) {
+    const road = getRoadMetrics();
+    const depth = roadDepthAtY(y);
+    const width = roadWidthAtDepth(depth);
+    const offset = (lane - 1) * width * (isMobileLayout() ? 0.32 : 0.27);
+    return road.centerX + offset;
+  }
+
+  function roadEntityScale(y) {
+    const depth = roadDepthAtY(y);
+    return 0.32 + depth ** 1.05 * 0.92;
+  }
+
+  function getPlayerRoadBounds() {
+    const road = getRoadMetrics();
+    const margin = Math.max(24, road.nearWidth * 0.08);
+    return {
+      left: road.centerX - road.nearWidth * 0.44 + margin,
+      right: road.centerX + road.nearWidth * 0.44 - margin,
+    };
+  }
+
+  function nearestLane(x) {
+    if (!state.lanes.length) return null;
     let best = 0;
     let bestDistance = Infinity;
     for (let i = 0; i < state.lanes.length; i += 1) {
-      const distance = Math.abs(y - state.lanes[i]);
+      const distance = Math.abs(x - state.lanes[i]);
       if (distance < bestDistance) {
         best = i;
         bestDistance = distance;
       }
     }
     return best;
+  }
+
+  function playerEffectiveLane() {
+    return clamp(Math.round(player.lane), 0, 2);
+  }
+
+  function followPointerLane(x) {
+    const lane = nearestLane(x);
+    if (lane !== null) setLane(lane);
   }
 
   function resize() {
@@ -956,14 +1075,11 @@
     ctx.setTransform(state.dpr * state.sceneScale, 0, 0, state.dpr * state.sceneScale, 0, 0);
     ctx.imageSmoothingEnabled = false;
 
-    const scale = getSceneScale();
-    const mobile = isMobileLayout();
-    const safeBottom = state.height - (mobile ? 154 / scale : 76);
-    const safeTop = mobile ? 226 / scale : 188;
-    const gap = Math.max(mobile ? 66 / scale : 68, Math.min(mobile ? 88 / scale : 96, (safeBottom - safeTop) / 3));
-    state.lanes = [safeBottom - gap * 2, safeBottom - gap, safeBottom];
-    player.x = clamp(player.x || state.width * 0.22, 92, state.width * 0.5);
-    player.y = state.lanes[player.lane];
+    const road = getRoadMetrics();
+    state.lanes = [roadLaneCenter(0, road.nearY), roadLaneCenter(1, road.nearY), roadLaneCenter(2, road.nearY)];
+    const bounds = getPlayerRoadBounds();
+    player.x = clamp(player.x || state.lanes[player.lane] || road.centerX, bounds.left, bounds.right);
+    player.y = road.nearY;
   }
 
   function startGame() {
@@ -991,6 +1107,10 @@
     state.slowTime = 0;
     state.magnetTime = 0;
     state.openingMode = null;
+    state.routeForkTimer = 0;
+    state.routeForkCueTimer = 0;
+    state.nextForkTimer = 6.8;
+    state.routeForkCount = 0;
     state.recentMissionIds = [];
     state.mission = null;
     state.modifier = { ...MODIFIERS[0] };
@@ -1000,9 +1120,9 @@
     state.level = 1;
     state.purity = 100;
     state.timeRemaining = 64;
-    state.requiredTimer = 0.24;
-    state.decoyTimer = 0.95;
-    state.hazardTimer = 2.25;
+    state.requiredTimer = 1.75;
+    state.decoyTimer = 1.15;
+    state.hazardTimer = 3.05;
     state.batchLaneChanges = 0;
     state.batchBonuses = 0;
     state.batchShieldBlocks = 0;
@@ -1052,15 +1172,19 @@
     state.bursts = [];
     state.floats = [];
     state.packages = [];
-    player.x = Math.min(190, state.width * 0.34);
+    player.x = state.lanes[1] || state.width * 0.5;
     player.lane = 1;
     player.targetLane = 1;
-    player.y = state.lanes[1];
+    player.y = getRoadMetrics().nearY;
     state.lastPlayerX = player.x;
     state.lastPlayerLane = player.lane;
     player.actionTimer = 0;
     player.invuln = 0;
     player.laneRepeat = 0;
+    player.jumpTimer = 0;
+    player.slideTimer = 0;
+    player.jumpDodgeBuffer = 0;
+    player.slideDodgeBuffer = 0;
     player.reactionTimer = 0;
     player.reactionKey = null;
     resetPointerControl();
@@ -1070,7 +1194,7 @@
     dom.gameOverOverlay.classList.add("hidden");
     renderRecipe();
     updateHud();
-    showToast("上中下三路開吃：好料全收，紅色全躲");
+    showToast("三路優格快線：吃好料、閃紅色、做官方優格");
     startBgm(true);
     beep(560, 0.055, "square", 0.04);
   }
@@ -1105,6 +1229,38 @@
     if (!forceFirst && state.modifier.id !== "standard" && !opening) {
       showToast(`${state.modifier.label}：${state.modifier.desc}`);
     }
+  }
+
+  function updateRouteFlow(dt) {
+    state.routeForkTimer = 0;
+    state.routeForkCueTimer = 0;
+    state.nextForkTimer = ROUTE_FORK_MAX_GAP;
+  }
+
+  function clearForkSideEntities() {
+    let cleared = 0;
+    for (const entity of state.entities) {
+      if (entity.done || entity.remove || entity.lane === 1) continue;
+      if (entity.y > player.y + 80) continue;
+      entity.remove = true;
+      cleared += 1;
+      if (entity.type !== "hazard") emitPop(entity.x + entity.w / 2, entity.y - 34, COLORS.aquaDeep, 6);
+    }
+    if (cleared > 0) floatText("路線合流", player.x + 42, player.y - 104, COLORS.aquaDeep);
+  }
+
+  function startRouteFork() {
+    state.routeForkTimer = random(ROUTE_FORK_MIN_TIME, ROUTE_FORK_MAX_TIME);
+    state.nextForkTimer = 0;
+    state.routeForkCueTimer = 0;
+    state.routeForkCount += 1;
+    state.requiredTimer = Math.min(state.requiredTimer, 0.16);
+    state.decoyTimer = Math.min(state.decoyTimer, 0.28);
+    state.hazardTimer = Math.max(state.hazardTimer, 0.9);
+    showToast("三路加速，追好料閃紅色");
+    floatText("三路衝刺", player.x + 50, player.y - 132, COLORS.orange);
+    emitRingBurst(player.x + 38, player.y - 50, COLORS.orange, 3, 36);
+    triggerJuice(COLORS.orange, 1.35, { x: player.x + 38, y: player.y - 48, style: "speed", hitStop: 0.08 });
   }
 
   function loop(now) {
@@ -1145,11 +1301,10 @@
     }
     state.survivalTime += worldDt;
     applyDailyCalorieBurn(worldDt);
-    state.level = Math.max(1, 1 + Math.floor(state.survivalTime / 15) + Math.floor(state.totalYogurts / 4));
-    state.timeRemaining -= worldDt * diff.timerDrain;
+    state.level = Math.max(1, 1 + Math.floor(state.survivalTime / 12) + Math.floor(state.totalYogurts / 3));
+    state.timeRemaining = Math.max(0, state.timeRemaining - worldDt * diff.timerDrain);
     if (state.timeRemaining <= 0) {
-      endGame("時間歸零");
-      return;
+      state.hazardPressure = clamp(state.hazardPressure + worldDt * 0.1, 0, 1);
     }
     state.idleToastCooldown = Math.max(0, state.idleToastCooldown - fxDt);
 
@@ -1161,9 +1316,14 @@
     state.shake = Math.max(0, state.shake - fxDt * 9);
     player.actionTimer = Math.max(0, player.actionTimer - fxDt);
     player.invuln = Math.max(0, player.invuln - fxDt);
+    player.jumpTimer = Math.max(0, player.jumpTimer - fxDt);
+    player.slideTimer = Math.max(0, player.slideTimer - fxDt);
+    player.jumpDodgeBuffer = Math.max(0, player.jumpDodgeBuffer - fxDt);
+    player.slideDodgeBuffer = Math.max(0, player.slideDodgeBuffer - fxDt);
     player.reactionTimer = Math.max(0, player.reactionTimer - fxDt);
     state.slowTime = Math.max(0, state.slowTime - worldDt);
     state.magnetTime = Math.max(0, state.magnetTime - worldDt);
+    updateRouteFlow(worldDt);
 
     if (state.feverTime > 0) {
       state.feverTime -= worldDt;
@@ -1173,21 +1333,25 @@
     }
 
     processLaneControls(fxDt);
-    const move = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
-    const maxX = state.width * 0.58;
+    const laneInput = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
+    const move = 0;
+    const road = getRoadMetrics();
+    const bounds = getPlayerRoadBounds();
     const weightMove = 1 - getWeightBurden();
     if (touch.id !== null && Number.isFinite(touch.targetX)) {
       const dx = touch.targetX - player.x;
       const followSpeed = (state.feverTime > 0 ? 620 : 520) * weightMove;
-      player.x = clamp(player.x + clamp(dx * 9, -followSpeed, followSpeed) * fxDt, 86, maxX);
-      if (Math.abs(dx) < 2) player.x = clamp(touch.targetX, 86, maxX);
+      player.x = clamp(player.x + clamp(dx * 9, -followSpeed, followSpeed) * fxDt, bounds.left, bounds.right);
+      if (Math.abs(dx) < 2) player.x = clamp(touch.targetX, bounds.left, bounds.right);
     } else {
-      player.x = clamp(player.x + move * (state.feverTime > 0 ? 330 : 260) * weightMove * fxDt, 86, maxX);
+      const laneTarget = state.lanes[player.lane] || road.centerX;
+      const guidedX = Math.abs(move) > 0 ? player.x : player.x + (laneTarget - player.x) * Math.min(1, fxDt * 7.5);
+      player.x = clamp(guidedX + move * (state.feverTime > 0 ? 360 : 286) * weightMove * fxDt, bounds.left, bounds.right);
     }
-    state.sceneryOffset += state.speed * worldDt * 0.34;
-    player.y += (state.lanes[player.lane] - player.y) * Math.min(1, fxDt * 13);
-    player.stepBob += fxDt * (8 + Math.abs(move) * 6 + state.speed / 95 + state.comboSurge * 4);
-    updateActivityPressure(worldDt, fxDt, move);
+    state.sceneryOffset += state.speed * worldDt * 0.72;
+    player.y += (road.nearY - player.y) * Math.min(1, fxDt * 13);
+    player.stepBob += fxDt * (8 + Math.abs(laneInput) * 6 + state.speed / 95 + state.comboSurge * 4);
+    updateActivityPressure(worldDt, fxDt, laneInput);
 
     if (state.requiredTimer <= 0) {
       spawnArcadePositive();
@@ -1204,23 +1368,45 @@
 
     for (const entity of state.entities) {
       const slowFactor = entity.type === "hazard" && state.slowTime > 0 ? 0.56 : 1;
-      entity.x -= (state.speed + entity.speedOffset) * slowFactor * worldDt;
+      const travelFactor = entity.type === "hazard" ? 0.74 : entity.type === "bonus" ? 0.82 : 0.86;
+      entity.y += (state.speed + entity.speedOffset) * slowFactor * worldDt * travelFactor;
+      entity.depthScale = roadEntityScale(entity.y);
+      entity.x = roadLaneCenter(entity.lane, entity.y) - entity.w / 2 + (entity.lateralOffset || 0) * entity.depthScale;
+      if (state.magnetTime > 0 && entity.type !== "hazard" && !entity.done && entity.y > road.horizonY && entity.y < player.y + 90) {
+        const pull = clamp(player.x - (entity.x + entity.w / 2), -260, 260);
+        const strength = entity.type === "bonus" ? 4.2 : 3.4;
+        entity.x += pull * Math.min(1, worldDt * strength);
+      }
       entity.anim += fxDt;
+      entity.resolveTimer = Math.max(0, (entity.resolveTimer || 0) - fxDt);
       entity.trailTimer -= fxDt;
-      if (entity.trailTimer <= 0 && entity.x > -40 && entity.x < state.width + 120) {
+      if (entity.trailTimer <= 0 && entity.y > road.horizonY - 60 && entity.y < state.height + 120) {
         emitEntityTrail(entity);
         entity.trailTimer = entity.type === "hazard" ? 0.1 : entity.type === "bonus" ? 0.07 : entity.required ? 0.12 : 0.18;
       }
-      if (entity.type !== "hazard" && !entity.done && entity.x + entity.w < player.x - 46) missPositive(entity);
+      if (entity.type === "hazard") resolveHazardAtPlayerLine(entity);
+      if (entity.type !== "hazard" && !entity.done && entity.y > player.y + 48) missPositive(entity);
     }
 
+    const playerHitBox = playerRect();
     for (const entity of state.entities) {
-      if (!entity.done && entity.lane === player.lane && overlap(playerRect(), entityRect(entity))) {
+      if (entity.type === "hazard") continue;
+      if (!entity.done && canEntityCollideWithPlayer(entity) && overlap(playerHitBox, entityRect(entity))) {
         handleCollision(entity);
       }
     }
 
-    state.entities = state.entities.filter((entity) => entity.x + entity.w > -80 && !entity.remove);
+    state.entities = state.entities.filter((entity) => entity.y < state.height + 160 && !entity.remove);
+
+    if (state.weightKg >= WEIGHT_LIMIT_KG) {
+      triggerWeightFail();
+      return;
+    }
+    if (state.purity <= 0) {
+      state.gameOverKind = "purity";
+      endGame("純淨率歸零");
+      return;
+    }
 
     for (const burst of state.bursts) {
       burst.life -= fxDt;
@@ -1317,10 +1503,70 @@
     return false;
   }
 
+  function laneForKey(key) {
+    const index = LANE_RULES.findIndex((rule) => rule.keys.includes(key));
+    return index >= 0 ? index : 1;
+  }
+
+  function summarizeRecipeProgress(recipe) {
+    let ownedUnits = 0;
+    let totalUnits = 0;
+    let missingUnits = 0;
+    const missing = [];
+    for (const [key, count] of Object.entries(recipe.needs)) {
+      const have = state.inventory[key] || 0;
+      totalUnits += count;
+      ownedUnits += Math.min(have, count);
+      if (have < count) {
+        const need = count - have;
+        missingUnits += need;
+        missing.push({ key, count: need, lane: laneForKey(key) });
+      }
+    }
+    return {
+      recipe,
+      official: OFFICIAL_YOGURT_IDS.has(recipe.id),
+      ownedUnits,
+      totalUnits,
+      missingUnits,
+      missing,
+      ready: missingUnits === 0,
+    };
+  }
+
+  function sortRecipeHints(a, b) {
+    if (a.ready !== b.ready) return a.ready ? -1 : 1;
+    if (a.missingUnits !== b.missingUnits) return a.missingUnits - b.missingUnits;
+    if (a.official !== b.official) return a.official ? -1 : 1;
+    if (a.ownedUnits !== b.ownedUnits) return b.ownedUnits - a.ownedUnits;
+    return b.recipe.points - a.recipe.points;
+  }
+
+  function getRecipeHint(options = {}) {
+    const officialOnly = Boolean(options.officialOnly);
+    const pool = officialOnly ? YOGURT_RECIPES.filter((recipe) => OFFICIAL_YOGURT_IDS.has(recipe.id)) : YOGURT_RECIPES;
+    const hints = pool.map(summarizeRecipeProgress).sort(sortRecipeHints);
+    return hints[0] || null;
+  }
+
+  function chooseHintIngredient() {
+    const hint = getRecipeHint({ officialOnly: Math.random() < 0.82 });
+    if (!hint || !hint.missing.length) return null;
+    const close = hint.missing.filter((item) => item.count > 0);
+    const pool = close.length ? close : hint.missing;
+    const preferred = pool.slice(0, Math.min(3, pool.length));
+    return preferred[randomInt(0, preferred.length - 1)]?.key || null;
+  }
+
   function spawnArcadePositive(forceLane = null) {
-    const lane = forceLane ?? chooseArcadeLane();
+    let lane = forceLane === null ? chooseArcadeLane() : normalizePlayableLane(forceLane);
+    let key = null;
+    if (forceLane === null && state.flavorRushTime <= 0 && Math.random() < 0.66) {
+      key = chooseHintIngredient();
+      if (key) lane = normalizePlayableLane(laneForKey(key));
+    }
     const rule = LANE_RULES[lane];
-    const key = pickLaneKey(rule, state.flavorRushTime > 0);
+    if (!key) key = pickLaneKey(rule, state.flavorRushTime > 0);
     const asStation = STATION_KEYS.includes(key);
     spawnEntity({
       type: asStation ? "station" : "item",
@@ -1334,7 +1580,8 @@
 
   function chooseArcadeLane() {
     if (state.magnetTime > 0 && Math.random() < 0.52) return player.lane;
-    const pressureLane = state.combo > 10 && Math.random() < 0.42 ? differentLane(player.lane) : randomInt(0, 2);
+    if (isForkRouteOpen() && Math.random() < 0.48) return differentLane(player.lane);
+    const pressureLane = state.combo > 10 && Math.random() < 0.42 ? differentLane(player.lane) : randomPlayableLane();
     return pressureLane;
   }
 
@@ -1355,34 +1602,67 @@
   }
 
   function differentLane(lane) {
-    const options = [0, 1, 2].filter((item) => item !== lane);
+    const options = getPlayableLanes().filter((item) => item !== lane);
+    if (!options.length) return 1;
     return options[randomInt(0, options.length - 1)];
   }
 
   function spawnArcadeExtra() {
     const diff = getDifficulty();
-    const bonusChance = state.flavorRushTime > 0 ? Math.min(0.86, diff.bonusChance + 0.38) : diff.bonusChance;
+    const bonusChance = state.flavorRushTime > 0 ? Math.min(0.42, diff.bonusChance + 0.14) : diff.bonusChance;
     if (Math.random() < bonusChance) {
       const bonus = BONUS[randomInt(0, BONUS.length - 1)];
-      spawnEntity({ type: "bonus", key: bonus.key, lane: randomInt(0, 2), bonus });
+      const lane = state.magnetTime > 0 && Math.random() < 0.52 ? player.lane : randomPlayableLane();
+      spawnEntity({ type: "bonus", key: bonus.key, lane, bonus, speedOffset: random(-8, 24) });
     } else {
-      spawnArcadePositive(randomInt(0, 2));
+      spawnArcadePositive(randomPlayableLane());
     }
   }
 
   function spawnHazard() {
     const idleThreat = state.idleTime > 1.05 || state.hazardPressure > 0.5;
-    if (!idleThreat && state.survivalTime <= 5 && !activeOpeningMode() && state.completedOrders === 0) return;
-    if (state.flavorCountdown > 0 || state.flavorRushTime > 0) return;
+    const activeHazards = state.entities.filter((item) => item.type === "hazard" && !item.done && !item.remove && item.y < player.y + 120).length;
+    const hazardCap = state.survivalTime < 12 ? 1 : state.survivalTime < 28 ? 2 : 4;
+    if (activeHazards >= hazardCap) return;
     const diff = getDifficulty();
-    const chaseChance = clamp(diff.hazardTarget + state.hazardPressure * 0.18 + (idleThreat ? 0.18 : 0), 0, 0.98);
-    const lane = Math.random() < chaseChance ? player.lane : randomInt(0, 2);
-    const hazardPool = LANE_RULES[lane].hazards;
-    const hazardKey = hazardPool[randomInt(0, hazardPool.length - 1)];
-    const hazard = HAZARDS.find((item) => item.key === hazardKey) || HAZARDS[randomInt(0, HAZARDS.length - 1)];
-    const speedOffset = random(18, 46) + Math.min(95, state.hazardPressure * 32 + Math.max(0, state.idleTime - 1) * 22);
-    spawnEntity({ type: "hazard", key: hazard.key, lane, hazard, speedOffset });
-    if (lane === player.lane) emitLaneFlash(lane, hazard.color);
+    const chaseChance = state.survivalTime < 10 ? 0.1 : clamp(diff.hazardTarget * 0.42 + state.hazardPressure * 0.08 + (idleThreat ? 0.1 : 0), 0, 0.58);
+    const clusterChance = clamp(-0.1 + state.level * 0.007 + state.survivalTime * 0.001 + state.hazardPressure * 0.028, 0, 0.22);
+    const playable = getPlayableLanes();
+    const count = state.level >= 12 && Math.random() < clusterChance ? 2 : 1;
+    const used = new Set();
+    for (let i = 0; i < count; i += 1) {
+      let lane = i === 0 && Math.random() < chaseChance ? player.lane : randomPlayableLane();
+      if (used.has(lane)) lane = differentLane(lane);
+      used.add(lane);
+      const hazardPool = LANE_RULES[lane].hazards;
+      const hazardKey = hazardPool[randomInt(0, hazardPool.length - 1)];
+      const hazard = HAZARDS.find((item) => item.key === hazardKey) || HAZARDS[randomInt(0, HAZARDS.length - 1)];
+      const speedOffset = random(-8, 14) + Math.min(34, state.hazardPressure * 12 + Math.max(0, state.idleTime - 1) * 8 + state.level * 0.8);
+      spawnEntity({ type: "hazard", key: hazard.key, lane, hazard, speedOffset, dodge: "avoid", gapLane: null });
+      if (lane === player.lane && state.survivalTime > 12) emitLaneFlash(lane, hazard.color);
+    }
+  }
+
+  function pickHazardDodge() {
+    if (!isForkRouteOpen()) return Math.random() < 0.54 ? "jump" : "slide";
+    const roll = Math.random();
+    const actionChance = clamp(0.34 + state.level * 0.014, 0.34, 0.58);
+    if (roll < actionChance * 0.5) return "jump";
+    if (roll < actionChance) return "slide";
+    return Math.random() < 0.5 ? "left" : "right";
+  }
+
+  function isLaneGapDodge(dodge) {
+    return dodge === "left" || dodge === "right";
+  }
+
+  function isLaneGapHazard(entity) {
+    return entity?.type === "hazard" && isLaneGapDodge(entity.dodge) && Number.isFinite(entity.gapLane);
+  }
+
+  function getGapLaneForDodge(dodge, lane) {
+    if (!isLaneGapDodge(dodge)) return null;
+    return dodge === "left" ? 0 : 2;
   }
 
   function spawnEntity(options) {
@@ -1390,6 +1670,9 @@
     const station = options.type === "station";
     const w = station ? 92 : options.type === "hazard" ? 64 : 58;
     const h = station ? 76 : options.type === "hazard" ? 58 : 54;
+    const road = getRoadMetrics();
+    const spawnY = road.horizonY - random(16, 58);
+    const lane = normalizePlayableLane(options.lane ?? 1);
     const entity = {
       id: entityId++,
       type: options.type,
@@ -1397,9 +1680,9 @@
       required: Boolean(options.required),
       done: false,
       remove: false,
-      x: state.width + random(20, 120),
-      lane: options.lane,
-      y: state.lanes[options.lane],
+      x: roadLaneCenter(lane, spawnY) - w / 2,
+      lane,
+      y: spawnY,
       w,
       h,
       label: options.label || def.label,
@@ -1407,10 +1690,17 @@
       color: def.color,
       bg: def.bg || "#fff4dc",
       speedOffset: options.speedOffset ?? random(-12, 28),
+      lateralOffset: random(-8, 8),
+      depthScale: roadEntityScale(spawnY),
       anim: random(0, 2),
       trailTimer: random(0.04, 0.16),
       hazard: options.hazard,
       bonus: options.bonus,
+      dodge: options.dodge || "lane",
+      gapLane: Number.isFinite(options.gapLane) ? options.gapLane : null,
+      resolved: "",
+      resolveTimer: 0,
+      resolveDodge: "",
       pulse: 0,
     };
     state.entities.push(entity);
@@ -1420,10 +1710,8 @@
   function handleCollision(entity) {
     if (entity.type === "hazard") {
       entity.done = true;
-      entity.remove = true;
-      emitHazardImpact(entity);
-      setPlayerReaction(entity.key, entity.color, 1.35);
-      registerMistake(`${entity.label}混進來了`, entity);
+      entity.remove = false;
+      handleHazardImpact(entity);
       return;
     }
 
@@ -1445,6 +1733,70 @@
     entity.done = true;
     entity.remove = true;
     collectArcadeItem(entity);
+  }
+
+  function resolveHazardAtPlayerLine(entity) {
+    if (entity.done || entity.remove) return;
+    const passLine = player.y - (isLaneGapHazard(entity) ? 24 : 18);
+    if (entity.y < passLine) return;
+
+    if (isHazardOutsidePlayerLane(entity)) {
+      entity.done = true;
+      entity.remove = false;
+      entity.resolved = "clear";
+      entity.resolveTimer = 0.5;
+      entity.resolveDodge = "";
+      state.hazardPressure = Math.max(0, state.hazardPressure - 0.12);
+      return;
+    }
+
+    if (isHazardSafelyDodged(entity)) {
+      resolveDodgedHazard(entity);
+      return;
+    }
+
+    entity.done = true;
+    entity.remove = true;
+    handleHazardImpact(entity);
+  }
+
+  function isHazardSafelyDodged(entity) {
+    const currentLane = playerEffectiveLane();
+    if (entity.dodge === "jump") return player.jumpTimer > 0.04 || player.jumpDodgeBuffer > 0 || getJumpLift() > 8;
+    if (entity.dodge === "slide") return player.slideTimer > 0.04 || player.slideDodgeBuffer > 0;
+    if (isLaneGapHazard(entity)) return currentLane === entity.gapLane;
+    return false;
+  }
+
+  function isHazardOutsidePlayerLane(entity) {
+    return !isLaneGapHazard(entity) && Number.isFinite(entity.lane) && entity.lane !== playerEffectiveLane();
+  }
+
+  function handleHazardImpact(entity) {
+    entity.resolved = "impact";
+    entity.resolveTimer = Math.max(entity.resolveTimer || 0, 1.05);
+    entity.resolveDodge = entity.dodge || "";
+    entity.remove = true;
+    emitHazardImpact(entity);
+    setPlayerReaction(entity.key, entity.color, 1.35);
+    registerMistake(`${entity.label}撞上來了`, entity);
+  }
+
+  function resolveDodgedHazard(entity) {
+    entity.done = true;
+    entity.remove = false;
+    entity.resolved = "dodge";
+    entity.resolveTimer = Math.max(entity.resolveTimer || 0, 0.95);
+    entity.resolveDodge = entity.dodge || "";
+    const value = 1 + Math.min(3, Math.floor(state.survivalTime / 24));
+    state.score += value;
+    state.fever = clamp(state.fever + 3, 0, 100);
+    state.hazardPressure = Math.max(0, state.hazardPressure - 0.38);
+    noteActivePlay(1.25);
+    emitPop(entity.x + entity.w / 2, entity.y - 34, COLORS.aquaDeep, 12);
+    emitRingBurst(entity.x + entity.w / 2, entity.y - 40, COLORS.aquaDeep, 2, 25);
+    triggerJuice(COLORS.aquaDeep, 0.78, { x: entity.x + entity.w / 2, y: entity.y - 52, style: "speed", hitStop: 0.045 });
+    beep(760, 0.035, "triangle", 0.022);
   }
 
   function setPlayerReaction(key, color, power = 1) {
@@ -1490,6 +1842,7 @@
     const crafted = craftYogurts(entity, def);
     addFlavorChargeArcade(entity, def, crafted);
     handleComboPrize();
+    triggerQuickComboSurge(entity, def);
     if (state.fever >= 100 && state.feverTime <= 0 && state.combo >= 24 && state.totalYogurts >= 3) activateFever();
 
     emitPop(entity.x + entity.w / 2, entity.y - 28, def.color, 14);
@@ -1506,6 +1859,26 @@
     floatText(`+${value}`, entity.x + entity.w / 2, entity.y - 70, def.color);
     beep(500 + Math.min(520, state.combo * 12), 0.04, "square", 0.028);
     updateHud();
+  }
+
+  function triggerQuickComboSurge(entity, def) {
+    if (state.combo < 5 || state.combo % 5 !== 0) return;
+    const surgeValue = Math.min(16, 3 + Math.floor(state.combo / 5) * 2);
+    state.score += surgeValue;
+    state.fever = clamp(state.fever + 6 + Math.min(6, Math.floor(state.combo / 10)), 0, 100);
+    state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 0.28);
+    state.speedLineTime = Math.max(state.speedLineTime, 0.62);
+    state.comboSurge = Math.max(state.comboSurge, 0.72);
+    state.zoomKick = Math.max(state.zoomKick, 0.42);
+    if (state.combo % 10 === 0) {
+      state.magnetTime = Math.max(state.magnetTime, 1.35);
+      emitScreenSparks(player.x, player.y - 54, def.color, 12);
+    }
+    emitRingBurst(player.x, player.y - 48, def.color, state.combo % 10 === 0 ? 3 : 2, state.combo % 10 === 0 ? 38 : 28);
+    emitPop(player.x, player.y - 36, def.color, state.combo % 10 === 0 ? 24 : 16);
+    floatText(`連吃 x${state.combo}`, player.x + 58, player.y - 118, def.color);
+    floatText(`+${surgeValue}`, player.x + 58, player.y - 94, COLORS.leaf);
+    beep(760 + Math.min(360, state.combo * 6), 0.045, "triangle", 0.028);
   }
 
   function missPositive(entity) {
@@ -1741,7 +2114,10 @@
 
   function craftYogurts(entity, sourceDef) {
     let crafted = 0;
-    const recipes = [...YOGURT_RECIPES].sort((a, b) => b.points - a.points);
+    const recipes = [...YOGURT_RECIPES].sort((a, b) => {
+      const officialDelta = Number(OFFICIAL_YOGURT_IDS.has(b.id)) - Number(OFFICIAL_YOGURT_IDS.has(a.id));
+      return officialDelta || b.points - a.points;
+    });
     let made = true;
     while (made) {
       made = false;
@@ -1769,7 +2145,7 @@
       }
     }
     if (crafted > 0) {
-      state.level = Math.max(state.level, 1 + Math.floor(state.survivalTime / 15) + Math.floor(state.totalYogurts / 4));
+      state.level = Math.max(state.level, 1 + Math.floor(state.survivalTime / 12) + Math.floor(state.totalYogurts / 3));
       renderRecipe();
       showToast(`做出 ${crafted} 杯優格，繼續自搭`);
       beep(820, 0.07, "triangle", 0.035);
@@ -2131,6 +2507,27 @@
     spawnOrder(false);
   }
 
+  function clearHazardsNearPlayer(range = 520, color = COLORS.aquaDeep) {
+    let cleared = 0;
+    for (const hazard of state.entities) {
+      if (hazard.type !== "hazard" || hazard.done || hazard.remove) continue;
+      const visible = hazard.y > getRoadMetrics().horizonY - 70 && hazard.y < player.y + 120;
+      const close = player.y - hazard.y < range;
+      if (!visible || !close) continue;
+      hazard.done = true;
+      hazard.remove = true;
+      cleared += 1;
+      emitPop(hazard.x + hazard.w / 2, hazard.y - 30, color, 10);
+      emitRingBurst(hazard.x + hazard.w / 2, hazard.y - 36, color, 1, 22);
+    }
+    if (cleared > 0) {
+      state.hazardTimer = Math.max(state.hazardTimer, 0.42);
+      triggerJuice(color, Math.min(1.9, 0.9 + cleared * 0.22), { x: player.x, y: player.y - 62, style: "speed", hitStop: 0.08 });
+      floatText(`清掉${cleared}個`, player.x + 58, player.y - 124, color);
+    }
+    return cleared;
+  }
+
   function collectBonus(entity) {
     const bonus = entity.bonus;
     let text = "";
@@ -2151,9 +2548,10 @@
       text = "鈣力慢拍";
     } else if (bonus.key === "rushBoost") {
       state.fever = clamp(state.fever + 16, 0, 100);
+      state.feverTime = Math.max(state.feverTime, 3.2);
       state.speedLineTime = Math.max(state.speedLineTime, 1.0);
       value = 7;
-      text = "爽感爆發";
+      text = "限時加速";
     } else if (bonus.key === "comboBoost") {
       state.combo += 3;
       value = 6;
@@ -2162,6 +2560,30 @@
       state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 2.2);
       value = 4;
       text = "秒數++";
+    } else if (bonus.key === "roadSweep") {
+      const cleared = clearHazardsNearPlayer(720, bonus.color);
+      state.purity = clamp(state.purity + 3 + cleared, 0, 100);
+      value = 5 + cleared * 2;
+      text = cleared ? "道路清場" : "路線預清";
+    } else if (bonus.key === "streetGuard") {
+      state.shield = Math.min(4, state.shield + 2);
+      player.invuln = Math.max(player.invuln, 3.2);
+      state.purity = clamp(state.purity + 2, 0, 100);
+      value = 7;
+      text = `無敵x${state.shield}`;
+    } else if (bonus.key === "yogurtMagnet") {
+      state.magnetTime = Math.max(state.magnetTime, 5.8);
+      state.requiredTimer = Math.min(state.requiredTimer, 0.08);
+      spawnArcadePositive(player.lane);
+      if (state.level >= 5) spawnArcadePositive(differentLane(player.lane));
+      value = 6;
+      text = "優格磁場";
+    } else if (bonus.key === "pureWave") {
+      const cleared = clearHazardsNearPlayer(420, bonus.color);
+      state.purity = clamp(state.purity + 10 + cleared * 2, 0, 100);
+      state.slowTime = Math.max(state.slowTime, 1.2);
+      value = 6 + cleared;
+      text = "純淨波";
     }
     if (state.flavorRushTime > 0) value = Math.round(value * state.flavorMultiplier);
     state.score += value;
@@ -2180,20 +2602,24 @@
     emitLaneFlash(entity.lane, bonus.color);
     emitBonusImpact(bonus.key, entity, bonus.color);
     setPlayerReaction(bonus.key, bonus.color, 1.1);
-    triggerJuice(bonus.color, 1.25, { x: entity.x + entity.w / 2, y: entity.y - 46, style: "magnet", hitStop: 0.08 });
+    state.speedLineTime = Math.max(state.speedLineTime, bonus.key === "rushBoost" || bonus.key === "roadSweep" ? 1.25 : 0.82);
+    state.comboSurge = Math.max(state.comboSurge, 0.9);
+    state.zoomKick = Math.max(state.zoomKick, 0.62);
+    emitScreenSparks(entity.x + entity.w / 2, entity.y - 46, bonus.color, bonus.key === "comboBoost" || bonus.key === "rushBoost" ? 18 : 10);
+    triggerJuice(bonus.color, bonus.key === "rushBoost" || bonus.key === "roadSweep" ? 1.65 : 1.38, { x: entity.x + entity.w / 2, y: entity.y - 46, style: "magnet", hitStop: 0.095 });
     floatText(`+${value}`, entity.x, entity.y - 88, COLORS.leaf);
     beep(700, 0.04, "triangle", 0.03);
   }
 
   function handleComboPrize() {
-    const milestone = Math.floor(state.combo / 10) * 10;
-    if (milestone < 10 || milestone === state.lastComboPrize) return;
+    const milestone = Math.floor(state.combo / 8) * 8;
+    if (milestone < 8 || milestone === state.lastComboPrize) return;
     state.lastComboPrize = milestone;
     const prize = Math.min(40, 6 + Math.floor(milestone / 10) * 3 + state.level);
     state.score += prize;
     state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 0.65);
     state.fever = clamp(state.fever + 10, 0, 100);
-    if (milestone % 30 === 0) state.shield = Math.min(3, state.shield + 1);
+    if (milestone % 24 === 0) state.shield = Math.min(3, state.shield + 1);
     floatText(`${milestone}連吃!`, player.x + 62, player.y - 136, COLORS.berry);
     floatText(`+${prize}`, player.x + 62, player.y - 112, COLORS.leaf);
     emitPop(player.x + 56, player.y - 42, COLORS.yellow, 24);
@@ -2244,7 +2670,10 @@
     emitPop(player.x + 20, player.y - 30, COLORS.berry, 16);
     triggerJuice(COLORS.berry, 0.85, { x: player.x + 20, y: player.y - 40, style: "hazard", hitStop: 0.09 });
     beep(150, 0.08, "sawtooth", 0.035);
-    if (state.purity <= 0) endGame("純淨率歸零");
+    if (state.purity <= 0) {
+      state.gameOverKind = "purity";
+      endGame("純淨率歸零");
+    }
   }
 
   function activateFever() {
@@ -2272,8 +2701,37 @@
     }, 90);
   }
 
+  function runDodge(direction) {
+    if (state.phase !== "playing" || state.paused) return;
+    if (direction === "left") {
+      changeLane(-1);
+    } else if (direction === "right") {
+      changeLane(1);
+    }
+  }
+
+  function triggerJump() {
+    if (state.phase !== "playing" || state.paused) return;
+    player.jumpTimer = Math.max(player.jumpTimer, JUMP_DODGE_SECONDS);
+    player.jumpDodgeBuffer = Math.max(player.jumpDodgeBuffer, 1.55);
+    player.slideTimer = 0;
+    noteActivePlay(0.65);
+    state.speedLineTime = Math.max(state.speedLineTime, 0.12);
+    beep(620, 0.035, "triangle", 0.022);
+  }
+
+  function triggerSlide() {
+    if (state.phase !== "playing" || state.paused) return;
+    player.slideTimer = Math.max(player.slideTimer, SLIDE_DODGE_SECONDS);
+    player.slideDodgeBuffer = Math.max(player.slideDodgeBuffer, 1.45);
+    player.jumpTimer = 0;
+    noteActivePlay(0.65);
+    state.speedLineTime = Math.max(state.speedLineTime, 0.1);
+    beep(360, 0.035, "square", 0.02);
+  }
+
   function processLaneControls(dt) {
-    const dir = (controls.down ? 1 : 0) - (controls.up ? 1 : 0);
+    const dir = (controls.right ? 1 : 0) - (controls.left ? 1 : 0);
     if (dir === 0) {
       player.laneRepeat = 0;
       return;
@@ -2281,7 +2739,7 @@
     player.laneRepeat -= dt;
     if (player.laneRepeat <= 0) {
       changeLane(dir);
-      player.laneRepeat = 0.14;
+      player.laneRepeat = 0.2;
     }
   }
 
@@ -2292,7 +2750,7 @@
 
   function setLane(lane) {
     if (state.phase !== "playing" || state.paused) return;
-    const nextLane = clamp(Math.round(lane), 0, 2);
+    const nextLane = normalizePlayableLane(lane);
     if (nextLane === player.lane) return;
     player.lane = nextLane;
     player.targetLane = player.lane;
@@ -2314,23 +2772,31 @@
       return;
     }
     if (state.paused) return;
-    if (key === "arrowleft" || key === "a") controls.left = true;
-    if (key === "arrowright" || key === "d") controls.right = true;
+    if (key === "arrowleft" || key === "a") {
+      event.preventDefault();
+      controls.left = true;
+      if (!event.repeat) {
+        changeLane(-1);
+        player.laneRepeat = 0.18;
+      }
+    }
+    if (key === "arrowright" || key === "d") {
+      event.preventDefault();
+      controls.right = true;
+      if (!event.repeat) {
+        changeLane(1);
+        player.laneRepeat = 0.18;
+      }
+    }
     if (key === "arrowup" || key === "w") {
       event.preventDefault();
       controls.up = true;
-      if (!event.repeat) {
-        changeLane(-1);
-        player.laneRepeat = 0.16;
-      }
+      if (!event.repeat) setLane(1);
     }
     if (key === "arrowdown" || key === "s") {
       event.preventDefault();
       controls.down = true;
-      if (!event.repeat) {
-        changeLane(1);
-        player.laneRepeat = 0.16;
-      }
+      if (!event.repeat) setLane(1);
     }
     if (key === " " || key === "e") {
       event.preventDefault();
@@ -2458,46 +2924,1223 @@
     const h = state.height;
     const t = state.time;
     fillRect(0, 0, w, h, "#9bdcf0");
-    fillRect(0, 0, w, h * 0.34, "#bfeef8");
+    fillRect(0, 0, w, h * 0.42, "#bfeef8");
 
     for (let i = 0; i < 7; i += 1) {
       const x = ((i * 260 - t * 24) % (w + 300)) - 180;
       drawCloud(x, 72 + (i % 3) * 42);
     }
 
-    const wallTop = Math.max(100, h * 0.14);
-    fillRect(0, wallTop, w, h * 0.34, "#e8fbff");
-    for (let x = -60 - (t * 28) % 64; x < w + 80; x += 64) {
-      fillRect(x, wallTop, 4, h * 0.34, "rgba(38,138,161,.08)");
-    }
-    for (let y = wallTop; y < wallTop + h * 0.34; y += 42) {
-      fillRect(0, y, w, 4, "rgba(38,138,161,.07)");
-    }
+    const road = getRoadMetrics();
+    fillRect(0, road.horizonY - 42, w, h - road.horizonY + 42, "#fff4dc");
+    fillRect(0, road.horizonY - 38, w, 8, "rgba(38,138,161,.20)");
+    drawPixelSign(w * 0.5 - ((t * 22) % 460), road.horizonY - 36, "純粹優格多一點", COLORS.aquaDeep, 156);
+    drawPixelSign(w * 0.82 - ((t * 20) % 560), road.horizonY - 6, "健康多一點", COLORS.leaf, 126);
+    drawCuteBrandDecals(w, road.horizonY - 90, t);
+    drawPseudoRoad(w, h, t);
+    drawTainanRoadside(w, h, t);
+    drawConveyor(w, h, t);
+  }
 
-    drawPixelSign(w * 0.5 - ((t * 34) % 460), wallTop + 28, "純粹優格多一點", COLORS.aquaDeep, 156);
-    drawPixelSign(w * 0.82 - ((t * 34) % 560), wallTop + 74, "健康多一點", COLORS.leaf, 126);
-    drawPixelSign(w * 0.28 - ((t * 30) % 620), wallTop + 118, "UGOODAYS", COLORS.berry, 112);
-    drawCuteBrandDecals(w, wallTop, t);
-    drawTainanBackdrop(w, h, wallTop, t);
-
-    const floorY = state.lanes[0] - 78;
-    fillRect(0, floorY, w, h - floorY, "#fff4dc");
-    for (let x = -80 - (t * state.speed * 0.22) % 80; x < w + 80; x += 80) {
-      fillRect(x, floorY, 4, h - floorY, "rgba(36,50,58,.08)");
+  function drawPseudoRoad(w, h, t) {
+    const road = getRoadMetrics();
+    const fork = getForkVisualAmount();
+    const leftFar = road.centerX - road.farWidth / 2;
+    const rightFar = road.centerX + road.farWidth / 2;
+    const leftNear = road.centerX - road.nearWidth / 2;
+    const rightNear = road.centerX + road.nearWidth / 2;
+    ctx.save();
+    ctx.beginPath();
+    ctx.moveTo(leftFar, road.horizonY);
+    ctx.lineTo(rightFar, road.horizonY);
+    ctx.lineTo(rightNear, road.nearY + 95);
+    ctx.lineTo(leftNear, road.nearY + 95);
+    ctx.closePath();
+    ctx.fillStyle = "#8fd7e9";
+    ctx.fill();
+    ctx.globalAlpha = 0.28;
+    ctx.beginPath();
+    ctx.moveTo(leftFar - 28, road.horizonY);
+    ctx.lineTo(leftFar, road.horizonY);
+    ctx.lineTo(leftNear, road.nearY + 95);
+    ctx.lineTo(leftNear - 68, road.nearY + 95);
+    ctx.closePath();
+    ctx.fillStyle = "#ffe9cc";
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(rightFar, road.horizonY);
+    ctx.lineTo(rightFar + 28, road.horizonY);
+    ctx.lineTo(rightNear + 68, road.nearY + 95);
+    ctx.lineTo(rightNear, road.nearY + 95);
+    ctx.closePath();
+    ctx.fillStyle = "#ffe9cc";
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    strokePerspectiveLine(leftFar, road.horizonY, leftNear, road.nearY + 92, "rgba(38,138,161,.55)", 4);
+    strokePerspectiveLine(rightFar, road.horizonY, rightNear, road.nearY + 92, "rgba(38,138,161,.55)", 4);
+    if (fork > 0.06) {
+      const splitY = road.horizonY + (road.nearY - road.horizonY) * 0.23;
+      const splitLeft = road.centerX - roadWidthAtDepth(0.23) * 0.16;
+      const splitRight = road.centerX + roadWidthAtDepth(0.23) * 0.16;
+      ctx.globalAlpha = 0.2 + fork * 0.38;
+      strokePerspectiveLine(splitLeft, splitY, roadLaneCenter(0, road.nearY), road.nearY + 70, "rgba(255,255,255,.72)", 5);
+      strokePerspectiveLine(splitRight, splitY, roadLaneCenter(2, road.nearY), road.nearY + 70, "rgba(255,255,255,.72)", 5);
+      ctx.globalAlpha = 1;
+      for (let lane = 0; lane < 3; lane += 1) {
+        const laneX = roadLaneCenter(lane, road.nearY);
+        const farX = lane === 1 ? road.centerX : lane < 1 ? splitLeft : splitRight;
+        const color = lane === player.lane ? "rgba(255,255,255,.76)" : `rgba(255,255,255,${0.18 + fork * 0.22})`;
+        strokePerspectiveLine(farX, lane === 1 ? road.horizonY + 4 : splitY, laneX, road.nearY + 60, color, lane === player.lane ? 4 : 2);
+      }
+      drawRouteForkBanner(road, fork);
+    } else {
+      strokePerspectiveLine(road.centerX, road.horizonY + 4, road.centerX, road.nearY + 60, "rgba(255,255,255,.38)", 2);
     }
-    for (let y = floorY; y < h + 80; y += 54) {
-      fillRect(0, y, w, 4, "rgba(36,50,58,.06)");
+    for (let i = 0; i < 16; i += 1) {
+      const depth = positiveModulo(i * 0.09 + state.sceneryOffset * 0.00065, 1);
+      const y = road.horizonY + (road.nearY - road.horizonY) * depth ** 1.15;
+      const width = roadWidthAtDepth(depth);
+      const x = road.centerX;
+      const stripeW = Math.max(12, width * 0.035);
+      const stripeH = 4 + depth * 12;
+      fillRect(x - stripeW / 2, y - stripeH / 2, stripeW, stripeH, depth > 0.42 ? "rgba(255,255,255,.68)" : "rgba(255,255,255,.36)");
+      if (i % 3 === 0) {
+        fillRect(x - width * 0.48, y, width * 0.12, 4 + depth * 6, "rgba(255,255,255,.42)");
+        fillRect(x + width * 0.36, y, width * 0.12, 4 + depth * 6, "rgba(255,255,255,.42)");
+      }
     }
+    ctx.restore();
+  }
 
-    for (let i = 0; i < state.lanes.length; i += 1) {
-      const y = state.lanes[i] + 8;
-      fillRect(0, y, w, 6, i === player.lane ? "rgba(38,138,161,.32)" : "rgba(36,50,58,.12)");
-      for (let x = -40 - (t * state.speed * 0.5) % 92; x < w + 90; x += 92) {
-        fillRect(x, y - 11, 46, 6, "rgba(255,255,255,.58)");
+  function drawRouteForkBanner(road, fork) {
+    const y = road.horizonY + (road.nearY - road.horizonY) * 0.17;
+    const text = "三路快線";
+    const width = isMobileLayout() ? 108 : 142;
+    const height = isMobileLayout() ? 24 : 30;
+    ctx.save();
+    ctx.globalAlpha = 0.54 + fork * 0.38;
+    fillRect(road.centerX - width / 2, y - height / 2, width, height, "rgba(255,255,255,.9)");
+    strokeRect(road.centerX - width / 2, y - height / 2, width, height, COLORS.aquaDeep, 3);
+    drawText(text, road.centerX, y + 5, isMobileLayout() ? 13 : 16, COLORS.aquaDeep, "center");
+    ctx.restore();
+  }
+
+  function strokePerspectiveLine(x1, y1, x2, y2, color, width) {
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawTainanRoadside(w, h, t) {
+    const road = getRoadMetrics();
+    const landmarks = [
+      { name: "純粹好食門市", kind: "ugoodays", model: "ugoodaysStore", color: "#f7fdff", accent: "#7fc3de" },
+      { name: "臺南車站", kind: "station", model: "tainanStation", color: "#f3dfbf", accent: "#6f9fb0" },
+      { name: "南紡購物中心", kind: "mall", model: "nanfangMall", color: "#e9f6f8", accent: "#82c6d8" },
+      { name: "善化車站", kind: "station", model: "shanhuaStation", color: "#f4e2c4", accent: "#8cb8c7" },
+      { name: "赤崁樓", kind: "fort", model: "chihkanTower", color: "#d98975", accent: "#b44966" },
+      { name: "河樂廣場", kind: "plaza", model: "helePlaza", color: "#dff6ff", accent: "#61c7de" },
+      { name: "大魚的祝福", kind: "fish", model: "bigFish", color: "#e7f7fa", accent: "#7fc3de" },
+      { name: "安平古堡", kind: "fort", model: "anpingFort", color: "#c57563", accent: "#934b42" },
+      { name: "億載金城", kind: "fort", model: "eternalCastle", color: "#d99b72", accent: "#a85f4f" },
+      { name: "德記洋行", kind: "colonial", model: "taitMerchant", color: "#f5f0df", accent: "#9dbf8f" },
+      { name: "司法博物館", kind: "museum", model: "judicialMuseum", color: "#eef4f4", accent: "#7aa9b6" },
+      { name: "知事官邸", kind: "colonial", model: "governorResidence", color: "#f3e6c4", accent: "#89b381" },
+      { name: "水仙宮市場", kind: "market", model: "shuixianMarket", color: "#fff4dc", accent: "#65a85f" },
+      { name: "國華街", kind: "street", model: "guohuaStreet", color: "#ffe5c7", accent: "#ef8b53" },
+      { name: "富農街", kind: "street", model: "funongStreet", color: "#ffe5c7", accent: "#c85f45" },
+      { name: "神農街", kind: "street", model: "shennongStreet", color: "#f4dfc8", accent: "#8f5f42" },
+      { name: "四草綠隧", kind: "tunnel", model: "sicaoTunnel", color: "#dbe8c9", accent: "#65a85f" },
+      { name: "漁光島", kind: "island", model: "yuguangIsland", color: "#f7e2bd", accent: "#f4d16f" },
+      { name: "林百貨", kind: "deco", model: "hayashi", color: "#e9e1cf", accent: "#8a9aa1" },
+      { name: "大天后宮", kind: "temple", model: "mazuTemple", color: "#f5d4b2", accent: "#d8243c" },
+      { name: "奇美博物館", kind: "museum", model: "chimeiMuseum", color: "#eef5f8", accent: "#7aa9b6" },
+      { name: "臺南美術館", kind: "museum", model: "tainanArtMuseum", color: "#f3f5f0", accent: "#c9a57c" },
+      { name: "花園夜市", kind: "market", model: "gardenNightMarket", color: "#ffe3b6", accent: "#ef8b53" },
+      { name: "安平樹屋", kind: "treehouse", model: "anpingTreeHouse", color: "#d8c1a2", accent: "#65a85f" },
+      { name: "安平砲臺", kind: "fort", model: "anpingBattery", color: "#c7846d", accent: "#934b42" },
+      { name: "鳳凰木綠廊", kind: "flora", model: "flameTree", color: "#dbe8c9", accent: "#ef6f53" },
+      { name: "府城榕樹蔭", kind: "flora", model: "banyanShade", color: "#dfe9cf", accent: "#65a85f" },
+      { name: "四草紅樹林", kind: "flora", model: "mangrove", color: "#d5ead4", accent: "#4a9f72" },
+      { name: "九重葛花牆", kind: "flora", model: "bougainvillea", color: "#f8dfec", accent: "#b44966" },
+      { name: "芒果樹小徑", kind: "flora", model: "mangoGrove", color: "#f2e5b8", accent: "#f4b84f" },
+      { name: "白河蓮田", kind: "flora", model: "lotusPond", color: "#dff6ef", accent: "#7fc3de" },
+    ];
+    const buildingLandmarks = landmarks.filter((landmark) => landmark.kind !== "flora");
+    const floraLandmarks = landmarks.filter((landmark) => landmark.kind === "flora");
+    const roadsideSequence = ["building", "building", "flora", "building", "flora", "building", "building", "flora"];
+    const entries = [];
+    const mobile = isMobileLayout();
+    const slotCount = mobile ? 24 : 40;
+    const scroll = state.sceneryOffset * (mobile ? 0.00098 : 0.00108);
+    const trackLength = 1.76;
+    for (let slot = 0; slot < slotCount; slot += 1) {
+      const rawProgress = slot / slotCount * trackLength + scroll;
+      const depth = positiveModulo(rawProgress, trackLength) - 0.08;
+      if (depth < 0) continue;
+      const cycle = Math.floor(rawProgress / trackLength);
+      const sideSlot = Math.floor(slot / 2);
+      const kind = roadsideSequence[positiveModulo(sideSlot + cycle, roadsideSequence.length)];
+      const pool = kind === "flora" ? floraLandmarks : buildingLandmarks;
+      const landmarkIndex = positiveModulo(sideSlot * 3 + slot + cycle * 5, pool.length);
+      const side = slot % 2 === 0 ? -1 : 1;
+      entries.push({ type: kind, landmark: pool[landmarkIndex], depth, side, index: landmarkIndex + cycle * slotCount });
+    }
+    entries.sort((a, b) => a.depth - b.depth);
+    const drawRoadsideEntry = (entry) => {
+      const eased = Math.max(0, entry.depth) ** 1.12;
+      const y = road.horizonY + (road.nearY - road.horizonY) * eased;
+      const roadW = roadWidthAtDepth(Math.min(eased, 1.18));
+      const mobile = isMobileLayout();
+      const scale = (mobile ? 0.38 : 0.48) + eased * (mobile ? 0.88 : 1.2);
+      const alpha = clamp(0.72 + Math.min(1, eased) * 0.28, 0.72, 1);
+      const roadEdge = road.centerX + entry.side * roadW * 0.5;
+      const sideGap = entry.type === "flora"
+        ? (mobile ? 0.5 + eased * 1.1 : 0.75 + eased * 1.4)
+        : (mobile ? 0.75 + eased * 1.4 : 1 + eased * 1.8);
+      const clearBuildingOffset = entry.type === "flora" ? (mobile ? 36 + eased * 18 : 48 + eased * 24) * scale : 0;
+      const drawRoadEdge = roadEdge + entry.side * clearBuildingOffset;
+      ctx.save();
+      ctx.globalAlpha *= entry.type === "flora" ? alpha * 0.9 : alpha;
+      const modelSize = getRoadsideModelSize(entry.landmark);
+      const modelW = modelSize.w * scale;
+      const modelH = modelSize.h * scale;
+      const groundY = y + 62 * scale;
+      const visualTop = groundY - modelH - (entry.type === "flora" ? 126 * scale : 86 * scale);
+      const visualBottom = groundY + 40 * scale;
+      if (visualBottom < -80 || visualTop > h + 80) {
+        ctx.restore();
+        return;
+      }
+      const x = entry.side < 0 ? drawRoadEdge - sideGap - modelW : drawRoadEdge + sideGap;
+      drawRoadsideModel(entry.landmark, x, groundY, scale, entry.side, entry.index, drawRoadEdge);
+      ctx.restore();
+    };
+    entries.filter((entry) => entry.type === "flora").forEach(drawRoadsideEntry);
+    entries.filter((entry) => entry.type !== "flora").forEach(drawRoadsideEntry);
+  }
+
+  function drawRoadsideGreenBelts(road, scroll) {
+    const mobile = isMobileLayout();
+    const stripOffset = mobile ? 18 : 26;
+    const stripWidth = mobile ? 62 : 78;
+    const stripSegments = 14;
+
+    for (const side of [-1, 1]) {
+      ctx.save();
+      ctx.globalAlpha *= 0.66;
+
+      for (let i = 0; i < stripSegments; i += 1) {
+        const d1 = i / stripSegments;
+        const d2 = (i + 1) / stripSegments;
+        const e1 = d1 ** 1.18;
+        const e2 = d2 ** 1.18;
+        const y1 = road.horizonY + (road.nearY - road.horizonY) * e1;
+        const y2 = road.horizonY + (road.nearY - road.horizonY) * e2;
+        const edge1 = road.centerX + side * roadWidthAtDepth(e1) * 0.5;
+        const edge2 = road.centerX + side * roadWidthAtDepth(e2) * 0.5;
+        const inner1 = edge1 + side * stripOffset * (0.7 + e1 * 0.5);
+        const inner2 = edge2 + side * stripOffset * (0.7 + e2 * 0.5);
+        const outer1 = inner1 + side * stripWidth * (0.55 + e1 * 0.7);
+        const outer2 = inner2 + side * stripWidth * (0.55 + e2 * 0.7);
+        drawQuad(
+          inner1,
+          y1,
+          outer1,
+          y1 + 4,
+          outer2,
+          y2 + 4,
+          inner2,
+          y2,
+          i % 2 ? "rgba(137,179,129,.56)" : "rgba(101,168,95,.62)"
+        );
+      }
+
+      drawRoadsideVegetationColumns(road, side, scroll, stripOffset, stripWidth);
+      ctx.restore();
+    }
+  }
+
+  function drawRoadsideVegetationColumns(road, side, scroll, stripOffset, stripWidth) {
+    const mobile = isMobileLayout();
+    const columns = mobile ? 3 : 4;
+    const rows = mobile ? 15 : 20;
+    const cycle = 1.22;
+    const plantScroll = scroll * 1.18;
+    const plants = [];
+
+    for (let col = 0; col < columns; col += 1) {
+      for (let row = 0; row < rows; row += 1) {
+        const rawDepth = positiveModulo(row / rows * cycle + plantScroll + col * 0.08, cycle) - 0.08;
+        if (rawDepth < 0.02 || rawDepth > 0.96) continue;
+        plants.push({ col, row, depth: rawDepth });
       }
     }
 
-    drawConveyor(w, h, t);
+    plants.sort((a, b) => a.depth - b.depth);
+    for (const plant of plants) {
+      const eased = plant.depth ** 1.18;
+      const y = road.horizonY + (road.nearY - road.horizonY) * eased;
+      const roadW = roadWidthAtDepth(eased);
+      const edge = road.centerX + side * roadW * 0.5;
+      const colRatio = columns === 1 ? 0.5 : plant.col / (columns - 1);
+      const offset = (stripOffset + stripWidth * (0.28 + colRatio * 0.54)) * (0.72 + eased * 0.42);
+      const x = edge + side * offset;
+      const scale = (mobile ? 0.28 : 0.34) + eased * (mobile ? 0.58 : 0.72);
+      drawRoadsideColumnPlant(x, y + 46 * scale, scale, side, plant.row + plant.col * 7);
+    }
+  }
+
+  function drawRoadsideColumnPlant(x, groundY, scale, side, index) {
+    const flowerColors = ["#ef6f53", "#f19aa0", "#f4d16f", "#b44966", "#7fc3de"];
+    const treeType = index % 4;
+    ctx.save();
+    ctx.globalAlpha *= 0.95;
+    fillRect(x - 18 * scale, groundY + 3 * scale, 36 * scale, 5 * scale, "rgba(68,125,73,.42)");
+    if (treeType === 0) {
+      fillRect(x - 4 * scale, groundY - 38 * scale, 8 * scale, 42 * scale, "#8b6b4e");
+      drawCircle(x - 10 * scale, groundY - 48 * scale, 17 * scale, "#65a85f");
+      drawCircle(x + 9 * scale, groundY - 52 * scale, 18 * scale, "#76b96c");
+      drawCircle(x + side * 6 * scale, groundY - 58 * scale, 6 * scale, flowerColors[index % flowerColors.length]);
+    } else if (treeType === 1) {
+      fillRect(x - 3 * scale, groundY - 32 * scale, 6 * scale, 36 * scale, "#8b6b4e");
+      for (let i = 0; i < 4; i += 1) {
+        const a = -Math.PI / 2 + (i - 1.5) * 0.46;
+        drawQuad(
+          x,
+          groundY - 32 * scale,
+          x + Math.cos(a) * 29 * scale,
+          groundY - 32 * scale + Math.sin(a) * 16 * scale,
+          x + Math.cos(a + 0.16) * 18 * scale,
+          groundY - 28 * scale + Math.sin(a + 0.16) * 12 * scale,
+          x,
+          groundY - 27 * scale,
+          "#65a85f"
+        );
+      }
+    } else if (treeType === 2) {
+      for (let i = 0; i < 4; i += 1) {
+        const px = x + (i - 1.5) * 9 * scale;
+        fillRect(px - 2 * scale, groundY - 22 * scale, 4 * scale, 22 * scale, "#65a85f");
+        drawCircle(px, groundY - 26 * scale, 6 * scale, flowerColors[(index + i) % flowerColors.length]);
+      }
+      drawCircle(x - 10 * scale, groundY - 10 * scale, 8 * scale, "#89b381");
+      drawCircle(x + 9 * scale, groundY - 11 * scale, 8 * scale, "#65a85f");
+    } else {
+      fillRect(x - 5 * scale, groundY - 34 * scale, 10 * scale, 38 * scale, "#8b6b4e");
+      drawCircle(x - 13 * scale, groundY - 43 * scale, 18 * scale, "#4a9f72");
+      drawCircle(x + 12 * scale, groundY - 47 * scale, 20 * scale, "#65a85f");
+      strokePerspectiveLine(x, groundY - 5 * scale, x - side * 18 * scale, groundY + 10 * scale, "#8b6b4e", Math.max(1, 2 * scale));
+    }
+    ctx.restore();
+  }
+
+  function drawConnectedRoadsidePlant(x, groundY, scale, side, index) {
+    const flowerColors = ["#f19aa0", "#f4d16f", "#7fc3de", "#b44966", "#ef8b53"];
+    fillRect(x - 22 * scale, groundY + 2 * scale, 44 * scale, 7 * scale, "rgba(101,168,95,.72)");
+
+    for (let i = 0; i < 4; i += 1) {
+      const tx = x + side * (i - 1.5) * 12 * scale;
+      fillRect(tx - 3 * scale, groundY - 16 * scale, 6 * scale, 20 * scale, "#9b7b50");
+      drawCircle(tx - 5 * scale, groundY - 20 * scale, 10 * scale, i % 2 ? "#8ec47d" : "#65a85f");
+      drawCircle(tx + 5 * scale, groundY - 23 * scale, 11 * scale, "#6fb56a");
+      drawCircle(tx + side * 5 * scale, groundY - 18 * scale, 2.6 * scale, flowerColors[(index + i) % flowerColors.length]);
+    }
+
+    for (let i = 0; i < 5; i += 1) {
+      const fx = x + (i - 2) * 9 * scale;
+      drawCircle(fx, groundY + 6 * scale, 4.5 * scale, i % 2 ? "#89b381" : "#65a85f");
+      drawCircle(fx + 2 * scale, groundY + scale, 2.4 * scale, flowerColors[(index + i + 2) % flowerColors.length]);
+    }
+  }
+
+  function drawRoadsideStandalonePlanters(road) {
+    const mobile = isMobileLayout();
+    const count = mobile ? 7 : 12;
+    const scroll = state.sceneryOffset * (mobile ? 0.0005 : 0.00062);
+    const planters = [];
+    for (let i = 0; i < count; i += 1) {
+      const depth = positiveModulo((i + 0.5) / count + scroll, 1);
+      planters.push({ depth, side: i % 2 === 0 ? -1 : 1, index: i });
+    }
+    planters.sort((a, b) => a.depth - b.depth);
+    for (const planter of planters) {
+      const eased = planter.depth ** 1.18;
+      if (eased > 0.72) continue;
+      const y = road.horizonY + (road.nearY - road.horizonY) * eased;
+      const roadW = roadWidthAtDepth(eased);
+      const scale = (mobile ? 0.34 : 0.38) + eased * (mobile ? 0.72 : 0.9);
+      const roadEdge = road.centerX + planter.side * roadW * 0.5;
+      const x = roadEdge + planter.side * (mobile ? 34 + eased * 12 : 44 + eased * 18);
+      ctx.save();
+      ctx.globalAlpha *= clamp(0.52 + eased * 0.5, 0.52, 1);
+      drawRoadsideStandalonePlanter(x, y + 70 * scale, scale, planter.side, planter.index);
+      ctx.restore();
+    }
+  }
+
+  function drawRoadsideStandalonePlanter(x, groundY, scale, side, index) {
+    const flowerColors = ["#f19aa0", "#f4d16f", "#7fc3de", "#b44966", "#ef8b53"];
+    drawQuad(
+      x - 44 * scale,
+      groundY + 3 * scale,
+      x + 44 * scale,
+      groundY + 3 * scale,
+      x + 56 * scale,
+      groundY + 20 * scale,
+      x - 56 * scale,
+      groundY + 20 * scale,
+      "rgba(255,244,220,.78)"
+    );
+    strokePerspectiveLine(x - 40 * scale, groundY + 5 * scale, x + 40 * scale, groundY + 5 * scale, "rgba(101,168,95,.42)", Math.max(1, 2 * scale));
+    for (let i = 0; i < 3; i += 1) {
+      const tx = x + side * (i - 1) * 21 * scale;
+      fillRect(tx - 5 * scale, groundY - 28 * scale, 10 * scale, 34 * scale, "#9b7b50");
+      drawCircle(tx - 8 * scale, groundY - 32 * scale, 15 * scale, i % 2 ? "#89b381" : "#65a85f");
+      drawCircle(tx + 7 * scale, groundY - 37 * scale, 17 * scale, "#6fb56a");
+      drawCircle(tx, groundY - 47 * scale, 12 * scale, "#8ec47d");
+    }
+    for (let i = 0; i < 7; i += 1) {
+      const fx = x + (i - 3) * 12 * scale;
+      const fy = groundY + (i % 2 ? 2 : -2) * scale;
+      drawCircle(fx, fy, 5 * scale, i % 2 ? "#65a85f" : "#89b381");
+      drawCircle(fx + 3 * scale, fy - 5 * scale, 3 * scale, flowerColors[(index + i) % flowerColors.length]);
+    }
+  }
+
+  function drawRoadsideGarden(x, groundY, modelW, scale, side, index, roadEdge) {
+    const innerX = side < 0 ? x + modelW + 7 * scale : x - 7 * scale;
+    const flowerColors = ["#f19aa0", "#f4d16f", "#7fc3de", "#b44966"];
+    ctx.save();
+    for (let i = 0; i < 4; i += 1) {
+      const bx = innerX + side * (8 + i * 12) * scale;
+      const by = groundY - (10 + (i % 2) * 7) * scale;
+      drawCircle(bx, by, (7 + i % 2 * 2) * scale, i % 2 ? "#89b381" : "#65a85f");
+      fillRect(bx - 2 * scale, by + 5 * scale, 4 * scale, 16 * scale, "#8b6b4e");
+      drawCircle(bx + side * 4 * scale, by - 3 * scale, 3 * scale, flowerColors[(index + i) % flowerColors.length]);
+    }
+    if (index % 3 === 0) {
+      const palmX = innerX + side * 34 * scale;
+      fillRect(palmX - 4 * scale, groundY - 58 * scale, 8 * scale, 58 * scale, "#9b7b50");
+      for (let i = 0; i < 5; i += 1) {
+        const a = -Math.PI / 2 + (i - 2) * 0.5;
+        drawQuad(
+          palmX,
+          groundY - 58 * scale,
+          palmX + Math.cos(a) * 36 * scale,
+          groundY - 58 * scale + Math.sin(a) * 18 * scale,
+          palmX + Math.cos(a + 0.18) * 24 * scale,
+          groundY - 58 * scale + Math.sin(a + 0.18) * 14 * scale,
+          palmX,
+          groundY - 52 * scale,
+          "#65a85f"
+        );
+      }
+    }
+    drawQuad(innerX, groundY + 2 * scale, roadEdge, groundY + 7 * scale, roadEdge, groundY + 16 * scale, innerX + side * 28 * scale, groundY + 14 * scale, "rgba(255,255,255,.34)");
+    ctx.restore();
+  }
+
+  function drawRoadsidePlantCluster(groundY, scale, side, index, roadEdge) {
+    const flowerColors = ["#f19aa0", "#f4d16f", "#7fc3de", "#b44966", "#ef8b53"];
+    const innerDir = -side;
+    const baseX = roadEdge + side * (34 + (index % 3) * 16) * scale;
+    ctx.save();
+    ctx.globalAlpha *= 0.96;
+
+    drawQuad(
+      baseX - 52 * scale,
+      groundY + 5 * scale,
+      baseX + 52 * scale,
+      groundY + 5 * scale,
+      baseX + 66 * scale,
+      groundY + 23 * scale,
+      baseX - 66 * scale,
+      groundY + 23 * scale,
+      "rgba(255,244,220,.66)"
+    );
+    strokePerspectiveLine(baseX - 48 * scale, groundY + 7 * scale, baseX + 48 * scale, groundY + 7 * scale, "rgba(101,168,95,.38)", Math.max(1, 2 * scale));
+
+    for (let i = 0; i < 3; i += 1) {
+      const x = baseX + side * (i * 18) * scale;
+      const y = groundY - (2 + (i % 2) * 5) * scale;
+      fillRect(x - 6 * scale, y - 24 * scale, 12 * scale, 28 * scale, "#9b7b50");
+      drawCircle(x - 10 * scale, y - 27 * scale, 16 * scale, i % 2 ? "#8ec47d" : "#65a85f");
+      drawCircle(x + 8 * scale, y - 30 * scale, 17 * scale, "#6fb56a");
+      drawCircle(x, y - 42 * scale, 14 * scale, "#89b381");
+      drawCircle(x + innerDir * 9 * scale, y - 30 * scale, 4.5 * scale, flowerColors[(index + i) % flowerColors.length]);
+    }
+
+    if (index % 2 === 0) {
+      const palmX = baseX + side * 64 * scale;
+      fillRect(palmX - 4 * scale, groundY - 64 * scale, 8 * scale, 66 * scale, "#9b7b50");
+      for (let i = 0; i < 6; i += 1) {
+        const angle = -Math.PI / 2 + (i - 2.5) * 0.38;
+        drawQuad(
+          palmX,
+          groundY - 64 * scale,
+          palmX + Math.cos(angle) * 42 * scale,
+          groundY - 64 * scale + Math.sin(angle) * 20 * scale,
+          palmX + Math.cos(angle + 0.2) * 26 * scale,
+          groundY - 58 * scale + Math.sin(angle + 0.2) * 15 * scale,
+          palmX,
+          groundY - 56 * scale,
+          "#65a85f"
+        );
+      }
+    } else {
+      const potX = baseX + side * 54 * scale;
+      fillRect(potX - 17 * scale, groundY - 18 * scale, 34 * scale, 20 * scale, "#d99b72");
+      strokeRect(potX - 17 * scale, groundY - 18 * scale, 34 * scale, 20 * scale, "rgba(36,50,58,.34)", Math.max(1, 2 * scale));
+      for (let i = 0; i < 5; i += 1) {
+        drawCircle(potX + (i - 2) * 7 * scale, groundY - (24 + Math.abs(i - 2) * 4) * scale, 7 * scale, i % 2 ? "#8ec47d" : "#65a85f");
+        drawCircle(potX + (i - 2) * 7 * scale, groundY - 31 * scale, 2.8 * scale, flowerColors[(index + i + 2) % flowerColors.length]);
+      }
+    }
+
+    ctx.globalAlpha *= 0.82;
+    for (let i = 0; i < 5; i += 1) {
+      const x = baseX + side * (12 + i * 15) * scale;
+      const y = groundY + (5 + (i % 2) * 2) * scale;
+      drawCircle(x, y, 7 * scale, i % 2 ? "#89b381" : "#65a85f");
+      drawCircle(x + innerDir * 4 * scale, y - 4 * scale, 3.2 * scale, flowerColors[(index + i + 1) % flowerColors.length]);
+    }
+    ctx.restore();
+  }
+
+  function getRoadsideModelSize(landmark) {
+    const model = landmark.model || landmark.kind;
+    const sizes = {
+      ugoodaysStore: { w: 214, h: 154 },
+      tainanStation: { w: 168, h: 124 },
+      nanfangMall: { w: 190, h: 150 },
+      shanhuaStation: { w: 160, h: 104 },
+      chihkanTower: { w: 162, h: 126 },
+      helePlaza: { w: 166, h: 82 },
+      bigFish: { w: 132, h: 112 },
+      anpingFort: { w: 156, h: 116 },
+      eternalCastle: { w: 172, h: 106 },
+      taitMerchant: { w: 166, h: 112 },
+      judicialMuseum: { w: 174, h: 124 },
+      governorResidence: { w: 164, h: 104 },
+      shuixianMarket: { w: 162, h: 102 },
+      guohuaStreet: { w: 168, h: 104 },
+      funongStreet: { w: 166, h: 104 },
+      shennongStreet: { w: 166, h: 106 },
+      sicaoTunnel: { w: 176, h: 106 },
+      yuguangIsland: { w: 166, h: 98 },
+      hayashi: { w: 136, h: 140 },
+      mazuTemple: { w: 166, h: 126 },
+      chimeiMuseum: { w: 184, h: 118 },
+      tainanArtMuseum: { w: 168, h: 116 },
+      gardenNightMarket: { w: 166, h: 100 },
+      anpingTreeHouse: { w: 156, h: 116 },
+      anpingBattery: { w: 166, h: 96 },
+      flameTree: { w: 164, h: 138 },
+      banyanShade: { w: 176, h: 142 },
+      mangrove: { w: 170, h: 124 },
+      bougainvillea: { w: 166, h: 126 },
+      mangoGrove: { w: 168, h: 132 },
+      lotusPond: { w: 170, h: 118 },
+    };
+    return sizes[model] || { w: landmark.kind === "mall" ? 158 : landmark.kind === "fish" ? 126 : 138, h: landmark.kind === "temple" ? 118 : 108 };
+  }
+
+  function drawRoadsideFloraModel(landmark, x, groundY, scale, side, index, roadEdge) {
+    const size = getRoadsideModelSize(landmark);
+    const w = size.w * scale;
+    const h = size.h * scale;
+    const model = landmark.model || "flora";
+    const accent = landmark.accent || COLORS.leaf;
+    const road = getRoadMetrics();
+    const farY = groundY - h * 0.78;
+    const farDepth = roadDepthAtY(farY);
+    const farRoadEdge = road.centerX + side * roadWidthAtDepth(farDepth) * 0.5;
+    const innerX = side < 0 ? x + w : x;
+    const stripNearInner = roadEdge + side * 2 * scale;
+    const stripNearOuter = roadEdge + side * Math.min(118 * scale, w * 0.88);
+    const stripFarInner = farRoadEdge + side * 2 * scale;
+    const stripFarOuter = farRoadEdge + side * Math.min(104 * scale, w * 0.82);
+
+    ctx.save();
+    drawQuad(
+      stripNearInner,
+      groundY + 8 * scale,
+      stripNearOuter,
+      groundY + 8 * scale,
+      stripNearOuter + side * 20 * scale,
+      groundY + 25 * scale,
+      stripNearInner,
+      groundY + 24 * scale,
+      "rgba(36,50,58,.2)"
+    );
+    drawQuad(stripNearInner, groundY - 7 * scale, stripNearOuter, groundY - 7 * scale, stripFarOuter, farY, stripFarInner, farY, model === "lotusPond" ? "rgba(127,195,222,.54)" : "#dbe8c9");
+    drawQuad(stripNearInner, groundY - 7 * scale, stripFarInner, farY, stripFarInner, farY + 22 * scale, stripNearInner, groundY + 13 * scale, "rgba(101,168,95,.34)");
+    strokePerspectiveLine(stripNearInner, groundY - 7 * scale, stripFarInner, farY, "rgba(36,50,58,.25)", Math.max(1, 2 * scale));
+    strokePerspectiveLine(stripNearOuter, groundY - 7 * scale, stripFarOuter, farY, "rgba(36,50,58,.25)", Math.max(1, 2 * scale));
+
+    const rows = model === "lotusPond" ? 7 : 5;
+    for (let i = 0; i < rows; i += 1) {
+      const t = i / Math.max(1, rows - 1);
+      const y = groundY - 6 * scale - t * (h - 18 * scale);
+      const rowDepth = roadDepthAtY(y);
+      const rowEdge = road.centerX + side * roadWidthAtDepth(rowDepth) * 0.5;
+      const rowScale = scale * (1.02 - t * 0.2);
+      const laneOffset = (34 + (i % 2) * 5) * scale;
+      const centerX = rowEdge + side * laneOffset + Math.sin(index * 1.7 + i) * 2 * scale;
+      drawRoadsideFloraPatch(model, centerX, y, rowScale, accent, i);
+    }
+
+    const tagW = Math.min(w - 12 * scale, 118 * scale);
+    const tagX = side < 0 ? innerX - tagW - 12 * scale : innerX + 12 * scale;
+    fillRect(tagX, groundY - 38 * scale, tagW, 25 * scale, "rgba(255,255,255,.88)");
+    strokeRect(tagX, groundY - 38 * scale, tagW, 25 * scale, accent, Math.max(1, 2.5 * scale));
+    drawText(landmark.name, tagX + tagW / 2, groundY - 19 * scale, Math.max(9, 13 * scale), accent, "center");
+    drawText(landmark.name, x + w / 2, groundY + 17 * scale, Math.max(10, 14 * scale), accent, "center");
+    ctx.restore();
+  }
+
+  function drawRoadsideFloraPatch(model, x, y, scale, accent, index) {
+    if (model === "lotusPond") {
+      drawCircle(x - 16 * scale, y + 6 * scale, 13 * scale, "#89b381");
+      drawCircle(x + 14 * scale, y + 3 * scale, 12 * scale, "#65a85f");
+      drawCircle(x, y - 8 * scale, 11 * scale, index % 2 ? "#ffffff" : "#f19aa0");
+      fillRect(x - 2 * scale, y - 2 * scale, 4 * scale, 19 * scale, "#65a85f");
+      return;
+    }
+    if (model === "mangrove") {
+      fillRect(x - 6 * scale, y - 60 * scale, 12 * scale, 64 * scale, "#8b6b4e");
+      strokePerspectiveLine(x, y - 4 * scale, x - 18 * scale, y + 18 * scale, "#8b6b4e", Math.max(1, 3 * scale));
+      strokePerspectiveLine(x, y - 4 * scale, x + 18 * scale, y + 18 * scale, "#8b6b4e", Math.max(1, 3 * scale));
+      drawCircle(x - 8 * scale, y - 72 * scale, 23 * scale, "#4a9f72");
+      drawCircle(x + 9 * scale, y - 80 * scale, 25 * scale, "#65a85f");
+      drawCircle(x + 1 * scale, y - 96 * scale, 22 * scale, "#76b96c");
+      return;
+    }
+    const flower = model === "flameTree" ? "#ef6f53" : model === "bougainvillea" ? "#b44966" : model === "mangoGrove" ? "#f4b84f" : accent;
+    fillRect(x - 6 * scale, y - 78 * scale, 12 * scale, 81 * scale, "#8b6b4e");
+    drawCircle(x - 12 * scale, y - 91 * scale, 24 * scale, "#65a85f");
+    drawCircle(x + 12 * scale, y - 98 * scale, 26 * scale, "#76b96c");
+    drawCircle(x, y - 118 * scale, 23 * scale, model === "bougainvillea" ? "#f19aa0" : "#89b381");
+    drawCircle(x + 8 * scale, y - 91 * scale, 5 * scale, flower);
+    drawCircle(x - 9 * scale, y - 108 * scale, 4.5 * scale, flower);
+    drawCircle(x + 3 * scale, y - 122 * scale, 4 * scale, flower);
+  }
+
+  function drawRoadsideModel(landmark, x, groundY, scale, side, index, roadEdge) {
+    if (landmark.kind === "flora") {
+      drawRoadsideFloraModel(landmark, x, groundY, scale, side, index, roadEdge);
+      return;
+    }
+    const size = getRoadsideModelSize(landmark);
+    const baseW = size.w;
+    const baseH = size.h;
+    const w = baseW * scale;
+    const h = baseH * scale;
+    const depth = (68 + (index % 3) * 12) * scale;
+    const backX = side * depth;
+    const backY = -depth * 0.54;
+    const roadFaceDepth = side * depth * 0.58;
+    const topColor = landmark.accent || "#7fc3de";
+    const sideColor = index % 2 ? "#e6d1bc" : "#cfe5ea";
+    const roadFaceColor = index % 2 ? "#f1dfca" : "#dff2f6";
+    const frontY = groundY - h;
+    const innerEdgeX = side < 0 ? x + w : x;
+
+    ctx.save();
+    const shadowInnerX = side < 0 ? x + w : x;
+    const shadowOuterX = side < 0 ? x - 42 * scale : x + w + 42 * scale;
+    drawQuad(
+      shadowInnerX,
+      groundY + 6 * scale,
+      shadowOuterX,
+      groundY + 6 * scale,
+      shadowOuterX + side * 16 * scale,
+      groundY + 24 * scale,
+      shadowInnerX,
+      groundY + 22 * scale,
+      "rgba(36,50,58,.22)"
+    );
+    const roofOuterFrontX = side < 0 ? x - 8 * scale : x + w + 8 * scale;
+    const roofInnerFrontX = side < 0 ? x + w : x;
+    drawQuad(
+      roofOuterFrontX,
+      frontY - 4 * scale,
+      roofOuterFrontX + backX,
+      frontY + backY - 11 * scale,
+      roofInnerFrontX + backX,
+      frontY + backY - 11 * scale,
+      roofInnerFrontX,
+      frontY - 4 * scale,
+      "rgba(36,50,58,.16)"
+    );
+    drawQuad(x, frontY, x + backX, frontY + backY, x + w + backX, frontY + backY, x + w, frontY, topColor);
+    drawQuad(x + 7 * scale, frontY + 5 * scale, x + backX + 7 * scale, frontY + backY + 4 * scale, x + w + backX - 7 * scale, frontY + backY + 4 * scale, x + w - 7 * scale, frontY + 5 * scale, "rgba(255,255,255,.28)");
+    if (side < 0) {
+      drawQuad(x, frontY, x + backX, frontY + backY, x + backX, groundY + backY, x, groundY, sideColor);
+      drawSideWindows(x + backX, frontY + backY, depth, h, scale, side, topColor);
+    } else {
+      drawQuad(x + w, frontY, x + w + backX, frontY + backY, x + w + backX, groundY + backY, x + w, groundY, sideColor);
+      drawSideWindows(x + w + backX - depth, frontY + backY, depth, h, scale, side, topColor);
+    }
+    fillRect(x, frontY, w, h, landmark.color || "#ffffff");
+    strokeRect(x, frontY, w, h, COLORS.ink, Math.max(2, 3 * scale));
+    drawQuad(
+      innerEdgeX,
+      frontY + 8 * scale,
+      innerEdgeX + roadFaceDepth,
+      frontY + backY * 0.38 + 10 * scale,
+      innerEdgeX + roadFaceDepth,
+      groundY + backY * 0.38,
+      innerEdgeX,
+      groundY,
+      roadFaceColor
+    );
+    strokePerspectiveLine(innerEdgeX, frontY + 8 * scale, innerEdgeX + roadFaceDepth, frontY + backY * 0.38 + 10 * scale, "rgba(36,50,58,.34)", Math.max(1, 2 * scale));
+    strokePerspectiveLine(innerEdgeX, groundY, innerEdgeX + roadFaceDepth, groundY + backY * 0.38, "rgba(36,50,58,.28)", Math.max(1, 2 * scale));
+    fillRect(x + 8 * scale, frontY + 10 * scale, w - 16 * scale, 22 * scale, "rgba(255,255,255,.72)");
+    for (let i = 0; i < 4; i += 1) {
+      const bandX = x + (18 + i * (baseW / 4)) * scale;
+      fillRect(bandX, frontY + 44 * scale, Math.max(2, 4 * scale), h - 58 * scale, "rgba(255,255,255,.16)");
+    }
+    drawRoadsideFeature(landmark, x, frontY, w, h, scale, side);
+    drawRoadsideLandmarkSilhouette(landmark, x, frontY, w, h, scale, side);
+    drawRoadsideSign(landmark, x, frontY, w, scale);
+    const baseOuterX = side < 0 ? x - 12 * scale : x + w + 12 * scale;
+    drawQuad(innerEdgeX, groundY - 1 * scale, baseOuterX, groundY - 1 * scale, baseOuterX + side * 12 * scale, groundY + 9 * scale, innerEdgeX, groundY + 9 * scale, "rgba(36,50,58,.16)");
+    drawText(landmark.name, x + w / 2, groundY + 18 * scale, Math.max(10, 15 * scale), landmark.accent || COLORS.aquaDeep, "center");
+    ctx.restore();
+  }
+
+  function drawSideWindows(x, y, depth, h, scale, side, color) {
+    ctx.save();
+    ctx.globalAlpha *= 0.78;
+    for (let i = 0; i < 3; i += 1) {
+      const wx = x + side * (10 + i * 8) * scale;
+      const wy = y + (32 + i * 18) * scale;
+      drawQuad(wx, wy, wx + side * 13 * scale, wy - 3 * scale, wx + side * 13 * scale, wy + 14 * scale, wx, wy + 17 * scale, "rgba(255,255,255,.58)");
+      drawQuad(wx + side * 2 * scale, wy + 2 * scale, wx + side * 10 * scale, wy, wx + side * 10 * scale, wy + 11 * scale, wx + side * 2 * scale, wy + 13 * scale, color);
+    }
+    ctx.globalAlpha *= 0.72;
+    for (let yLine = y + 20 * scale; yLine < y + h - 14 * scale; yLine += 22 * scale) {
+      strokePerspectiveLine(x, yLine, x + side * Math.min(depth * 0.72, 34 * scale), yLine - 5 * scale, "rgba(36,50,58,.13)", Math.max(1, 1.5 * scale));
+    }
+    ctx.restore();
+  }
+
+  function drawRoadsideSign(landmark, x, y, w, scale) {
+    const signX = x + 8 * scale;
+    const signY = y + 7 * scale;
+    const signW = w - 16 * scale;
+    const signH = 30 * scale;
+    const fontSize = clamp(signW / Math.max(5.7, landmark.name.length * 1.22), 10, 17 * scale);
+    fillRect(signX + 4 * scale, signY + 5 * scale, signW, signH, "rgba(36,50,58,.14)");
+    fillRect(signX, signY, signW, signH, "rgba(255,255,255,.94)");
+    strokeRect(signX, signY, signW, signH, landmark.accent || COLORS.aquaDeep, Math.max(2, 3 * scale));
+    drawText(landmark.name, x + w / 2, signY + signH * 0.68, fontSize, landmark.accent || COLORS.aquaDeep, "center");
+  }
+
+  function drawRoadsideLandmarkSilhouette(landmark, x, y, w, h, scale, side) {
+    const model = landmark.model || landmark.kind;
+    const accent = landmark.accent || COLORS.aquaDeep;
+    const shade = "rgba(36,50,58,.28)";
+
+    if (model === "ugoodaysStore") {
+      drawQuad(x + 10 * scale, y - 16 * scale, x + w - 18 * scale, y - 24 * scale, x + w - 4 * scale, y + 6 * scale, x + 22 * scale, y + 10 * scale, "#ffffff");
+      strokePerspectiveLine(x + 18 * scale, y + 4 * scale, x + w - 8 * scale, y - 4 * scale, COLORS.aquaDeep, Math.max(2, 3 * scale));
+      drawCircle(x + 72 * scale, y - 1 * scale, 23 * scale, COLORS.aqua);
+      drawCircle(x + 62 * scale, y + 6 * scale, 5 * scale, "#ffffff");
+      drawCircle(x + 83 * scale, y + 7 * scale, 5 * scale, "#ffffff");
+      fillRect(x + 67 * scale, y + 15 * scale, 20 * scale, 4 * scale, "#ffffff");
+      drawText("UGOODAYS", x + w * 0.62, y + 7 * scale, Math.max(7, 10 * scale), COLORS.aquaDeep, "center");
+      return;
+    }
+
+    if (model === "tainanStation" || model === "shanhuaStation") {
+      const towerX = x + w * 0.5;
+      fillRect(towerX - 18 * scale, y - 46 * scale, 36 * scale, 50 * scale, "#fff4dc");
+      drawQuad(towerX - 25 * scale, y - 46 * scale, towerX, y - 64 * scale, towerX + 25 * scale, y - 46 * scale, towerX + 18 * scale, y - 38 * scale, "#8f3550");
+      drawCircle(towerX, y - 25 * scale, 10 * scale, "#ffffff");
+      strokeCircle(towerX, y - 25 * scale, 10 * scale, accent, Math.max(1, 2 * scale));
+      for (let i = 0; i < 5; i += 1) {
+        const archX = x + (18 + i * (w / scale - 36) / 4) * scale;
+        drawCircle(archX, y + h - 39 * scale, 10 * scale, "#f8ead0");
+        fillRect(archX - 10 * scale, y + h - 39 * scale, 20 * scale, 24 * scale, "#f8ead0");
+      }
+      return;
+    }
+
+    if (model === "nanfangMall") {
+      drawQuad(x + w * 0.58, y - 32 * scale, x + w * 0.9, y - 44 * scale, x + w * 0.92, y + 74 * scale, x + w * 0.62, y + 82 * scale, "#bfeef8");
+      strokePerspectiveLine(x + w * 0.6, y - 23 * scale, x + w * 0.9, y - 34 * scale, accent, Math.max(2, 3 * scale));
+      for (let i = 0; i < 5; i += 1) fillRect(x + w * 0.65, y + (i * 20 - 12) * scale, w * 0.2, 7 * scale, "rgba(255,255,255,.56)");
+      drawQuad(x + 15 * scale, y + 35 * scale, x + w * 0.53, y + 18 * scale, x + w * 0.57, y + 111 * scale, x + 28 * scale, y + 125 * scale, "rgba(130,198,216,.30)");
+      return;
+    }
+
+    if (model === "chihkanTower" || model === "mazuTemple") {
+      const roofColor = model === "mazuTemple" ? "#d8243c" : "#8f3550";
+      for (let tier = 0; tier < 3; tier += 1) {
+        const yy = y + (18 + tier * 24) * scale;
+        const inset = (tier * 16 + 3) * scale;
+        drawQuad(x + inset, yy, x + w / 2, yy - (18 + tier * 3) * scale, x + w - inset, yy, x + w - inset - 16 * scale, yy + 10 * scale, roofColor);
+        fillRect(x + inset + 22 * scale, yy + 12 * scale, w - inset * 2 - 44 * scale, 7 * scale, "#f4d16f");
+      }
+      return;
+    }
+
+    if (model === "chimeiMuseum" || model === "judicialMuseum") {
+      drawCircle(x + w / 2, y + 20 * scale, 28 * scale, "#ffffff");
+      fillRect(x + w / 2 - 33 * scale, y + 19 * scale, 66 * scale, 28 * scale, "#ffffff");
+      strokePerspectiveLine(x + w / 2 - 27 * scale, y + 19 * scale, x + w / 2 + 27 * scale, y + 19 * scale, shade, Math.max(1, 2 * scale));
+      for (let i = 0; i < 6; i += 1) {
+        const colX = x + (34 + i * (w / scale - 68) / 5) * scale;
+        fillRect(colX - 5 * scale, y + 58 * scale, 10 * scale, 68 * scale, "#eef5f8");
+        strokeRect(colX - 5 * scale, y + 58 * scale, 10 * scale, 68 * scale, "rgba(36,50,58,.12)", Math.max(1, 1.5 * scale));
+      }
+      return;
+    }
+
+    if (model === "hayashi") {
+      fillRect(x + w * 0.56, y - 28 * scale, 34 * scale, 44 * scale, "#c8945e");
+      fillRect(x + w * 0.56 + 7 * scale, y - 39 * scale, 20 * scale, 12 * scale, "#8a9aa1");
+      for (let i = 0; i < 4; i += 1) fillRect(x + (24 + i * 28) * scale, y + 47 * scale, 14 * scale, 14 * scale, "#fff6d8");
+      return;
+    }
+
+    if (model === "sicaoTunnel" || model === "anpingTreeHouse") {
+      for (let i = 0; i < 7; i += 1) {
+        const tx = x + (14 + i * (w / scale - 28) / 6) * scale;
+        fillRect(tx - 4 * scale, y + 18 * scale, 8 * scale, h - 14 * scale, "#5f7a45");
+        drawCircle(tx, y + 14 * scale, 24 * scale, i % 2 ? "#76b96c" : "#4a9f72");
+      }
+      return;
+    }
+
+    if (model === "bigFish") {
+      drawFishSculpture(x + w / 2, y + h * 0.45, 1.02 * scale, accent);
+      return;
+    }
+  }
+
+  function drawRoadsideFeature(landmark, x, y, w, h, scale, side) {
+    const accent = landmark.accent || COLORS.aquaDeep;
+    const doorW = 26 * scale;
+    const doorH = 34 * scale;
+    const doorX = side < 0 ? x + w - doorW - 18 * scale : x + 18 * scale;
+    fillRect(doorX, y + h - doorH, doorW, doorH, "#dceffc");
+    strokeRect(doorX, y + h - doorH, doorW, doorH, accent, Math.max(1, 2 * scale));
+    fillRect(doorX + doorW * 0.42, y + h - doorH + 4 * scale, 3 * scale, doorH - 8 * scale, accent);
+
+    const model = landmark.model || landmark.kind;
+    const glass = "#dff6ff";
+    const shade = "rgba(36,50,58,.18)";
+    const brick = "#8f4d3c";
+
+    if (model === "ugoodaysStore") {
+      fillRect(x + 8 * scale, y + 8 * scale, w - 16 * scale, 48 * scale, "#ffffff");
+      fillRect(x + 11 * scale, y + 53 * scale, w - 22 * scale, 8 * scale, "rgba(36,50,58,.16)");
+      for (let i = 0; i < 15; i += 1) fillRect(x + (15 + i * 13) * scale, y + 9 * scale, 3 * scale, 47 * scale, "rgba(36,50,58,.13)");
+      fillRect(x + 16 * scale, y + 16 * scale, 48 * scale, 24 * scale, "#bfeef8");
+      strokeRect(x + 16 * scale, y + 16 * scale, 48 * scale, 24 * scale, "#7fc3de", Math.max(1, 2 * scale));
+      drawText("優格", x + 40 * scale, y + 31 * scale, Math.max(8, 13 * scale), "#ffffff", "center");
+      drawText("專賣", x + 40 * scale, y + 43 * scale, Math.max(7, 11 * scale), "#ffffff", "center");
+      drawCircle(x + 84 * scale, y + 32 * scale, 20 * scale, COLORS.aqua);
+      drawCircle(x + 73 * scale, y + 37 * scale, 5 * scale, "#ffffff");
+      drawCircle(x + 91 * scale, y + 39 * scale, 5 * scale, "#ffffff");
+      fillRect(x + 79 * scale, y + 45 * scale, 18 * scale, 4 * scale, "#ffffff");
+      drawText("純粹好食", x + w * 0.66, y + 36 * scale, Math.max(13, 22 * scale), COLORS.aquaDeep, "center");
+      drawText("UGOODAYS", x + w * 0.66, y + 50 * scale, Math.max(6, 9 * scale), COLORS.aqua, "center");
+      fillRect(x, y + 65 * scale, w, 18 * scale, "#8fcfe0");
+      fillRect(x, y + 81 * scale, w, 7 * scale, "#6ab7c9");
+      fillRect(x + 15 * scale, y + 92 * scale, 72 * scale, 46 * scale, "#5e554d");
+      for (let i = 0; i < 7; i += 1) fillRect(x + 18 * scale, y + (99 + i * 6) * scale, 66 * scale, 3 * scale, "#2f2c29");
+      fillRect(x + 96 * scale, y + 85 * scale, 42 * scale, 58 * scale, "#eefcff");
+      strokeRect(x + 96 * scale, y + 85 * scale, 42 * scale, 58 * scale, COLORS.aquaDeep, Math.max(2, 3 * scale));
+      fillRect(x + 116 * scale, y + 90 * scale, 3 * scale, 47 * scale, COLORS.aquaDeep);
+      fillRect(x + 146 * scale, y + 89 * scale, 56 * scale, 54 * scale, "#dff6ff");
+      strokeRect(x + 146 * scale, y + 89 * scale, 56 * scale, 54 * scale, COLORS.aqua, Math.max(1, 2 * scale));
+      fillRect(x + 153 * scale, y + 95 * scale, 42 * scale, 13 * scale, "#f19aa0");
+      drawText("徵求", x + 174 * scale, y + 105 * scale, Math.max(6, 9 * scale), "#ffffff", "center");
+      drawCircle(x + 174 * scale, y + 123 * scale, 12 * scale, "#ffffff");
+      drawCircle(x + 170 * scale, y + 126 * scale, 3 * scale, COLORS.aqua);
+      drawCircle(x + 179 * scale, y + 126 * scale, 3 * scale, COLORS.aqua);
+      fillRect(x + 168 * scale, y + 133 * scale, 16 * scale, 3 * scale, COLORS.aqua);
+      fillRect(x + 35 * scale, y + 145 * scale, 130 * scale, 5 * scale, "rgba(36,50,58,.22)");
+      return;
+    }
+
+    if (model === "tainanStation") {
+      fillRect(x + 17 * scale, y + 22 * scale, w - 34 * scale, 20 * scale, "#8f3550");
+      fillRect(x + 48 * scale, y - 7 * scale, 62 * scale, 31 * scale, "#c85f45");
+      fillRect(x + 65 * scale, y - 29 * scale, 29 * scale, 31 * scale, "#fff4dc");
+      fillRect(x + 72 * scale, y - 43 * scale, 15 * scale, 15 * scale, "#8f3550");
+      drawCircle(x + 79 * scale, y - 17 * scale, 10 * scale, "#f7fdff");
+      strokeCircle(x + 79 * scale, y - 17 * scale, 10 * scale, accent, Math.max(1, 2 * scale));
+      for (let i = 0; i < 5; i += 1) {
+        fillRect(x + (23 + i * 26) * scale, y + 60 * scale, 15 * scale, 24 * scale, glass);
+        strokeRect(x + (23 + i * 26) * scale, y + 60 * scale, 15 * scale, 24 * scale, shade, Math.max(1, 2 * scale));
+      }
+      fillRect(x + 63 * scale, y + 88 * scale, 38 * scale, 36 * scale, "#8fcfe0");
+      fillRect(x + 6 * scale, y + 102 * scale, w - 12 * scale, 8 * scale, "#8f3550");
+      for (let i = 0; i < 4; i += 1) {
+        const ax = x + (20 + i * 32) * scale;
+        drawCircle(ax + 9 * scale, y + 91 * scale, 9 * scale, "#f8ead0");
+        fillRect(ax, y + 91 * scale, 18 * scale, 22 * scale, "#f8ead0");
+      }
+      drawText("臺南車站", x + w / 2, y + 50 * scale, Math.max(8, 12 * scale), "#8f3550", "center");
+      return;
+    }
+
+    if (model === "nanfangMall") {
+      fillRect(x + 9 * scale, y + 34 * scale, w - 18 * scale, 70 * scale, "#f7fdff");
+      fillRect(x + 14 * scale, y + 18 * scale, 76 * scale, 25 * scale, "#82c6d8");
+      fillRect(x + 98 * scale, y - 6 * scale, 58 * scale, 52 * scale, "#bfeef8");
+      strokeRect(x + 98 * scale, y - 6 * scale, 58 * scale, 52 * scale, shade, Math.max(1, 2 * scale));
+      for (let row = 0; row < 2; row += 1) {
+        for (let col = 0; col < 5; col += 1) {
+          fillRect(x + (25 + col * 27) * scale, y + (57 + row * 24) * scale, 16 * scale, 14 * scale, col % 2 ? "#fff4dc" : glass);
+        }
+      }
+      fillRect(x + 67 * scale, y + 104 * scale, 48 * scale, 30 * scale, "#86c6d6");
+      fillRect(x + 116 * scale, y + 10 * scale, 44 * scale, 14 * scale, "#ffffff");
+      drawText("南紡", x + 138 * scale, y + 21 * scale, Math.max(8, 12 * scale), "#82c6d8", "center");
+      drawQuad(x + 18 * scale, y + 110 * scale, x + 167 * scale, y + 110 * scale, x + 156 * scale, y + 132 * scale, x + 30 * scale, y + 132 * scale, "rgba(130,198,216,.34)");
+      for (let i = 0; i < 4; i += 1) fillRect(x + (32 + i * 32) * scale, y + 115 * scale, 17 * scale, 9 * scale, "#ffffff");
+      return;
+    }
+
+    if (model === "shanhuaStation") {
+      fillRect(x, y + 24 * scale, w, 14 * scale, "#6f9fb0");
+      fillRect(x + 21 * scale, y + 2 * scale, w - 42 * scale, 22 * scale, "#dff6ff");
+      strokeRect(x + 21 * scale, y + 2 * scale, w - 42 * scale, 22 * scale, shade, Math.max(1, 2 * scale));
+      drawText("善化", x + w / 2, y + 15 * scale, Math.max(10, 16 * scale), COLORS.aquaDeep, "center");
+      drawCircle(x + w / 2, y + 58 * scale, 13 * scale, "#fff4dc");
+      strokeCircle(x + w / 2, y + 58 * scale, 13 * scale, "#6f9fb0", Math.max(1, 2 * scale));
+      for (let i = 0; i < 3; i += 1) fillRect(x + (18 + i * 43) * scale, y + 84 * scale, 27 * scale, 20 * scale, glass);
+      fillRect(x - 10 * scale, y + 113 * scale, w + 20 * scale, 6 * scale, "#4a5b62");
+      fillRect(x + 16 * scale, y + 39 * scale, w - 32 * scale, 9 * scale, "#8cb8c7");
+      fillRect(x + 42 * scale, y + 49 * scale, w - 84 * scale, 8 * scale, "#ffffff");
+      drawText("SHANHUA", x + w / 2, y + 74 * scale, Math.max(6, 9 * scale), "#6f9fb0", "center");
+      return;
+    }
+
+    if (model === "chihkanTower") {
+      fillRect(x + 10 * scale, y + 41 * scale, w - 20 * scale, 74 * scale, "#fff4dc");
+      drawBrickPattern(x + 13 * scale, y + 49 * scale, w - 26 * scale, 66 * scale, brick);
+      drawQuad(x, y + 30 * scale, x + w / 2, y + 8 * scale, x + w, y + 30 * scale, x + w - 16 * scale, y + 38 * scale, "#b44966");
+      drawQuad(x + 22 * scale, y + 16 * scale, x + w / 2, y - 2 * scale, x + w - 22 * scale, y + 16 * scale, x + w - 35 * scale, y + 24 * scale, "#d97a57");
+      drawQuad(x + 45 * scale, y + 3 * scale, x + w / 2, y - 14 * scale, x + w - 45 * scale, y + 3 * scale, x + w - 54 * scale, y + 11 * scale, "#8f3550");
+      for (let i = 0; i < 4; i += 1) fillRect(x + (30 + i * 31) * scale, y + 68 * scale, 13 * scale, 47 * scale, "#a85d3b");
+      fillRect(x + 25 * scale, y + 95 * scale, w - 50 * scale, 8 * scale, "#b44966");
+      for (let i = 0; i < 5; i += 1) fillRect(x + (22 + i * 28) * scale, y + 54 * scale, 12 * scale, 8 * scale, "#fff1cf");
+      drawText("赤崁樓", x + w / 2, y + 43 * scale, Math.max(8, 12 * scale), "#fff1cf", "center");
+      return;
+    }
+
+    if (model === "helePlaza") {
+      for (let i = 0; i < 4; i += 1) fillRect(x + (12 + i * 18) * scale, y + (64 - i * 12) * scale, (w / scale - 24 - i * 36) * scale, 12 * scale, i % 2 ? "#ffffff" : "#dff6ff");
+      fillRect(x + 36 * scale, y + 76 * scale, w - 72 * scale, 28 * scale, "#8fcfe0");
+      fillRect(x + 50 * scale, y + 85 * scale, w - 100 * scale, 10 * scale, "#bfeef8");
+      drawCircle(x + 25 * scale, y + 92 * scale, 8 * scale, "rgba(255,255,255,.72)");
+      drawCircle(x + w - 25 * scale, y + 73 * scale, 10 * scale, "rgba(255,255,255,.72)");
+      return;
+    }
+
+    if (model === "bigFish") {
+      drawFishSculpture(x + w / 2, y + h * 0.55, 0.82 * scale, accent);
+      fillRect(x + 26 * scale, y + h - 20 * scale, w - 52 * scale, 8 * scale, "#9ccfd8");
+      return;
+    }
+
+    if (model === "anpingFort") {
+      fillRect(x + 8 * scale, y + 62 * scale, w - 16 * scale, 52 * scale, "#c57563");
+      drawBrickPattern(x + 8 * scale, y + 62 * scale, w - 16 * scale, 52 * scale, brick);
+      fillRect(x + 57 * scale, y + 8 * scale, 45 * scale, 60 * scale, "#fff1cf");
+      fillRect(x + 52 * scale, y - 2 * scale, 55 * scale, 10 * scale, "#b44966");
+      fillRect(x + 68 * scale, y - 18 * scale, 25 * scale, 18 * scale, "#d97a57");
+      fillRect(x + 65 * scale, y + 30 * scale, 24 * scale, 11 * scale, glass);
+      fillRect(x + 25 * scale, y + 82 * scale, w - 50 * scale, 12 * scale, "#934b42");
+      drawText("安平古堡", x + w / 2, y + 107 * scale, Math.max(8, 12 * scale), "#fff1cf", "center");
+      return;
+    }
+
+    if (model === "eternalCastle") {
+      fillRect(x + 22 * scale, y + 42 * scale, w - 44 * scale, 76 * scale, "#b55f44");
+      fillRect(x, y + 22 * scale, 44 * scale, 38 * scale, "#a74d3c");
+      fillRect(x + w - 44 * scale, y + 22 * scale, 44 * scale, 38 * scale, "#a74d3c");
+      drawBrickPattern(x + 4 * scale, y + 26 * scale, w - 8 * scale, 88 * scale, "#6e3b32");
+      fillRect(x + 68 * scale, y + 72 * scale, 42 * scale, 46 * scale, "#7b3f35");
+      fillRect(x + 119 * scale, y + 58 * scale, 28 * scale, 8 * scale, "#3d4b53");
+      fillRect(x + 143 * scale, y + 60 * scale, 20 * scale, 4 * scale, "#3d4b53");
+      return;
+    }
+
+    if (model === "taitMerchant") {
+      fillRect(x + 4 * scale, y + 31 * scale, w - 8 * scale, 18 * scale, "#8f5f42");
+      fillRect(x + 21 * scale, y + 12 * scale, w - 42 * scale, 19 * scale, "#c85f45");
+      for (let i = 0; i < 4; i += 1) {
+        const ax = x + (24 + i * 32) * scale;
+        drawCircle(ax + 12 * scale, y + 68 * scale, 13 * scale, "#f1dcc2");
+        fillRect(ax, y + 68 * scale, 24 * scale, 45 * scale, "#f1dcc2");
+        fillRect(ax + 7 * scale, y + 86 * scale, 10 * scale, 29 * scale, glass);
+      }
+      return;
+    }
+
+    if (model === "judicialMuseum") {
+      drawBrickPattern(x + 6 * scale, y + 33 * scale, w - 12 * scale, 86 * scale, "#743a32");
+      fillRect(x + 18 * scale, y + 14 * scale, w - 36 * scale, 22 * scale, "#8f3550");
+      drawCircle(x + w / 2, y + 13 * scale, 22 * scale, "#f3e0bd");
+      fillRect(x + w / 2 - 23 * scale, y + 14 * scale, 46 * scale, 24 * scale, "#f3e0bd");
+      for (let i = 0; i < 5; i += 1) {
+        const wx = x + (23 + i * 29) * scale;
+        drawCircle(wx + 9 * scale, y + 68 * scale, 9 * scale, "#fff1cf");
+        fillRect(wx, y + 68 * scale, 18 * scale, 30 * scale, "#fff1cf");
+      }
+      return;
+    }
+
+    if (model === "governorResidence") {
+      fillRect(x + 6 * scale, y + 28 * scale, w - 12 * scale, 20 * scale, "#4a5b62");
+      fillRect(x + 36 * scale, y + 8 * scale, w - 72 * scale, 22 * scale, "#5e554d");
+      fillRect(x + 24 * scale, y + 54 * scale, 22 * scale, 59 * scale, "#d7a66e");
+      fillRect(x + w - 46 * scale, y + 54 * scale, 22 * scale, 59 * scale, "#d7a66e");
+      for (let i = 0; i < 3; i += 1) fillRect(x + (58 + i * 23) * scale, y + 66 * scale, 14 * scale, 20 * scale, glass);
+      return;
+    }
+
+    if (model === "shuixianMarket" || model === "guohuaStreet" || model === "funongStreet" || model === "shennongStreet") {
+      const awning = model === "shuixianMarket" ? "#2f9b8c" : model === "funongStreet" ? "#c85f45" : model === "shennongStreet" ? "#8f5f42" : "#ef8b53";
+      const shopCount = model === "shuixianMarket" ? 2 : 4;
+      for (let i = 0; i < shopCount; i += 1) {
+        const shopW = (w - 14 * scale) / shopCount;
+        const sx = x + 7 * scale + i * shopW;
+        fillRect(sx, y + 46 * scale + (i % 2) * 5 * scale, shopW - 4 * scale, 68 * scale, i % 2 ? "#dff6ff" : "#fff4dc");
+        fillRect(sx - 2 * scale, y + 34 * scale + (i % 2) * 5 * scale, shopW, 14 * scale, i % 2 ? accent : awning);
+        fillRect(sx + 8 * scale, y + 70 * scale, 20 * scale, 14 * scale, "#f7fdff");
+        fillRect(sx + 11 * scale, y + 94 * scale, 16 * scale, 20 * scale, "#8fcfe0");
+      }
+      if (model === "shuixianMarket") {
+        for (let i = 0; i < 8; i += 1) fillRect(x + i * 20 * scale, y + 28 * scale, 10 * scale, 18 * scale, i % 2 ? "#f6d27a" : "#2f9b8c");
+      } else {
+        for (let i = 0; i < 6; i += 1) drawCircle(x + (16 + i * 24) * scale, y + 25 * scale, 6 * scale, i % 2 ? "#f4d16f" : "#d8484f");
+      }
+      return;
+    }
+
+    if (model === "sicaoTunnel") {
+      fillRect(x, y + 87 * scale, w, 28 * scale, "#8fcfe0");
+      for (let i = 0; i < 7; i += 1) {
+        const bx = x + (12 + i * 24) * scale;
+        fillRect(bx, y + 22 * scale, 10 * scale, 84 * scale, "#5f7a45");
+        drawCircle(bx + 5 * scale, y + 21 * scale, 22 * scale, "rgba(77,138,76,.82)");
+        drawCircle(bx + 18 * scale, y + 38 * scale, 18 * scale, "rgba(101,168,95,.68)");
+      }
+      fillRect(x + 58 * scale, y + 94 * scale, 54 * scale, 10 * scale, "#8b5d3c");
+      return;
+    }
+
+    if (model === "yuguangIsland") {
+      fillRect(x, y + 82 * scale, w, 35 * scale, "#f2d4a8");
+      fillRect(x, y + 61 * scale, w, 22 * scale, "#8fcfe0");
+      drawCircle(x + 34 * scale, y + 45 * scale, 16 * scale, COLORS.yellow);
+      fillRect(x + 111 * scale, y + 10 * scale, 15 * scale, 54 * scale, "#f7fdff");
+      fillRect(x + 106 * scale, y + 3 * scale, 25 * scale, 8 * scale, "#d8484f");
+      fillRect(x + 112 * scale, y + 31 * scale, 13 * scale, 8 * scale, "#d8484f");
+      return;
+    }
+
+    if (model === "hayashi") {
+      fillRect(x + 14 * scale, y + 37 * scale, w - 28 * scale, 82 * scale, "#e9d8bd");
+      fillRect(x + 27 * scale, y + 21 * scale, w - 54 * scale, 18 * scale, "#c8945e");
+      fillRect(x + 42 * scale, y + 2 * scale, w - 84 * scale, 28 * scale, "#fff4dc");
+      fillRect(x + 54 * scale, y - 16 * scale, w - 108 * scale, 22 * scale, "#c8945e");
+      for (let row = 0; row < 3; row += 1) for (let col = 0; col < 3; col += 1) fillRect(x + (30 + col * 28) * scale, y + (60 + row * 22) * scale, 14 * scale, 10 * scale, "#fff6d8");
+      fillRect(x + 50 * scale, y + 24 * scale, 12 * scale, 12 * scale, "#8a9aa1");
+      fillRect(x + 76 * scale, y + 24 * scale, 12 * scale, 12 * scale, "#8a9aa1");
+      drawText("林", x + w / 2, y + 7 * scale, Math.max(10, 16 * scale), "#8a6d50", "center");
+      return;
+    }
+
+    if (model === "mazuTemple") {
+      drawQuad(x, y + 32 * scale, x + w / 2, y + 8 * scale, x + w, y + 32 * scale, x + w - 18 * scale, y + 42 * scale, "#8f3550");
+      drawQuad(x + 14 * scale, y + 15 * scale, x + w / 2, y - 3 * scale, x + w - 14 * scale, y + 15 * scale, x + w - 28 * scale, y + 26 * scale, "#d97a57");
+      fillRect(x + 16 * scale, y + 45 * scale, w - 32 * scale, 70 * scale, "#ffe3ad");
+      fillRect(x + 26 * scale, y + 60 * scale, 21 * scale, 55 * scale, "#a85d3b");
+      fillRect(x + w - 47 * scale, y + 60 * scale, 21 * scale, 55 * scale, "#a85d3b");
+      drawCircle(x + w / 2, y + 65 * scale, 15 * scale, "#f4d16f");
+      return;
+    }
+
+    if (model === "chimeiMuseum") {
+      drawCircle(x + w / 2, y + 27 * scale, 26 * scale, "#f7fdff");
+      fillRect(x + w / 2 - 28 * scale, y + 26 * scale, 56 * scale, 27 * scale, "#f7fdff");
+      fillRect(x + 17 * scale, y + 53 * scale, w - 34 * scale, 65 * scale, "#f7fdff");
+      for (let i = 0; i < 5; i += 1) fillRect(x + (39 + i * 25) * scale, y + 62 * scale, 11 * scale, 56 * scale, "#e5edf1");
+      fillRect(x, y + 114 * scale, w, 8 * scale, "#d9c19a");
+      fillRect(x + 12 * scale, y + 104 * scale, w - 24 * scale, 8 * scale, "#ffffff");
+      drawText("奇美博物館", x + w / 2, y + 50 * scale, Math.max(8, 12 * scale), "#7aa9b6", "center");
+      return;
+    }
+
+    if (model === "tainanArtMuseum") {
+      fillRect(x + 10 * scale, y + 31 * scale, w - 20 * scale, 85 * scale, "#f7fdff");
+      drawQuad(x + 2 * scale, y + 18 * scale, x + w - 5 * scale, y + 4 * scale, x + w - 18 * scale, y + 28 * scale, x + 16 * scale, y + 36 * scale, "#ffffff");
+      strokePerspectiveLine(x + 8 * scale, y + 19 * scale, x + w - 14 * scale, y + 10 * scale, "rgba(36,50,58,.18)", Math.max(1, 2 * scale));
+      for (let i = 0; i < 4; i += 1) {
+        fillRect(x + (25 + i * 29) * scale, y + 61 * scale, 18 * scale, 18 * scale, i % 2 ? "#fff4dc" : glass);
+        fillRect(x + (25 + i * 29) * scale, y + 90 * scale, 18 * scale, 16 * scale, i % 2 ? glass : "#fff4dc");
+      }
+      return;
+    }
+
+    if (model === "gardenNightMarket") {
+      fillRect(x, y + 47 * scale, w, 65 * scale, "#fff4dc");
+      fillRect(x - 5 * scale, y + 32 * scale, w + 10 * scale, 15 * scale, "#d8484f");
+      for (let i = 0; i < 9; i += 1) fillRect(x + i * 18 * scale, y + 32 * scale, 9 * scale, 15 * scale, i % 2 ? "#fff4dc" : "#d8484f");
+      for (let i = 0; i < 3; i += 1) {
+        fillRect(x + (14 + i * 43) * scale, y + 67 * scale, 30 * scale, 28 * scale, i % 2 ? glass : "#ffe2b8");
+        drawCircle(x + (29 + i * 43) * scale, y + 80 * scale, 8 * scale, i % 2 ? COLORS.yellow : COLORS.orange);
+      }
+      return;
+    }
+
+    if (model === "anpingTreeHouse") {
+      fillRect(x + 9 * scale, y + 42 * scale, w - 18 * scale, 75 * scale, "#d7a66e");
+      drawBrickPattern(x + 9 * scale, y + 42 * scale, w - 18 * scale, 75 * scale, brick);
+      fillRect(x + 1 * scale, y + 31 * scale, w - 2 * scale, 12 * scale, "#8f5f42");
+      for (let i = 0; i < 7; i += 1) {
+        const rootX = x + (15 + i * 19) * scale;
+        fillRect(rootX, y + (22 + (i % 2) * 7) * scale, 7 * scale, 95 * scale, "#5f7a45");
+        drawCircle(rootX + 4 * scale, y + (17 + (i % 3) * 6) * scale, 11 * scale, "rgba(101,168,95,.82)");
+      }
+      return;
+    }
+
+    if (model === "anpingBattery") {
+      fillRect(x + 10 * scale, y + 51 * scale, w - 20 * scale, 62 * scale, "#a85d3b");
+      drawBrickPattern(x + 10 * scale, y + 51 * scale, w - 20 * scale, 62 * scale, "#6e3b32");
+      fillRect(x, y + 39 * scale, w, 14 * scale, "#8f4d3c");
+      for (let i = 0; i < 5; i += 1) fillRect(x + (14 + i * 30) * scale, y + 31 * scale, 17 * scale, 10 * scale, "#8f4d3c");
+      fillRect(x + 111 * scale, y + 72 * scale, 28 * scale, 8 * scale, "#3d4b53");
+      fillRect(x + 135 * scale, y + 74 * scale, 27 * scale, 4 * scale, "#3d4b53");
+      drawCircle(x + 111 * scale, y + 82 * scale, 10 * scale, "#3d4b53");
+      return;
+    }
+
+    if (landmark.kind === "ugoodays") {
+      fillRect(x + 10 * scale, y + 12 * scale, w - 20 * scale, 26 * scale, "#f7fdff");
+      drawCircle(x + 31 * scale, y + 25 * scale, 13 * scale, COLORS.aqua);
+      drawText("UG", x + 31 * scale, y + 30 * scale, Math.max(8, 12 * scale), "#ffffff", "center");
+      drawText("純粹好食", x + w * 0.63, y + 30 * scale, Math.max(9, 15 * scale), COLORS.aquaDeep, "center");
+      fillRect(x + 12 * scale, y + h - 48 * scale, 32 * scale, 28 * scale, "#c9b79d");
+    } else if (landmark.kind === "station") {
+      fillRect(x + 12 * scale, y + 22 * scale, w - 24 * scale, 10 * scale, accent);
+      drawCircle(x + w / 2, y + 47 * scale, 13 * scale, "#ffffff");
+      strokeCircle(x + w / 2, y + 47 * scale, 13 * scale, accent, Math.max(1, 2 * scale));
+      for (let i = 0; i < 3; i += 1) fillRect(x + 16 * scale + i * 34 * scale, y + h - 62 * scale, 20 * scale, 22 * scale, "#ffffff");
+    } else if (landmark.kind === "mall") {
+      for (let i = 0; i < 4; i += 1) fillRect(x + 14 * scale + i * 33 * scale, y + 42 * scale, 20 * scale, 16 * scale, i % 2 ? "#fff4dc" : "#dff6ff");
+      fillRect(x + w - 46 * scale, y - 28 * scale, 36 * scale, 48 * scale, "#bfeef8");
+      strokeRect(x + w - 46 * scale, y - 28 * scale, 36 * scale, 48 * scale, accent, Math.max(1, 2 * scale));
+    } else if (landmark.kind === "fort") {
+      for (let i = 0; i < 5; i += 1) fillRect(x + 10 * scale + i * 24 * scale, y - 12 * scale, 16 * scale, 22 * scale, accent);
+      for (let i = 0; i < 6; i += 1) fillRect(x + 12 * scale + i * 20 * scale, y + 42 * scale, 12 * scale, 8 * scale, "rgba(120,49,46,.35)");
+    } else if (landmark.kind === "fish") {
+      drawFishSculpture(x + w / 2, y + 55 * scale, 0.62 * scale, accent);
+    } else if (landmark.kind === "museum") {
+      fillRect(x + 8 * scale, y + 38 * scale, w - 16 * scale, 8 * scale, accent);
+      for (let i = 0; i < 5; i += 1) fillRect(x + 16 * scale + i * 22 * scale, y + 46 * scale, 9 * scale, h - 58 * scale, "#ffffff");
+    } else if (landmark.kind === "market" || landmark.kind === "street") {
+      for (let i = 0; i < 5; i += 1) fillRect(x + 10 * scale + i * 22 * scale, y + 28 * scale, 18 * scale, 12 * scale, i % 2 ? "#ffffff" : accent);
+      fillRect(x + 9 * scale, y + 40 * scale, w - 18 * scale, 10 * scale, accent);
+    } else if (landmark.kind === "tunnel" || landmark.kind === "treehouse") {
+      for (let i = 0; i < 5; i += 1) drawCircle(x + 18 * scale + i * 24 * scale, y + 36 * scale, 16 * scale, i % 2 ? "#8ec47d" : "#65a85f");
+      fillRect(x + 14 * scale, y + 58 * scale, w - 28 * scale, 12 * scale, "#8b6b4e");
+    } else if (landmark.kind === "island") {
+      drawCircle(x + w * 0.72, y + 32 * scale, 20 * scale, COLORS.yellow);
+      fillRect(x + 24 * scale, y + 44 * scale, w - 48 * scale, 12 * scale, COLORS.aqua);
+      fillRect(x + w * 0.28, y + 18 * scale, 12 * scale, 48 * scale, "#ffffff");
+      fillRect(x + w * 0.25, y + 13 * scale, 18 * scale, 8 * scale, accent);
+    } else if (landmark.kind === "temple") {
+      drawQuad(x + 8 * scale, y + 22 * scale, x + w / 2, y - 10 * scale, x + w - 8 * scale, y + 22 * scale, x + w - 20 * scale, y + 30 * scale, accent);
+      drawQuad(x + 8 * scale, y + 22 * scale, x + 20 * scale, y + 30 * scale, x + w - 20 * scale, y + 30 * scale, x + w - 8 * scale, y + 22 * scale, COLORS.orange);
+    } else if (landmark.kind === "deco") {
+      for (let floor = 0; floor < 3; floor += 1) {
+        for (let i = 0; i < 4; i += 1) fillRect(x + 16 * scale + i * 24 * scale, y + 38 * scale + floor * 18 * scale, 12 * scale, 9 * scale, "#ffffff");
+      }
+      fillRect(x + w - 24 * scale, y + 18 * scale, 14 * scale, 36 * scale, accent);
+    } else {
+      for (let i = 0; i < 3; i += 1) fillRect(x + 18 * scale + i * 34 * scale, y + 48 * scale, 19 * scale, 16 * scale, "#ffffff");
+    }
+  }
+
+  function drawFishSculpture(cx, cy, scale, color) {
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+    drawCircle(0, 0, 34, "rgba(255,255,255,.72)");
+    strokeCircle(0, 0, 34, color, 4);
+    drawTriangle(-40, -4, -62, -20, -58, 18, color);
+    drawTriangle(28, -8, 54, -26, 48, 4, color);
+    fillRect(-18, -12, 34, 7, color);
+    fillRect(-22, 5, 40, 7, color);
+    drawCircle(13, -11, 5, COLORS.ink);
+    fillRect(-25, 30, 50, 8, color);
+    ctx.restore();
+  }
+
+  function drawRoadsideDepthBlock(x, y, scale, side, index) {
+    const w = (158 + (index % 4) * 18) * scale;
+    const h = (104 + (index % 3) * 18) * scale;
+    const skew = side * (24 + (index % 2) * 7) * scale;
+    const baseX = side < 0 ? x + 22 * scale : x + 10 * scale;
+    const baseY = y + 9 * scale;
+    ctx.save();
+    ctx.globalAlpha *= 0.58;
+    drawQuad(
+      baseX + skew,
+      baseY - h - 18 * scale,
+      baseX + w + skew,
+      baseY - h - 10 * scale,
+      baseX + w,
+      baseY + 8 * scale,
+      baseX,
+      baseY,
+      index % 2 ? "#e7cdb4" : "#d9eef2"
+    );
+    ctx.globalAlpha *= 0.72;
+    drawQuad(
+      baseX,
+      baseY,
+      baseX + w,
+      baseY + 8 * scale,
+      baseX + w + 34 * scale,
+      baseY + 24 * scale,
+      baseX - 28 * scale,
+      baseY + 17 * scale,
+      "rgba(36, 50, 58, 0.18)"
+    );
+    ctx.globalAlpha *= 0.7;
+    fillRect(baseX + 8 * scale, baseY - h, w * 0.82, h * 0.86, "rgba(255,255,255,.22)");
+    ctx.restore();
+  }
+
+  function drawQuad(x1, y1, x2, y2, x3, y3, x4, y4, color) {
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.lineTo(x3, y3);
+    ctx.lineTo(x4, y4);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
   }
 
   function drawTainanBackdrop(w, h, wallTop, t) {
@@ -3109,12 +4752,13 @@
   function drawHitZone() {
     if (state.phase !== "playing") return;
     const x = Math.round(player.x);
-    const y = state.lanes[player.lane];
+    const y = player.y;
     const pulse = 0.55 + Math.sin(state.time * 9) * 0.22;
-    fillRect(x - 20, y - 88, 40, 112, `rgba(180,73,102,${0.08 + pulse * 0.04})`);
-    strokeRect(x - 20, y - 88, 40, 112, "rgba(180,73,102,.46)", 3);
-    fillRect(x - 3, y - 96, 6, 124, "rgba(38,138,161,.55)");
-    drawText("接料區", x, y - 109, isMobileLayout() ? 12 : 14, COLORS.berry, "center");
+    fillRect(x - 44, y - 104, 88, 122, `rgba(180,73,102,${0.05 + pulse * 0.03})`);
+    strokeRect(x - 44, y - 104, 88, 122, "rgba(180,73,102,.38)", 3);
+    strokeCircle(x, y - 46, 44 + pulse * 6, "rgba(255,255,255,.62)", 2);
+    strokeCircle(x, y - 46, 28 + pulse * 4, "rgba(38,138,161,.50)", 3);
+    drawText("吃好料", x, y - 119, isMobileLayout() ? 12 : 14, COLORS.berry, "center");
     const activeMult = state.multiplier * (state.flavorRushTime > 0 ? state.flavorMultiplier : 1);
     if (activeMult > 1) {
       drawText(`x${activeMult.toFixed(1)}`, x, y + 43, 18, COLORS.aquaDeep, "center");
@@ -3122,9 +4766,18 @@
   }
 
   function drawEntity(entity) {
+    const scale = entity.depthScale || roadEntityScale(entity.y);
+    const cx = entity.x + entity.w / 2;
+    const cy = entity.y - entity.h * 0.55;
+    if (entity.type === "hazard" && !entity.done) drawHazardLaneWarning(entity);
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(scale, scale);
+    ctx.translate(-cx, -cy);
     if (entity.type === "station") drawStation(entity);
     else if (entity.type === "hazard") drawHazard(entity);
     else drawItem(entity);
+    ctx.restore();
   }
 
   function drawItem(entity) {
@@ -3134,7 +4787,7 @@
     const target = isNextTargetEntity(entity);
     ctx.save();
     ctx.translate(x + 34, y + 34);
-    ctx.scale(0.84, 0.84);
+    ctx.scale(0.94, 0.94);
     ctx.translate(-(x + 34), -(y + 34));
     drawGoodItemAura(entity, x + 34, y + 34, color, target);
     drawPixelShadow(x + 10, entity.y - 10, entity.w + 8);
@@ -3204,13 +4857,21 @@
     const cx = x + 34;
     const cy = y + 38;
     ctx.save();
+    const radius = 31 + pulse * 10;
+    ctx.globalAlpha = 0.32;
+    drawCircle(cx + 6, cy + 9, radius + 2, COLORS.ink);
     ctx.globalAlpha = 0.9;
-    drawCircle(cx, cy, 31 + pulse * 10, def.bg || "#fff4dc");
-    ctx.globalAlpha = 0.7;
-    drawCircle(cx - 8, cy - 8, 16, "#ffffff");
+    drawCircle(cx + 4, cy + 6, radius, def.color || COLORS.aquaDeep);
+    ctx.globalAlpha = 0.94;
+    drawCircle(cx, cy, radius, def.bg || "#fff4dc");
+    ctx.globalAlpha = 0.72;
+    drawCircle(cx - 9, cy - 10, 15, "#ffffff");
     drawCircle(cx + 13, cy + 10, 12, "#ffffff");
-    ctx.globalAlpha = required ? 0.95 : 0.55;
-    strokeCircle(cx, cy, 31 + pulse * 10, def.color, required ? 4 : 2);
+    ctx.globalAlpha = 0.38;
+    fillRect(cx - radius * 0.48, cy + radius * 0.46, radius * 0.96, 7, def.color || COLORS.aquaDeep);
+    ctx.globalAlpha = required ? 0.98 : 0.68;
+    strokeCircle(cx, cy, radius, def.color, required ? 5 : 3);
+    strokeCircle(cx + 4, cy + 6, radius, "rgba(36,50,58,.24)", 2);
     if (required) {
       fillRect(cx - 28, cy - 32, 10, 10, def.color);
       fillRect(cx + 18, cy - 32, 10, 10, def.color);
@@ -3238,10 +4899,36 @@
     ctx.restore();
   }
 
+  function drawIngredientDepthCue(key, x, y, def) {
+    const cx = x + 34;
+    const cy = y + 38;
+    ctx.save();
+    ctx.globalAlpha = 0.62;
+    if (["milk", "culture", "calcium"].includes(key)) {
+      for (let i = 0; i < 3; i += 1) {
+        strokeCircle(cx - 10 + i * 10, cy + 2 - i * 3, 11 + i * 3, i % 2 ? "#ffffff" : def.color, 2);
+      }
+    } else if (["fruit", "honey", "oat", "matcha", "cocoa", "salt", "crunch"].includes(key)) {
+      for (let i = 0; i < 5; i += 1) {
+        const a = -Math.PI / 2 + i * 0.78;
+        fillRect(cx + Math.cos(a) * 22 - 4, cy + Math.sin(a) * 17 - 4, 8, 8, i % 2 ? "#ffffff" : def.color);
+      }
+    } else {
+      strokeRect(cx - 24, cy - 21, 48, 42, def.color, 2);
+      fillRect(cx - 19, cy - 15, 38, 6, "#ffffff");
+      fillRect(cx - 19, cy + 9, 38, 6, def.color);
+    }
+    ctx.globalAlpha = 0.5;
+    fillRect(cx + 19, cy - 18, 5, 34, "rgba(36,50,58,.22)");
+    fillRect(cx - 17, cy + 20, 34, 5, "rgba(36,50,58,.18)");
+    ctx.restore();
+  }
+
   function drawIngredientIcon(key, x, y, required) {
     const def = TYPES[key];
     if (required) drawTargetPips(x, y, def.color);
     drawStickerBase(x, y, def, required);
+    drawIngredientDepthCue(key, x, y, def);
     if (key === "milk") {
       fillRect(x + 21, y + 18, 26, 43, "#f7fdff");
       fillRect(x + 21, y + 18, 13, 9, "#ffffff");
@@ -3351,10 +5038,13 @@
     const target = isNextTargetEntity(entity);
     ctx.save();
     ctx.translate(x + 52, y + 48);
-    ctx.scale(0.86, 0.86);
+    ctx.scale(0.94, 0.94);
     ctx.translate(-(x + 52), -(y + 48));
     drawPixelShadow(x + 16, entity.y - 12, entity.w + 20);
     if (target) drawBlinkFrame(x - 8, y - 12, 120, 104, def.color);
+    drawQuad(x + 8, y + 18, x + 19, y + 8, x + 106, y + 8, x + 96, y + 18, "#ffffff");
+    drawQuad(x + 96, y + 18, x + 106, y + 8, x + 106, y + 66, x + 96, y + 86, "rgba(36,50,58,.14)");
+    fillRect(x + 5, y + 82, 104, 9, "rgba(36,50,58,.18)");
     fillRect(x, y + 28, 104, 58, def.bg);
     fillRect(x + 8, y + 15, 88, 20, "#ffffff");
     fillRect(x + 14, y + 8, 76, 10, def.color);
@@ -3419,30 +5109,169 @@
   function drawHazard(entity) {
     const x = Math.round(entity.x);
     const y = Math.round(entity.y - 72 + Math.sin(entity.anim * 8) * 4);
-    drawHazardLaneWarning(entity);
     ctx.save();
     ctx.translate(x + 36, y + 36);
-    ctx.scale(0.86, 0.86);
+    ctx.scale(0.94, 0.94);
     ctx.translate(-(x + 36), -(y + 36));
-    drawHazardAlert(entity, x, y);
+    if (!entity.done) drawHazardAlert(entity, x, y);
     drawPixelShadow(x + 10, entity.y - 9, entity.w + 10);
     const pulse = 0.55 + Math.sin(entity.anim * 10) * 0.22;
-    fillRect(x - 1, y + 3, 74, 66, `rgba(216,36,60,${0.15 + pulse * 0.08})`);
-    for (let i = 0; i < 6; i += 1) {
-      fillRect(x + 4 + i * 12, y + 7 + (i % 2) * 8, 7, 55, i % 2 ? "rgba(255,255,255,.72)" : "rgba(168,18,39,.2)");
-    }
-    fillRect(x + 5, y + 9, 62, 54, "#ffe8ed");
-    fillRect(x + 9, y + 13, 54, 11, "rgba(216,36,60,.18)");
-    strokeRect(x + 5, y + 9, 62, 54, COLORS.ink, 2);
-    strokeRect(x + 5, y + 9, 62, 54, entity.color, 6);
+    fillRect(x - 8, y - 3, 88, 82, `rgba(216,36,60,${0.12 + pulse * 0.08})`);
+    drawNegativeElement3D(entity, x + 3, y + 7, 66, 60);
     drawHazardSymbol(entity, x, y);
-    drawText("!", x + 36, y + 41, 32, "#ffffff", "center");
-    drawText(entity.short, x + 36, y + 74, 15, entity.color, "center");
-    fillRect(x - 1, y + 2, 12, 12, entity.color);
-    fillRect(x + 61, y + 2, 12, 12, entity.color);
-    fillRect(x - 1, y + 58, 12, 12, entity.color);
-    fillRect(x + 61, y + 58, 12, 12, entity.color);
-    drawEntityLabel(entity, x + 36, y + 88, "danger");
+    drawText("避開", x + 36, y - 8, 15, entity.color, "center");
+    drawText(entity.short, x + 36, y + 75, 15, entity.color, "center");
+    drawEntityLabel(entity, x + 36, y + 90, "danger");
+    drawHazardPostAction(entity, x, y);
+    ctx.restore();
+  }
+
+  function drawNegativeElement3D(entity, x, y, w, h) {
+    const color = entity.color || COLORS.berry;
+    const side = "#8f1425";
+    const top = "#ffccd3";
+    const face = "#ffe8ed";
+    ctx.save();
+    drawQuad(x + 9, y - 9, x + w + 9, y - 9, x + w, y, x, y, top);
+    drawQuad(x + w, y, x + w + 9, y - 9, x + w + 9, y + h - 9, x + w, y + h, side);
+    fillRect(x, y, w, h, face);
+    fillRect(x + 7, y + 8, w - 14, 10, "rgba(216,36,60,.2)");
+    fillRect(x + 8, y + h - 14, w - 16, 6, "rgba(36,50,58,.12)");
+    strokeRect(x, y, w, h, COLORS.ink, 3);
+    strokeRect(x, y, w, h, color, 5);
+    fillRect(x - 5, y - 5, 12, 12, color);
+    fillRect(x + w - 7, y - 5, 12, 12, color);
+    fillRect(x - 5, y + h - 7, 12, 12, color);
+    fillRect(x + w - 7, y + h - 7, 12, 12, color);
+    drawText("!", x + w * 0.5, y + h * 0.66, Math.max(24, h * 0.55), "#ffffff", "center");
+    ctx.restore();
+  }
+
+  function drawHazardBlock3D(x, y, w, h, color, label = "!") {
+    const dx = Math.max(8, w * 0.16);
+    const dy = Math.max(7, h * 0.18);
+    ctx.save();
+    drawQuad(x - 7, y + h + 4, x + w + 8, y + h + 4, x + w + dx + 4, y + h - dy + 8, x + dx - 7, y + h - dy + 8, "rgba(36,50,58,.22)");
+    drawQuad(x + dx, y - dy, x + w + dx, y - dy, x + w, y, x, y, "#ffd5dc");
+    drawQuad(x + w, y, x + w + dx, y - dy, x + w + dx, y + h - dy, x + w, y + h, "#8f1425");
+    drawQuad(x, y, x + dx, y - dy, x + dx, y + h - dy, x, y + h, "#ffb9c4");
+    fillRect(x, y, w, h, "#ffe8ed");
+    fillRect(x + 7, y + 8, w - 14, Math.max(7, h * 0.18), "rgba(216,36,60,.2)");
+    fillRect(x + 8, y + h - Math.max(16, h * 0.22), w - 16, 7, "rgba(36,50,58,.12)");
+    strokeRect(x, y, w, h, COLORS.ink, 3);
+    strokeRect(x, y, w, h, color, 5);
+    strokePerspectiveLine(x + dx, y - dy, x + w + dx, y - dy, "rgba(36,50,58,.32)", 2);
+    strokePerspectiveLine(x + w + dx, y - dy, x + w, y, "rgba(36,50,58,.32)", 2);
+    drawText(label, x + w / 2, y + h * 0.62, Math.max(24, h * 0.55), color, "center");
+    ctx.restore();
+  }
+
+  function drawLaneGapHazard(entity, x, y) {
+    const scale = entity.depthScale || roadEntityScale(entity.y);
+    const gapLane = entity.gapLane;
+    const pulse = 0.55 + Math.sin(entity.anim * 10) * 0.22;
+    const blockW = 42 * scale;
+    const blockH = 58 * scale;
+    const topY = entity.y - blockH - 16 * scale;
+    ctx.save();
+    ctx.globalAlpha *= 0.98;
+    drawText(entity.dodge === "left" ? "往左缺口" : "往右缺口", roadLaneCenter(gapLane, entity.y), topY - 12 * scale, Math.max(12, 15 * scale), entity.color, "center");
+    for (let lane = 0; lane < 3; lane += 1) {
+      const laneX = roadLaneCenter(lane, entity.y);
+      if (lane === gapLane) {
+        ctx.globalAlpha *= 0.9;
+        strokeRect(laneX - blockW * 0.5, topY + 8 * scale, blockW, blockH - 10 * scale, COLORS.leaf, Math.max(2, 3 * scale));
+        fillRect(laneX - 5 * scale, topY + blockH * 0.43, 10 * scale, 22 * scale, COLORS.leaf);
+        fillRect(laneX - 16 * scale, topY + blockH * 0.56, 32 * scale, 7 * scale, COLORS.leaf);
+        ctx.globalAlpha /= 0.9;
+        continue;
+      }
+      fillRect(laneX - blockW * 0.5 - 4 * scale, topY + 3 * scale, blockW + 8 * scale, blockH, `rgba(216,36,60,${0.18 + pulse * 0.08})`);
+      drawHazardBlock3D(laneX - blockW * 0.5, topY + 9 * scale, blockW, blockH - 10 * scale, entity.color, "!");
+      for (let i = 0; i < 4; i += 1) {
+        fillRect(laneX - blockW * 0.34 + i * blockW * 0.22, topY + 16 * scale + (i % 2) * 7 * scale, 6 * scale, blockH - 24 * scale, i % 2 ? "#ffffff" : entity.color);
+      }
+      drawHazardSymbol(entity, laneX - 36, topY + 10 * scale);
+    }
+    drawText(entity.short, roadLaneCenter(gapLane, entity.y), topY + blockH + 16 * scale, Math.max(11, 14 * scale), entity.color, "center");
+    ctx.restore();
+  }
+
+  function drawJumpHazard(entity, x, y) {
+    const pulse = 0.55 + Math.sin(entity.anim * 10) * 0.22;
+    fillRect(x - 5, y + 34, 82, 30, `rgba(216,36,60,${0.18 + pulse * 0.08})`);
+    drawHazardBlock3D(x + 4, y + 42, 66, 18, entity.color, "!");
+    for (let i = 0; i < 4; i += 1) {
+      fillRect(x + 9 + i * 16, y + 45, 8, 12, i % 2 ? "#ffffff" : entity.color);
+    }
+    fillRect(x + 1, y + 29, 8, 35, entity.color);
+    fillRect(x + 66, y + 29, 8, 35, entity.color);
+    fillRect(x + 8, y + 25, 62, 8, "#ffccd3");
+    drawText("避紅色", x + 36, y + 28, 15, entity.color, "center");
+    drawText(entity.short, x + 36, y + 75, 14, entity.color, "center");
+    drawEntityLabel(entity, x + 36, y + 90, "danger");
+  }
+
+  function drawSlideHazard(entity, x, y) {
+    const pulse = 0.55 + Math.sin(entity.anim * 10) * 0.22;
+    fillRect(x - 6, y + 2, 84, 55, `rgba(216,36,60,${0.14 + pulse * 0.08})`);
+    fillRect(x + 2, y + 7, 10, 58, entity.color);
+    fillRect(x + 62, y + 7, 10, 58, entity.color);
+    drawHazardBlock3D(x + 2, y + 10, 70, 18, entity.color, "!");
+    fillRect(x + 14, y + 50, 46, 8, "rgba(255,255,255,.84)");
+    for (let i = 0; i < 5; i += 1) {
+      fillRect(x + 8 + i * 13, y + 14, 7, 10, i % 2 ? "#ffffff" : entity.color);
+    }
+    drawText("避紅色", x + 36, y + 43, 15, entity.color, "center");
+    drawText(entity.short, x + 36, y + 75, 14, entity.color, "center");
+    drawEntityLabel(entity, x + 36, y + 90, "danger");
+  }
+
+  function drawHazardPostAction(entity, x, y) {
+    if (!entity.resolved || entity.resolveTimer <= 0) return;
+    const alpha = clamp(entity.resolveTimer / (entity.resolved === "impact" ? 1.05 : 0.95), 0, 1);
+    const color = entity.resolved === "impact" ? entity.color : COLORS.leaf;
+    const cx = x + 36;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    if (entity.resolved === "impact") {
+      const shake = Math.sin(state.time * 34) * 5;
+      strokeRect(x - 7 + shake, y - 4, 84, 78, entity.color, 4);
+      for (let i = 0; i < 6; i += 1) {
+        const sx = x + 10 + i * 11;
+        strokePerspectiveLine(sx, y + 20 + (i % 2) * 7, sx + (i % 2 ? -12 : 12), y + 34 + i * 3, entity.color, 3);
+      }
+      drawCircle(cx + 24, y + 12, 8, "#ffffff");
+      drawCircle(cx + 24, y + 12, 4, entity.color);
+      ctx.restore();
+      return;
+    }
+    if (entity.resolved === "clear") {
+      ctx.globalAlpha = alpha * 0.55;
+      for (let i = 0; i < 3; i += 1) fillRect(cx - 32 + i * 28, y + 82 + i * 4, 20, 5, COLORS.leaf);
+      ctx.restore();
+      return;
+    }
+    const dodge = entity.resolveDodge || entity.dodge;
+    if (dodge === "jump") {
+      for (let i = 0; i < 6; i += 1) {
+        const t = i / 5;
+        const px = cx - 42 + t * 84;
+        const py = y + 20 - Math.sin(t * Math.PI) * 58;
+        drawCircle(px, py, i === 2 || i === 3 ? 6 : 4, i % 2 ? "#ffffff" : color);
+      }
+      strokeRect(cx - 30, y - 52, 60, 28, color, 3);
+      fillRect(cx - 8, y - 62, 16, 34, color);
+    } else if (dodge === "slide") {
+      for (let i = 0; i < 5; i += 1) fillRect(cx - 56 + i * 25, y + 61 + i % 2 * 7, 34, 5, i % 2 ? "#ffffff" : color);
+      strokeRect(cx - 48, y + 50, 96, 26, color, 3);
+      fillRect(cx - 22, y + 61, 44, 7, color);
+    } else {
+      const laneX = roadLaneCenter(entity.gapLane ?? playerEffectiveLane(), entity.y);
+      strokeRect(laneX - 35, y + 7, 70, 64, color, 4);
+      fillRect(laneX - 5, y + 25, 10, 34, color);
+      fillRect(laneX - 23, y + 43, 46, 8, color);
+    }
     ctx.restore();
   }
 
@@ -3571,13 +5400,36 @@
       fillRect(cx - 3, cy - 14, 6, 16, COLORS.purple);
       fillRect(cx, cy, 13, 5, COLORS.purple);
       fillRect(cx - 8, cy - 25, 16, 7, COLORS.purple);
+    } else if (bonus.key === "roadSweep") {
+      fillRect(cx - 24, cy - 5, 42, 10, COLORS.aquaDeep);
+      fillRect(cx + 10, cy - 15, 10, 30, COLORS.aquaDeep);
+      for (let i = 0; i < 4; i += 1) {
+        fillRect(cx - 22 + i * 12, cy + 13 + i % 2 * 3, 8, 9, COLORS.yellow);
+      }
+      strokeRect(cx - 28, cy - 18, 56, 38, color, 3);
+    } else if (bonus.key === "streetGuard") {
+      strokeRect(cx - 23, cy - 18, 46, 36, COLORS.leaf, 4);
+      fillRect(cx - 16, cy - 10, 8, 20, "#ffffff");
+      fillRect(cx + 8, cy - 10, 8, 20, "#ffffff");
+      fillRect(cx - 23, cy - 3, 46, 6, COLORS.leaf);
+    } else if (bonus.key === "yogurtMagnet") {
+      strokeCircle(cx, cy, 22, COLORS.orange, 4);
+      fillRect(cx - 20, cy - 18, 13, 30, COLORS.orange);
+      fillRect(cx + 7, cy - 18, 13, 30, COLORS.orange);
+      drawCapsule(cx - 13, cy + 7, 26, 10, "#ffffff", COLORS.aqua, COLORS.orange);
+    } else if (bonus.key === "pureWave") {
+      for (let i = 0; i < 3; i += 1) {
+        strokeCircle(cx, cy, 12 + i * 8 + Math.sin(entity.anim * 8) * 2, i % 2 ? "#ffffff" : COLORS.aquaDeep, 2);
+      }
+      fillRect(cx - 6, cy - 22, 12, 44, color);
+      fillRect(cx - 22, cy - 6, 44, 12, color);
     } else {
       drawPixelStar(cx, cy, color);
     }
   }
 
   function drawHazardAlert(entity, x, y) {
-    const close = entity.lane === player.lane && entity.x > player.x + 8 && entity.x - player.x < Math.min(420, state.width * 0.62);
+    const close = Math.abs(entity.x + entity.w / 2 - player.x) < 56 && entity.y < player.y && player.y - entity.y < Math.min(430, state.height * 0.48);
     if (state.phase !== "playing" || !close) return;
     const pulse = 0.5 + Math.sin(state.time * 20) * 0.3;
     ctx.save();
@@ -3598,17 +5450,17 @@
   }
 
   function drawHazardLaneWarning(entity) {
-    const close = entity.lane === player.lane && entity.x > player.x + 8 && entity.x - player.x < Math.min(520, state.width * 0.72);
+    const close = Math.abs(entity.x + entity.w / 2 - player.x) < 70 && entity.y < player.y && player.y - entity.y < Math.min(310, state.height * 0.38);
     if (state.phase !== "playing" || !close) return;
-    const laneY = state.lanes[entity.lane];
+    const laneX = roadLaneCenter(entity.lane, entity.y);
     const pulse = 0.45 + Math.sin(state.time * 18) * 0.25;
     ctx.save();
-    ctx.globalAlpha = 0.14 + pulse * 0.1;
-    fillRect(0, laneY - 82, state.width, 124, entity.color);
-    ctx.globalAlpha = 0.38 + pulse * 0.24;
-    for (let x = -40 - (state.time * state.speed * 0.75) % 72; x < state.width + 80; x += 72) {
-      fillRect(x, laneY - 74, 34, 8, entity.color);
-      fillRect(x + 18, laneY + 28, 34, 8, entity.color);
+    ctx.globalAlpha = 0.06 + pulse * 0.05;
+    fillRect(laneX - 42, entity.y - 34, 84, Math.min(250, player.y - entity.y + 44), entity.color);
+    ctx.globalAlpha = 0.28 + pulse * 0.18;
+    for (let y = entity.y + 6; y < Math.min(player.y + 18, entity.y + 260); y += 54) {
+      const x = roadLaneCenter(entity.lane, y);
+      fillRect(x - 18, y - 4, 36, 7, entity.color);
     }
     ctx.restore();
   }
@@ -3663,6 +5515,10 @@
       rushBoost: { kind: "boost", dx: wobble * 3, dy: -Math.abs(wobble) * 5, rot: wobble * 0.06, sx: 1.12, sy: 0.88 },
       comboBoost: { kind: "boost", dx: wobble * 2, dy: -3, rot: wobble * 0.04, sx: 1.08, sy: 0.92 },
       timeBurst: { kind: "time", dx: wobble, dy: -2, rot: wobble * 0.02, sx: 1, sy: 1 },
+      roadSweep: { kind: "boost", dx: wobble * 4, dy: -Math.abs(wobble) * 5, rot: wobble * 0.07, sx: 1.16, sy: 0.86 },
+      streetGuard: { kind: "shield", dx: 0, dy: -2, rot: 0, sx: 1.08, sy: 0.94 },
+      yogurtMagnet: { kind: "float", dx: wobble * 1.8, dy: -Math.abs(wobble) * 6, rot: wobble * 0.02, sx: 1.06, sy: 0.96 },
+      pureWave: { kind: "crystal", dx: wobble * 2, dy: -Math.abs(wobble) * 4, rot: wobble * 0.04, sx: 1.08, sy: 0.94 },
       flavor: { hazard: true, mark: "痛!", dx: wobble * 7, dy: 2, rot: wobble * 0.16, sx: 0.9, sy: 1.12 },
       coloring: { hazard: true, mark: "花!", dx: wobble * 7, dy: 2, rot: wobble * 0.15, sx: 0.92, sy: 1.1 },
       dirty: { hazard: true, mark: "髒!", dx: wobble * 8, dy: 3, rot: wobble * 0.18, sx: 0.88, sy: 1.14 },
@@ -3676,8 +5532,13 @@
 
   function drawPlayer() {
     const reaction = getPlayerReaction();
+    const jumpLift = getJumpLift();
+    const sliding = player.slideTimer > 0;
+    const jumpProgress = player.jumpTimer > 0 ? clamp(1 - player.jumpTimer / JUMP_DODGE_SECONDS, 0, 1) : 0;
+    const jumpPose = Math.sin(jumpProgress * Math.PI);
+    const crouchPose = sliding ? clamp(player.slideTimer / SLIDE_DODGE_SECONDS, 0.35, 1) : 0;
     const x = Math.round(player.x + (reaction?.dx || 0));
-    const y = Math.round(player.y - 76 + Math.sin(player.stepBob) * 3 + (reaction?.dy || 0));
+    const y = Math.round(player.y - 76 + Math.sin(player.stepBob) * 3 + (reaction?.dy || 0) - jumpLift + (sliding ? 18 : 0));
     const flash = player.invuln > 0 && Math.floor(state.time * 16) % 2 === 0;
     if (flash) return;
     const work = player.actionTimer > 0;
@@ -3698,11 +5559,14 @@
 
     ctx.save();
     ctx.translate(x, y + 99);
-    ctx.rotate(reaction?.rot || 0);
-    ctx.scale(0.74 * (reaction?.sx || 1), 0.74 * (reaction?.sy || 1) * (1 + Math.min(0.08, (weightScale - 1) * 0.28)));
+    ctx.rotate((reaction?.rot || 0) + Math.sin(jumpProgress * Math.PI * 2) * jumpPose * 0.04);
+    ctx.scale(
+      PLAYER_VISUAL_SCALE * (reaction?.sx || 1) * (1 + crouchPose * 0.16 + jumpPose * 0.04),
+      PLAYER_VISUAL_SCALE * (reaction?.sy || 1) * (1 - crouchPose * 0.24 - jumpPose * 0.03) * (1 + Math.min(0.08, (weightScale - 1) * 0.28))
+    );
     ctx.translate(-x, -(y + 99));
 
-    drawPixelShadow(x - 2, player.y - 10, 68 + (weightScale - 1) * 64);
+    drawPixelShadow(x - 2, player.y - 10, 58 + (weightScale - 1) * 58);
 
     // Oversized white knit sweater silhouette.
     fillRect(bodyX, y + 32, bodyW, 40 + bellyDrop, sweater);
@@ -3730,6 +5594,24 @@
     fillRect(x + 6, y + 75 + bellyDrop, 10, 15, "#3e6676");
     fillRect(x - 16, y + 89 + bellyDrop, 18, 8, COLORS.ink);
     fillRect(x + 4, y + 89 + bellyDrop, 18, 8, COLORS.ink);
+    if (jumpPose > 0.08) {
+      fillRect(x - 22, y + 69 + bellyDrop - jumpPose * 10, 16, 9, "#3e6676");
+      fillRect(x + 8, y + 69 + bellyDrop - jumpPose * 8, 16, 9, "#3e6676");
+      fillRect(x - 27, y + 65 + bellyDrop - jumpPose * 11, 15, 7, COLORS.ink);
+      fillRect(x + 15, y + 65 + bellyDrop - jumpPose * 9, 15, 7, COLORS.ink);
+      fillRect(x - 42, y + 25 - jumpPose * 12, 12, 26, sweater);
+      fillRect(x + 30, y + 25 - jumpPose * 12, 12, 26, sweater);
+      strokeRect(x - 42, y + 25 - jumpPose * 12, 12, 26, COLORS.ink, 2);
+      strokeRect(x + 30, y + 25 - jumpPose * 12, 12, 26, COLORS.ink, 2);
+    }
+    if (crouchPose > 0) {
+      fillRect(x - 25, y + 83 + bellyDrop, 26, 9, "#3e6676");
+      fillRect(x + 5, y + 82 + bellyDrop, 28, 9, "#3e6676");
+      fillRect(x - 31, y + 89 + bellyDrop, 20, 7, COLORS.ink);
+      fillRect(x + 23, y + 88 + bellyDrop, 20, 7, COLORS.ink);
+      fillRect(x - 45, y + 53, 25, 8, sweater);
+      fillRect(x + 21, y + 53, 28, 8, sweater);
+    }
 
     // Rounded short bob, side part, and visible gold hair clip.
     fillRect(x - 22, y + 1, 44, 18, hair);
@@ -3845,6 +5727,12 @@
     ctx.restore();
   }
 
+  function getJumpLift() {
+    if (player.jumpTimer <= 0) return 0;
+    const progress = 1 - player.jumpTimer / JUMP_DODGE_SECONDS;
+    return Math.sin(clamp(progress, 0, 1) * Math.PI) * 54;
+  }
+
   function drawPlayerReactionCallout(x, y, reaction) {
     const alpha = clamp(player.reactionTimer * 1.8, 0, 1);
     const bob = Math.sin(state.time * 24) * 4;
@@ -3887,11 +5775,18 @@
     const progress = 1 - alpha;
     ctx.save();
     if (burst.type === "lane") {
-      ctx.globalAlpha = alpha * 0.2;
-      fillRect(0, burst.y - 82, state.width, 118, burst.color);
-      ctx.globalAlpha = alpha * 0.72;
-      fillRect(0, burst.y - 16, state.width, 6, "#ffffff");
-      fillRect(0, burst.y + 20, state.width, 4, burst.color);
+      const road = getRoadMetrics();
+      ctx.globalAlpha = alpha * 0.12;
+      for (let i = 0; i < 7; i += 1) {
+        const depth = i / 6;
+        const y = road.horizonY + (road.nearY - road.horizonY) * depth ** 1.14;
+        const x = roadLaneCenter(burst.lane, y);
+        const width = 10 + depth * 44;
+        const height = 5 + depth * 8;
+        fillRect(x - width / 2, y - height / 2, width, height, burst.color);
+      }
+      ctx.globalAlpha = alpha * 0.42;
+      strokePerspectiveLine(roadLaneCenter(burst.lane, road.horizonY), road.horizonY, roadLaneCenter(burst.lane, road.nearY), road.nearY + 24, "#ffffff", 2);
     } else if (burst.type === "badge") {
       const y = burst.y - progress * 22;
       const size = burst.radius + progress * 14;
@@ -4085,7 +5980,7 @@
   function drawSpeedLines() {
     if (state.speedLineTime <= 0 && state.comboSurge <= 0) return;
     const alpha = clamp(state.speedLineTime * 2.6 + state.comboSurge * 0.16, 0, 0.72);
-    const baseY = state.lanes[player.lane] - 62;
+    const baseY = player.y - 150;
     ctx.save();
     ctx.globalAlpha = alpha;
     for (let i = 0; i < 16; i += 1) {
@@ -4169,7 +6064,7 @@
   function drawTouchCursor() {
     if (touch.id === null || !Number.isFinite(touch.targetX)) return;
     const x = Math.round(touch.targetX);
-    const y = state.lanes[player.lane];
+    const y = player.y;
     const pulse = 0.5 + Math.sin(state.time * 16) * 0.28;
     ctx.save();
     if (isMobileLayout()) {
@@ -4364,9 +6259,9 @@
 
   function emitBonusImpact(key, entity, color) {
     const { x, y } = impactCenter(entity);
-    const style = key === "cleanBoost" ? "shield" : key === "probioticBoost" ? "magnet" : key === "rushBoost" ? "speed" : key === "comboBoost" ? "confetti" : key === "timeBurst" ? "stamp" : "slow";
+    const style = key === "cleanBoost" || key === "streetGuard" ? "shield" : key === "probioticBoost" || key === "yogurtMagnet" ? "magnet" : key === "rushBoost" || key === "roadSweep" ? "speed" : key === "comboBoost" ? "confetti" : key === "timeBurst" || key === "pureWave" ? "stamp" : "slow";
     emitImpactBurst(x, y, color, style, 1.25);
-    emitImpactParticles(x, y, [color, "#ffffff", COLORS.yellow], 24, { spread: Math.PI * 2, speedMin: 100, speedMax: 280, friction: 0.95, spin: 10, shape: key === "calciumBoost" ? "diamond" : "spark" });
+    emitImpactParticles(x, y, [color, "#ffffff", COLORS.yellow], 24, { spread: Math.PI * 2, speedMin: 100, speedMax: 280, friction: 0.95, spin: 10, shape: key === "calciumBoost" || key === "pureWave" ? "diamond" : "spark" });
     trimParticles();
   }
 
@@ -4537,11 +6432,10 @@
   }
 
   function emitLaneFlash(lane, color) {
-    const y = state.lanes[lane];
-    if (!Number.isFinite(y)) return;
+    if (!Number.isFinite(lane)) return;
     state.bursts.push({
       type: "lane",
-      y,
+      lane,
       color,
       angle: 0,
       spin: 0,
@@ -4568,6 +6462,14 @@
     });
   }
 
+  function canEntityCollideWithPlayer(entity) {
+    if (!Number.isFinite(entity.lane)) return true;
+    if (state.magnetTime > 0 && entity.type !== "hazard") return true;
+    const currentLane = entity.type === "hazard" ? playerEffectiveLane() : nearestLane(player.x);
+    if (isLaneGapHazard(entity)) return true;
+    return entity.lane === (currentLane ?? player.lane);
+  }
+
   function playerRect() {
     const arcadeReach = (state.width < 620 ? 8 : 0) + Math.min(12, Math.floor(state.combo / 4) * 2);
     const weightScale = getPlayerWeightScale();
@@ -4578,16 +6480,74 @@
   }
 
   function entityRect(entity) {
-    return { x: entity.x - 4, y: entity.y - entity.h - 20, w: entity.w + 8, h: entity.h + 32 };
+    const scale = entity.depthScale || roadEntityScale(entity.y);
+    if (isLaneGapHazard(entity)) {
+      const road = getRoadMetrics();
+      const depth = roadDepthAtY(entity.y);
+      const width = roadWidthAtDepth(depth) * 0.9;
+      const height = (entity.h + 42) * scale;
+      return { x: road.centerX - width / 2, y: entity.y - height + 10, w: width, h: height };
+    }
+    const width = (entity.w + 10) * scale;
+    const height = (entity.h + 34) * scale;
+    const cx = entity.x + entity.w / 2;
+    return { x: cx - width / 2, y: entity.y - height + 10, w: width, h: height };
   }
 
   function overlap(a, b) {
     return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
   }
 
+  function formatMissingNeeds(missing, limit = 4) {
+    if (!missing.length) return "材料已齊";
+    return missing
+      .slice(0, limit)
+      .map((item) => `${(TYPES[item.key] || {}).label || item.key}x${item.count}`)
+      .join("、");
+  }
+
+  function renderNeedChips(hint, limit = 3) {
+    const items = hint.missing.length
+      ? hint.missing
+      : Object.entries(hint.recipe.needs).slice(0, limit).map(([key, count]) => ({ key, count, ready: true }));
+    return items
+      .slice(0, limit)
+      .map((item) => {
+        const def = TYPES[item.key] || {};
+        const label = def.label || item.key;
+        const short = def.short || label.slice(0, 1);
+        const color = def.color || hint.recipe.color;
+        const countText = item.count > 1 ? `x${item.count}` : "";
+        return `
+          <span class="recipe-need-chip ${item.ready ? "is-ready" : ""}">
+            <span class="recipe-need-icon" style="--need-color:${escapeHtml(color)}">${escapeHtml(short)}</span>
+            <span class="recipe-need-text">${escapeHtml(label)}${escapeHtml(countText)}</span>
+          </span>
+        `;
+      })
+      .join("");
+  }
+
   function renderRecipe() {
-    dom.orderName.textContent = `已做 ${state.totalYogurts} 杯優格`;
-    dom.recipeList.innerHTML = "";
+    const hint = getRecipeHint();
+    if (!hint) {
+      dom.orderName.textContent = `已做 ${state.totalYogurts} 杯優格`;
+      dom.recipeList.innerHTML = "";
+      return;
+    }
+    const progress = hint.totalUnits > 0 ? hint.ownedUnits / hint.totalUnits : 0;
+    const readyText = hint.ready ? "材料齊" : `缺 ${hint.missingUnits}`;
+    dom.orderName.textContent = `下一杯：${hint.recipe.label}`;
+    dom.recipeList.innerHTML = `
+      <div class="recipe-hint ${hint.ready ? "is-ready" : ""}">
+        <div class="recipe-hint-top">
+          <strong>${escapeHtml(hint.recipe.label)}</strong>
+          <span>${escapeHtml(readyText)}</span>
+        </div>
+        <div class="recipe-progress" aria-hidden="true"><span style="width:${Math.round(progress * 100)}%"></span></div>
+        <div class="recipe-need-list">${renderNeedChips(hint, hint.ready ? 2 : 3)}</div>
+      </div>
+    `;
   }
 
   function updateHud() {
@@ -4610,6 +6570,10 @@
     dom.playerName.textContent = state.playerName;
     const rushNeed = 15 + state.customFlavors * 3.5 + Math.min(8, state.level * 0.45);
     const rushPct = Math.round(clamp(state.flavorCharge / rushNeed, 0, 1) * 100);
+    const hint = getRecipeHint();
+    const hintText = hint
+      ? `${hint.recipe.label}${hint.ready ? "材料齊" : `缺${formatMissingNeeds(hint.missing, 2)}`}`
+      : "先收鮮奶與益菌";
     const idleText = weightStage === "danger"
       ? "體型警戒，下一個紅色可能直接爆掉"
       : weightStage === "heavy"
@@ -4617,7 +6581,7 @@
         : weightStage === "warning"
           ? "開始變重，少碰風味加料"
           : state.idleTime > 1 ? "紅色危險物正在追線，滑動躲開" : "純粹優格不增重，紅色全躲";
-    dom.fact.textContent = `${diff.name} / 節奏 ${state.level} / 體重 ${state.weightDisplayKg.toFixed(1)}kg / ${idleText} / 已做 ${state.totalYogurts} 杯 / RUSH ${rushPct}%`;
+    dom.fact.textContent = `${diff.name} / 節奏 ${state.level} / 體重 ${state.weightDisplayKg.toFixed(1)}kg / ${idleText} / 下一杯 ${hintText} / RUSH ${rushPct}%`;
   }
 
   function buildCarryText() {
