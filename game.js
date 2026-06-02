@@ -98,7 +98,7 @@
     { key: "calciumBoost", label: "鈣力慢拍", short: "鈣", color: "#4b91b6", feature: "鈣力補給", effect: "危險物慢" },
     { key: "probioticBoost", label: "益菌磁吸", short: "益", color: "#268aa1", feature: "益菌活力", effect: "目標貼近" },
     { key: "cleanBoost", label: "純淨盾", short: "淨", color: "#65a85f", feature: "純淨製作", effect: "擋添加物" },
-    { key: "rushBoost", label: "爽感爆發", short: "爽", color: "#ef8b53", feature: "短暫爆速", effect: "全屏爆" },
+    { key: "rushBoost", label: "飛鞋加速", short: "鞋", color: "#ef8b53", feature: "短暫加速", effect: "跑速+" },
     { key: "comboBoost", label: "連擊星糖", short: "連", color: "#f4d16f", feature: "連線補給", effect: "連擊+" },
     { key: "timeBurst", label: "冷鏈秒錶", short: "秒", color: "#7d5ba6", feature: "出貨加時", effect: "秒數++" },
     { key: "roadSweep", label: "道路清場", short: "清", color: "#49a8b8", feature: "清出路線", effect: "掃紅色" },
@@ -397,6 +397,7 @@
     zoomKick: 0,
     speedLineTime: 0,
     comboSurge: 0,
+    rewardWaveCooldown: 0,
     flavorCharge: 0,
     flavorRushTime: 0,
     flavorMultiplier: 1,
@@ -574,16 +575,18 @@
     const openingHazardTarget = opening?.hazardTarget || 0;
     const flavorSpeed = state.flavorRushTime > 0 ? 1.14 + Math.min(0.26, state.customFlavors * 0.014 + state.combo * 0.0016) : 1;
     const arcadePressure = Math.max(0, state.survivalTime / 16 + state.totalYogurts * 0.35);
-    const comboSpeed = 1 + Math.min(0.32, state.combo * 0.0035 + state.totalYogurts * 0.01 + arcadePressure * 0.008);
+    const comboSpeed = 1 + Math.min(0.22, state.combo * 0.0024 + state.totalYogurts * 0.008 + arcadePressure * 0.006);
+    const comboDensity = Math.min(0.18, state.combo * 0.0018 + state.totalYogurts * 0.008 + arcadePressure * 0.003);
+    const rushDensity = state.flavorRushTime > 0 ? 0.09 : 0;
     const idleThreat = state.flavorRushTime > 0 ? 0 : clamp((state.idleTime - 0.85) * 0.34 + state.hazardPressure * 0.12, 0, 0.72);
     return {
       ...tier,
-      speed: (tier.speed * 0.86 + pressure * 10 + latePressure * 7 + Math.max(0, state.level - 18) * 11 + state.totalYogurts * 3.2 + arcadePressure * 3.4) * modifier.speed * openingSpeed * flavorSpeed * comboSpeed,
+      speed: (tier.speed * 0.78 + pressure * 8 + latePressure * 5 + Math.max(0, state.level - 18) * 8 + state.totalYogurts * 2.5 + arcadePressure * 2.6) * modifier.speed * openingSpeed * flavorSpeed * comboSpeed,
       hazard: state.survivalTime > 3.2 || idleThreat > 0.18,
       sameLane: clamp(tier.sameLane - 0.36 - pressure * 0.02 + (modifier.sameLane || 0), 0.16, 0.64),
-      required: Math.max(1.25, (2.55 - arcadePressure * 0.024 - state.combo * 0.0022) * modifier.requiredRate),
-      decoyMin: Math.max(1.15, 2.05 - arcadePressure * 0.022),
-      decoyMax: Math.max(1.58, 3.2 - arcadePressure * 0.028),
+      required: Math.max(1.05, (2.08 - arcadePressure * 0.014 - comboDensity * 0.24) * modifier.requiredRate),
+      decoyMin: Math.max(0.95, 1.62 - arcadePressure * 0.01 - comboDensity * 0.14),
+      decoyMax: Math.max(1.35, 2.38 - arcadePressure * 0.014 - comboDensity * 0.2),
       hazardMin: Math.max(1.46, (2.75 - arcadePressure * 0.016 - latePressure * 0.01) * modifier.hazardRate - idleThreat * 0.22),
       hazardMax: Math.max(1.95, (4.05 - arcadePressure * 0.022 - latePressure * 0.014) * modifier.hazardRate - idleThreat * 0.34),
       orderTime: Math.max(2.2, tier.orderTime * modifier.orderTime),
@@ -591,7 +594,7 @@
       missTime: (1.25 + Math.min(2.2, arcadePressure * 0.08)) * modifier.purityPenalty,
       timerDrain: (0.72 + Math.min(0.68, arcadePressure * 0.018)) * modifier.timerDrain * openingDrain,
       hazardTarget: clamp(tier.hazardTarget + modifier.hazardTarget + openingHazardTarget + idleThreat, 0, 0.98),
-      bonusChance: clamp(0.12 + state.combo * 0.0012 + modifier.bonusChance * 0.45, 0.08, 0.28),
+      bonusChance: clamp(0.13 + comboDensity * 0.78 + rushDensity + modifier.bonusChance * 0.42, 0.1, state.flavorRushTime > 0 ? 0.42 : 0.28),
     };
   }
 
@@ -1120,9 +1123,9 @@
     state.level = 1;
     state.purity = 100;
     state.timeRemaining = 64;
-    state.requiredTimer = 1.75;
-    state.decoyTimer = 1.15;
-    state.hazardTimer = 3.05;
+    state.requiredTimer = 0.9;
+    state.decoyTimer = 1.2;
+    state.hazardTimer = 3.15;
     state.batchLaneChanges = 0;
     state.batchBonuses = 0;
     state.batchShieldBlocks = 0;
@@ -1137,6 +1140,7 @@
     state.zoomKick = 0;
     state.speedLineTime = 0;
     state.comboSurge = 0;
+    state.rewardWaveCooldown = 0;
     state.flavorCharge = 0;
     state.flavorRushTime = 0;
     state.flavorMultiplier = 1;
@@ -1313,6 +1317,7 @@
     state.requiredTimer -= worldDt;
     state.decoyTimer -= worldDt;
     state.hazardTimer -= worldDt;
+    state.rewardWaveCooldown = Math.max(0, (state.rewardWaveCooldown || 0) - worldDt);
     state.shake = Math.max(0, state.shake - fxDt * 9);
     player.actionTimer = Math.max(0, player.actionTimer - fxDt);
     player.invuln = Math.max(0, player.invuln - fxDt);
@@ -1348,7 +1353,7 @@
       const guidedX = Math.abs(move) > 0 ? player.x : player.x + (laneTarget - player.x) * Math.min(1, fxDt * 7.5);
       player.x = clamp(guidedX + move * (state.feverTime > 0 ? 360 : 286) * weightMove * fxDt, bounds.left, bounds.right);
     }
-    state.sceneryOffset += state.speed * worldDt * 0.72;
+    state.sceneryOffset += state.speed * worldDt * 0.48;
     player.y += (road.nearY - player.y) * Math.min(1, fxDt * 13);
     player.stepBob += fxDt * (8 + Math.abs(laneInput) * 6 + state.speed / 95 + state.comboSurge * 4);
     updateActivityPressure(worldDt, fxDt, laneInput);
@@ -1559,6 +1564,7 @@
   }
 
   function spawnArcadePositive(forceLane = null) {
+    if (!canSpawnCollectible()) return null;
     let lane = forceLane === null ? chooseArcadeLane() : normalizePlayableLane(forceLane);
     let key = null;
     if (forceLane === null && state.flavorRushTime <= 0 && Math.random() < 0.66) {
@@ -1568,7 +1574,7 @@
     const rule = LANE_RULES[lane];
     if (!key) key = pickLaneKey(rule, state.flavorRushTime > 0);
     const asStation = STATION_KEYS.includes(key);
-    spawnEntity({
+    return spawnEntity({
       type: asStation ? "station" : "item",
       key,
       required: false,
@@ -1609,14 +1615,69 @@
 
   function spawnArcadeExtra() {
     const diff = getDifficulty();
-    const bonusChance = state.flavorRushTime > 0 ? Math.min(0.42, diff.bonusChance + 0.14) : diff.bonusChance;
+    if (!canSpawnCollectible()) return null;
+    const bonusChance = state.flavorRushTime > 0 ? Math.min(0.48, diff.bonusChance + 0.12) : diff.bonusChance;
     if (Math.random() < bonusChance) {
-      const bonus = BONUS[randomInt(0, BONUS.length - 1)];
       const lane = state.magnetTime > 0 && Math.random() < 0.52 ? player.lane : randomPlayableLane();
-      spawnEntity({ type: "bonus", key: bonus.key, lane, bonus, speedOffset: random(-8, 24) });
-    } else {
-      spawnArcadePositive(randomPlayableLane());
+      const entity = spawnBonusPickup(lane, random(-16, 20));
+      if (state.flavorRushTime > 0 && Math.random() < 0.45) spawnArcadePositive(differentLane(lane));
+      return entity;
     }
+    return spawnArcadePositive(randomPlayableLane());
+  }
+
+  function spawnBonusPickup(lane = randomPlayableLane(), speedOffset = random(-16, 20)) {
+    if (!canSpawnCollectible()) return null;
+    const bonus = BONUS[randomInt(0, BONUS.length - 1)];
+    return spawnEntity({ type: "bonus", key: bonus.key, lane: normalizePlayableLane(lane), bonus, speedOffset });
+  }
+
+  function collectibleCap() {
+    return (isMobileLayout() ? 7 : 10) + (state.flavorRushTime > 0 ? 2 : 0);
+  }
+
+  function activeCollectibleCount() {
+    return state.entities.filter((entity) => entity.type !== "hazard" && !entity.done && !entity.remove && entity.y < state.height + 80).length;
+  }
+
+  function canSpawnCollectible(extra = 0) {
+    return activeCollectibleCount() + extra < collectibleCap();
+  }
+
+  function spawnRewardWave(originLane = player.lane, options = {}) {
+    if (!options.ignoreCooldown && (state.rewardWaveCooldown || 0) > 0) return 0;
+    const lanes = getPlayableLanes();
+    if (!lanes.length) return 0;
+    const room = Math.max(0, collectibleCap() - activeCollectibleCount());
+    if (room <= 1) return 0;
+    const focusLane = normalizePlayableLane(originLane);
+    const focusIndex = Math.max(0, lanes.indexOf(focusLane));
+    const bonusCount = Math.min(options.bonusCount ?? (state.flavorRushTime > 0 ? 1 : 0), Math.max(0, room - 1));
+    const count = Math.min(options.count ?? (state.flavorRushTime > 0 ? 3 : 2), Math.max(1, room - bonusCount));
+    let spawned = 0;
+    for (let i = 0; i < count; i += 1) {
+      const lane = lanes[(focusIndex + i) % lanes.length] ?? randomPlayableLane();
+      const entity = spawnArcadePositive(lane);
+      if (!entity) continue;
+      entity.speedOffset = (entity.speedOffset || 0) + random(-18, 12) - i * 4;
+      entity.trailTimer = 0.02 + i * 0.03;
+      spawned += 1;
+    }
+    for (let i = 0; i < bonusCount; i += 1) {
+      const lane = lanes[(focusIndex + i + 1) % lanes.length] ?? focusLane;
+      const entity = spawnBonusPickup(lane, random(-20, 10));
+      if (!entity) continue;
+      entity.trailTimer = 0.02 + i * 0.04;
+      spawned += 1;
+    }
+    if (spawned <= 0) return 0;
+    state.requiredTimer = Math.min(state.requiredTimer, 0.24);
+    state.decoyTimer = Math.min(state.decoyTimer, 0.38);
+    state.rewardWaveCooldown = options.cooldown ?? (state.flavorRushTime > 0 ? 1.4 : 2.15);
+    state.speedLineTime = Math.max(state.speedLineTime, 0.7);
+    state.comboSurge = Math.max(state.comboSurge, 0.9);
+    if (options.text) floatText(options.text, player.x + 58, player.y - 144, COLORS.yellow);
+    return spawned;
   }
 
   function spawnHazard() {
@@ -1870,6 +1931,12 @@
     state.speedLineTime = Math.max(state.speedLineTime, 0.62);
     state.comboSurge = Math.max(state.comboSurge, 0.72);
     state.zoomKick = Math.max(state.zoomKick, 0.42);
+    spawnRewardWave(entity.lane, {
+      count: state.combo % 10 === 0 ? 2 : 1,
+      bonusCount: state.combo % 10 === 0 ? 1 : 0,
+      cooldown: state.combo % 10 === 0 ? 1.45 : 2.1,
+      text: state.combo % 10 === 0 ? "好料雨" : "好料連發",
+    });
     if (state.combo % 10 === 0) {
       state.magnetTime = Math.max(state.magnetTime, 1.35);
       emitScreenSparks(player.x, player.y - 54, def.color, 12);
@@ -2147,6 +2214,12 @@
     if (crafted > 0) {
       state.level = Math.max(state.level, 1 + Math.floor(state.survivalTime / 12) + Math.floor(state.totalYogurts / 3));
       renderRecipe();
+      spawnRewardWave(player.lane, {
+        count: Math.min(3, 1 + crafted),
+        bonusCount: crafted >= 2 || state.totalYogurts % 4 === 0 ? 1 : 0,
+        cooldown: 1.65,
+        text: "優格補給",
+      });
       showToast(`做出 ${crafted} 杯優格，繼續自搭`);
       beep(820, 0.07, "triangle", 0.035);
     }
@@ -2548,10 +2621,10 @@
       text = "鈣力慢拍";
     } else if (bonus.key === "rushBoost") {
       state.fever = clamp(state.fever + 16, 0, 100);
-      state.feverTime = Math.max(state.feverTime, 3.2);
+      state.feverTime = Math.max(state.feverTime, 3.8);
       state.speedLineTime = Math.max(state.speedLineTime, 1.0);
       value = 7;
-      text = "限時加速";
+      text = "飛鞋加速";
     } else if (bonus.key === "comboBoost") {
       state.combo += 3;
       value = 6;
@@ -2596,6 +2669,14 @@
     bumpMission("bonuses");
     addFlavorChargeArcade(entity, bonus, 0);
     handleComboPrize();
+    if (bonus.key === "rushBoost" || bonus.key === "yogurtMagnet" || bonus.key === "comboBoost") {
+      spawnRewardWave(entity.lane, {
+        count: bonus.key === "rushBoost" ? 2 : 1,
+        bonusCount: 0,
+        cooldown: 1.75,
+        text: bonus.key === "yogurtMagnet" ? "磁吸好料" : "道具連發",
+      });
+    }
     if (state.fever >= 100 && state.feverTime <= 0 && state.combo >= 24 && state.totalYogurts >= 3) activateFever();
     emitPop(entity.x, entity.y - 20, bonus.color, 12);
     emitRingBurst(entity.x + entity.w / 2, entity.y - 34, bonus.color, 2, 28);
@@ -2757,6 +2838,7 @@
     noteActivePlay(0.55);
     state.batchLaneChanges += 1;
     bumpMission("laneChanges");
+    state.decoyTimer = Math.min(state.decoyTimer, 0.68);
     beep(440 + player.lane * 80, 0.025, "square", 0.018);
   }
 
@@ -2923,23 +3005,122 @@
     const w = state.width;
     const h = state.height;
     const t = state.time;
-    fillRect(0, 0, w, h, "#9bdcf0");
-    fillRect(0, 0, w, h * 0.42, "#bfeef8");
+    const mood = getWorldMood(t);
+    fillRect(0, 0, w, h, mood.skyBase);
+    fillRect(0, 0, w, h * 0.42, mood.skyTop);
+    drawDayNightSky(w, h, mood, t);
 
+    ctx.save();
+    ctx.globalAlpha = 1 - mood.night * 0.5;
     for (let i = 0; i < 7; i += 1) {
-      const x = ((i * 260 - t * 24) % (w + 300)) - 180;
-      drawCloud(x, 72 + (i % 3) * 42);
+      const x = ((i * 260 - t * 14) % (w + 300)) - 180;
+      drawCloud(x, 72 + (i % 3) * 42 + Math.sin(t * 0.25 + i) * 5);
     }
+    ctx.restore();
 
     const road = getRoadMetrics();
-    fillRect(0, road.horizonY - 42, w, h - road.horizonY + 42, "#fff4dc");
-    fillRect(0, road.horizonY - 38, w, 8, "rgba(38,138,161,.20)");
+    fillRect(0, road.horizonY - 42, w, h - road.horizonY + 42, mood.ground);
+    fillRect(0, road.horizonY - 42, w, 18, mood.seasonWash);
+    fillRect(0, road.horizonY - 38, w, 8, `rgba(38,138,161,${0.16 + mood.night * 0.12})`);
     drawPixelSign(w * 0.5 - ((t * 22) % 460), road.horizonY - 36, "純粹優格多一點", COLORS.aquaDeep, 156);
     drawPixelSign(w * 0.82 - ((t * 20) % 560), road.horizonY - 6, "健康多一點", COLORS.leaf, 126);
+    drawSeasonDetails(w, h, road, mood, t);
     drawCuteBrandDecals(w, road.horizonY - 90, t);
     drawPseudoRoad(w, h, t);
     drawTainanRoadside(w, h, t);
+    drawMoodOverlay(w, h, mood);
     drawConveyor(w, h, t);
+  }
+
+  function getWorldMood(t = state.time) {
+    const dayProgress = positiveModulo(t / 68 + 0.5, 1);
+    const sunAmount = 0.5 + Math.sin(dayProgress * Math.PI * 2 - Math.PI / 2) * 0.5;
+    const night = clamp((0.42 - sunAmount) / 0.42, 0, 1);
+    const dusk = clamp(1 - Math.abs(sunAmount - 0.42) / 0.2, 0, 1) * (1 - night * 0.45);
+    const seasonProgress = positiveModulo(t / 272, 1);
+    const seasonIndex = Math.floor(seasonProgress * 4) % 4;
+    const seasons = [
+      { name: "春", leaf: "#89b381", flower: "#f19aa0", ground: "#fff4dc", wash: "rgba(241,154,160,.16)" },
+      { name: "夏", leaf: "#65a85f", flower: "#ef6f53", ground: "#fff0d8", wash: "rgba(101,168,95,.16)" },
+      { name: "秋", leaf: "#c9a15f", flower: "#f4b84f", ground: "#f7e2bd", wash: "rgba(244,184,79,.16)" },
+      { name: "冬", leaf: "#7aa9b6", flower: "#dceffc", ground: "#eef6f7", wash: "rgba(127,195,222,.15)" },
+    ];
+    const season = seasons[seasonIndex];
+    const skyDayTop = mixColor("#bfeef8", "#ffd8b3", dusk * 0.45);
+    const skyDayBase = mixColor("#9bdcf0", "#f8c8a0", dusk * 0.42);
+    const skyTop = mixColor(skyDayTop, "#203858", night);
+    const skyBase = mixColor(skyDayBase, "#4b6c88", night);
+    return {
+      dayProgress,
+      sunAmount,
+      night,
+      dusk,
+      seasonIndex,
+      seasonName: season.name,
+      seasonLeaf: season.leaf,
+      seasonFlower: season.flower,
+      seasonWash: season.wash,
+      skyTop,
+      skyBase,
+      ground: mixColor(season.ground, "#d7e6ea", night * 0.3),
+    };
+  }
+
+  function drawDayNightSky(w, h, mood, t) {
+    const road = getRoadMetrics();
+    const sunX = w * (0.12 + mood.dayProgress * 0.76);
+    const arc = Math.sin(mood.dayProgress * Math.PI);
+    const sunY = road.horizonY - 72 - arc * Math.max(80, h * 0.18);
+    ctx.save();
+    if (mood.night < 0.95) {
+      ctx.globalAlpha = 0.42 + (1 - mood.night) * 0.3;
+      drawCircle(sunX, sunY, 30, mood.dusk > 0.25 ? "#f4b84f" : "#f4d16f");
+      drawCircle(sunX + 9, sunY - 8, 42, "rgba(255,255,255,.18)");
+    }
+    if (mood.night > 0.08) {
+      ctx.globalAlpha = mood.night * 0.75;
+      const moonX = w - sunX;
+      const moonY = road.horizonY - 116 - Math.sin((mood.dayProgress + 0.5) * Math.PI) * Math.max(50, h * 0.1);
+      drawCircle(moonX, moonY, 24, "#fff8d7");
+      drawCircle(moonX + 9, moonY - 5, 22, mood.skyTop);
+      for (let i = 0; i < 24; i += 1) {
+        const x = positiveModulo(i * 97 + t * 4, w + 80) - 40;
+        const y = 28 + positiveModulo(i * 37, Math.max(80, road.horizonY - 76));
+        fillRect(x, y, i % 3 === 0 ? 5 : 3, i % 3 === 0 ? 5 : 3, i % 2 ? "#ffffff" : "#f4d16f");
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawSeasonDetails(w, h, road, mood, t) {
+    ctx.save();
+    ctx.globalAlpha = 0.44 + mood.dusk * 0.12;
+    for (let i = 0; i < 14; i += 1) {
+      const x = positiveModulo(i * 137 - state.sceneryOffset * 0.11, w + 140) - 70;
+      const y = road.horizonY - 24 + (i % 4) * 18;
+      const color = i % 2 ? mood.seasonFlower : mood.seasonLeaf;
+      if (mood.seasonIndex === 3) {
+        drawCircle(x, y, 3 + (i % 3), "rgba(255,255,255,.78)");
+      } else if (mood.seasonIndex === 2) {
+        drawQuad(x, y, x + 8, y + 4, x + 2, y + 12, x - 6, y + 4, color);
+      } else {
+        drawCircle(x, y, 4 + (i % 2), color);
+        drawCircle(x + 5, y + 2, 3, mood.seasonFlower);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawMoodOverlay(w, h, mood) {
+    if (mood.night <= 0.04 && mood.dusk <= 0.08) return;
+    ctx.save();
+    if (mood.dusk > 0.08) {
+      fillRect(0, 0, w, h, `rgba(244,139,83,${mood.dusk * 0.08})`);
+    }
+    if (mood.night > 0.04) {
+      fillRect(0, 0, w, h, `rgba(24,45,76,${mood.night * 0.22})`);
+    }
+    ctx.restore();
   }
 
   function drawPseudoRoad(w, h, t) {
@@ -3062,6 +3243,12 @@
       { name: "奇美博物館", kind: "museum", model: "chimeiMuseum", color: "#eef5f8", accent: "#7aa9b6" },
       { name: "臺南美術館", kind: "museum", model: "tainanArtMuseum", color: "#f3f5f0", accent: "#c9a57c" },
       { name: "花園夜市", kind: "market", model: "gardenNightMarket", color: "#ffe3b6", accent: "#ef8b53" },
+      { name: "台南孔廟", kind: "temple", model: "confuciusTemple", color: "#f3d0b8", accent: "#b44966" },
+      { name: "藍晒圖園區", kind: "deco", model: "blueprintPark", color: "#dceffc", accent: "#4b91b6" },
+      { name: "十鼓仁糖", kind: "factory", model: "tenDrum", color: "#e7c0a7", accent: "#a85f4f" },
+      { name: "關子嶺溫泉", kind: "resort", model: "guanzilingHotSpring", color: "#f3e6c4", accent: "#7aa9b6" },
+      { name: "新化老街", kind: "street", model: "xinhuaOldStreet", color: "#f1d2bd", accent: "#934b42" },
+      { name: "安平老街", kind: "street", model: "anpingOldStreet", color: "#f4dfc8", accent: "#c85f45" },
       { name: "安平樹屋", kind: "treehouse", model: "anpingTreeHouse", color: "#d8c1a2", accent: "#65a85f" },
       { name: "安平砲臺", kind: "fort", model: "anpingBattery", color: "#c7846d", accent: "#934b42" },
       { name: "鳳凰木綠廊", kind: "flora", model: "flameTree", color: "#dbe8c9", accent: "#ef6f53" },
@@ -3073,12 +3260,13 @@
     ];
     const buildingLandmarks = landmarks.filter((landmark) => landmark.kind !== "flora");
     const floraLandmarks = landmarks.filter((landmark) => landmark.kind === "flora");
-    const roadsideSequence = ["building", "building", "flora", "building", "flora", "building", "building", "flora"];
+    const roadsideSequence = ["building", "flora", "building", "flora", "building", "flora", "flora", "building", "flora", "building"];
     const entries = [];
     const mobile = isMobileLayout();
-    const slotCount = mobile ? 24 : 40;
-    const scroll = state.sceneryOffset * (mobile ? 0.00098 : 0.00108);
-    const trackLength = 1.76;
+    const slotCount = mobile ? 16 : 28;
+    const scroll = state.sceneryOffset * (mobile ? 0.00072 : 0.00078);
+    const trackLength = 2.08;
+    const usedBuildingModels = new Set();
     for (let slot = 0; slot < slotCount; slot += 1) {
       const rawProgress = slot / slotCount * trackLength + scroll;
       const depth = positiveModulo(rawProgress, trackLength) - 0.08;
@@ -3087,9 +3275,17 @@
       const sideSlot = Math.floor(slot / 2);
       const kind = roadsideSequence[positiveModulo(sideSlot + cycle, roadsideSequence.length)];
       const pool = kind === "flora" ? floraLandmarks : buildingLandmarks;
-      const landmarkIndex = positiveModulo(sideSlot * 3 + slot + cycle * 5, pool.length);
+      let landmarkIndex = positiveModulo(sideSlot * 3 + slot + cycle * 5, pool.length);
+      let landmark = pool[landmarkIndex];
+      if (kind !== "flora") {
+        for (let tries = 0; tries < pool.length && usedBuildingModels.has(landmark.model); tries += 1) {
+          landmarkIndex = positiveModulo(landmarkIndex + 1, pool.length);
+          landmark = pool[landmarkIndex];
+        }
+        usedBuildingModels.add(landmark.model);
+      }
       const side = slot % 2 === 0 ? -1 : 1;
-      entries.push({ type: kind, landmark: pool[landmarkIndex], depth, side, index: landmarkIndex + cycle * slotCount });
+      entries.push({ type: kind, landmark, depth, side, index: landmarkIndex + cycle * slotCount });
     }
     entries.sort((a, b) => a.depth - b.depth);
     const drawRoadsideEntry = (entry) => {
@@ -3127,6 +3323,7 @@
 
   function drawRoadsideGreenBelts(road, scroll) {
     const mobile = isMobileLayout();
+    const mood = getWorldMood();
     const stripOffset = mobile ? 18 : 26;
     const stripWidth = mobile ? 62 : 78;
     const stripSegments = 14;
@@ -3157,7 +3354,7 @@
           y2 + 4,
           inner2,
           y2,
-          i % 2 ? "rgba(137,179,129,.56)" : "rgba(101,168,95,.62)"
+          i % 2 ? mixColor(mood.seasonLeaf, "#ffffff", 0.22) : mixColor(mood.seasonLeaf, "#2f6f49", 0.16)
         );
       }
 
@@ -3197,15 +3394,19 @@
   }
 
   function drawRoadsideColumnPlant(x, groundY, scale, side, index) {
-    const flowerColors = ["#ef6f53", "#f19aa0", "#f4d16f", "#b44966", "#7fc3de"];
+    const mood = getWorldMood();
+    const leaf = mood.seasonLeaf;
+    const leafLight = mixColor(leaf, "#ffffff", 0.18);
+    const leafDark = mixColor(leaf, "#2f6f49", 0.18);
+    const flowerColors = [mood.seasonFlower, "#ef6f53", "#f19aa0", "#f4d16f", "#b44966", "#7fc3de"];
     const treeType = index % 4;
     ctx.save();
     ctx.globalAlpha *= 0.95;
     fillRect(x - 18 * scale, groundY + 3 * scale, 36 * scale, 5 * scale, "rgba(68,125,73,.42)");
     if (treeType === 0) {
       fillRect(x - 4 * scale, groundY - 38 * scale, 8 * scale, 42 * scale, "#8b6b4e");
-      drawCircle(x - 10 * scale, groundY - 48 * scale, 17 * scale, "#65a85f");
-      drawCircle(x + 9 * scale, groundY - 52 * scale, 18 * scale, "#76b96c");
+      drawCircle(x - 10 * scale, groundY - 48 * scale, 17 * scale, leaf);
+      drawCircle(x + 9 * scale, groundY - 52 * scale, 18 * scale, leafLight);
       drawCircle(x + side * 6 * scale, groundY - 58 * scale, 6 * scale, flowerColors[index % flowerColors.length]);
     } else if (treeType === 1) {
       fillRect(x - 3 * scale, groundY - 32 * scale, 6 * scale, 36 * scale, "#8b6b4e");
@@ -3220,7 +3421,7 @@
           groundY - 28 * scale + Math.sin(a + 0.16) * 12 * scale,
           x,
           groundY - 27 * scale,
-          "#65a85f"
+          leaf
         );
       }
     } else if (treeType === 2) {
@@ -3229,12 +3430,12 @@
         fillRect(px - 2 * scale, groundY - 22 * scale, 4 * scale, 22 * scale, "#65a85f");
         drawCircle(px, groundY - 26 * scale, 6 * scale, flowerColors[(index + i) % flowerColors.length]);
       }
-      drawCircle(x - 10 * scale, groundY - 10 * scale, 8 * scale, "#89b381");
-      drawCircle(x + 9 * scale, groundY - 11 * scale, 8 * scale, "#65a85f");
+      drawCircle(x - 10 * scale, groundY - 10 * scale, 8 * scale, leafLight);
+      drawCircle(x + 9 * scale, groundY - 11 * scale, 8 * scale, leaf);
     } else {
       fillRect(x - 5 * scale, groundY - 34 * scale, 10 * scale, 38 * scale, "#8b6b4e");
-      drawCircle(x - 13 * scale, groundY - 43 * scale, 18 * scale, "#4a9f72");
-      drawCircle(x + 12 * scale, groundY - 47 * scale, 20 * scale, "#65a85f");
+      drawCircle(x - 13 * scale, groundY - 43 * scale, 18 * scale, leafDark);
+      drawCircle(x + 12 * scale, groundY - 47 * scale, 20 * scale, leaf);
       strokePerspectiveLine(x, groundY - 5 * scale, x - side * 18 * scale, groundY + 10 * scale, "#8b6b4e", Math.max(1, 2 * scale));
     }
     ctx.restore();
@@ -3439,6 +3640,12 @@
       chimeiMuseum: { w: 184, h: 118 },
       tainanArtMuseum: { w: 168, h: 116 },
       gardenNightMarket: { w: 166, h: 100 },
+      confuciusTemple: { w: 176, h: 120 },
+      blueprintPark: { w: 168, h: 112 },
+      tenDrum: { w: 178, h: 132 },
+      guanzilingHotSpring: { w: 174, h: 116 },
+      xinhuaOldStreet: { w: 172, h: 112 },
+      anpingOldStreet: { w: 174, h: 108 },
       anpingTreeHouse: { w: 156, h: 116 },
       anpingBattery: { w: 166, h: 96 },
       flameTree: { w: 164, h: 138 },
@@ -3456,7 +3663,8 @@
     const w = size.w * scale;
     const h = size.h * scale;
     const model = landmark.model || "flora";
-    const accent = landmark.accent || COLORS.leaf;
+    const mood = getWorldMood();
+    const accent = landmark.accent || mood.seasonLeaf || COLORS.leaf;
     const road = getRoadMetrics();
     const farY = groundY - h * 0.78;
     const farDepth = roadDepthAtY(farY);
@@ -3479,7 +3687,7 @@
       groundY + 24 * scale,
       "rgba(36,50,58,.2)"
     );
-    drawQuad(stripNearInner, groundY - 7 * scale, stripNearOuter, groundY - 7 * scale, stripFarOuter, farY, stripFarInner, farY, model === "lotusPond" ? "rgba(127,195,222,.54)" : "#dbe8c9");
+    drawQuad(stripNearInner, groundY - 7 * scale, stripNearOuter, groundY - 7 * scale, stripFarOuter, farY, stripFarInner, farY, model === "lotusPond" ? "rgba(127,195,222,.54)" : mixColor(mood.seasonLeaf, "#ffffff", 0.5));
     drawQuad(stripNearInner, groundY - 7 * scale, stripFarInner, farY, stripFarInner, farY + 22 * scale, stripNearInner, groundY + 13 * scale, "rgba(101,168,95,.34)");
     strokePerspectiveLine(stripNearInner, groundY - 7 * scale, stripFarInner, farY, "rgba(36,50,58,.25)", Math.max(1, 2 * scale));
     strokePerspectiveLine(stripNearOuter, groundY - 7 * scale, stripFarOuter, farY, "rgba(36,50,58,.25)", Math.max(1, 2 * scale));
@@ -3506,10 +3714,14 @@
   }
 
   function drawRoadsideFloraPatch(model, x, y, scale, accent, index) {
+    const mood = getWorldMood();
+    const leaf = mood.seasonLeaf;
+    const leafLight = mixColor(leaf, "#ffffff", 0.18);
+    const leafDark = mixColor(leaf, "#2f6f49", 0.2);
     if (model === "lotusPond") {
-      drawCircle(x - 16 * scale, y + 6 * scale, 13 * scale, "#89b381");
-      drawCircle(x + 14 * scale, y + 3 * scale, 12 * scale, "#65a85f");
-      drawCircle(x, y - 8 * scale, 11 * scale, index % 2 ? "#ffffff" : "#f19aa0");
+      drawCircle(x - 16 * scale, y + 6 * scale, 13 * scale, leafLight);
+      drawCircle(x + 14 * scale, y + 3 * scale, 12 * scale, leaf);
+      drawCircle(x, y - 8 * scale, 11 * scale, index % 2 ? "#ffffff" : mood.seasonFlower);
       fillRect(x - 2 * scale, y - 2 * scale, 4 * scale, 19 * scale, "#65a85f");
       return;
     }
@@ -3517,16 +3729,16 @@
       fillRect(x - 6 * scale, y - 60 * scale, 12 * scale, 64 * scale, "#8b6b4e");
       strokePerspectiveLine(x, y - 4 * scale, x - 18 * scale, y + 18 * scale, "#8b6b4e", Math.max(1, 3 * scale));
       strokePerspectiveLine(x, y - 4 * scale, x + 18 * scale, y + 18 * scale, "#8b6b4e", Math.max(1, 3 * scale));
-      drawCircle(x - 8 * scale, y - 72 * scale, 23 * scale, "#4a9f72");
-      drawCircle(x + 9 * scale, y - 80 * scale, 25 * scale, "#65a85f");
-      drawCircle(x + 1 * scale, y - 96 * scale, 22 * scale, "#76b96c");
+      drawCircle(x - 8 * scale, y - 72 * scale, 23 * scale, leafDark);
+      drawCircle(x + 9 * scale, y - 80 * scale, 25 * scale, leaf);
+      drawCircle(x + 1 * scale, y - 96 * scale, 22 * scale, leafLight);
       return;
     }
-    const flower = model === "flameTree" ? "#ef6f53" : model === "bougainvillea" ? "#b44966" : model === "mangoGrove" ? "#f4b84f" : accent;
+    const flower = model === "flameTree" ? "#ef6f53" : model === "bougainvillea" ? "#b44966" : model === "mangoGrove" ? "#f4b84f" : mood.seasonFlower || accent;
     fillRect(x - 6 * scale, y - 78 * scale, 12 * scale, 81 * scale, "#8b6b4e");
-    drawCircle(x - 12 * scale, y - 91 * scale, 24 * scale, "#65a85f");
-    drawCircle(x + 12 * scale, y - 98 * scale, 26 * scale, "#76b96c");
-    drawCircle(x, y - 118 * scale, 23 * scale, model === "bougainvillea" ? "#f19aa0" : "#89b381");
+    drawCircle(x - 12 * scale, y - 91 * scale, 24 * scale, leaf);
+    drawCircle(x + 12 * scale, y - 98 * scale, 26 * scale, leafLight);
+    drawCircle(x, y - 118 * scale, 23 * scale, model === "bougainvillea" ? "#f19aa0" : leafLight);
     drawCircle(x + 8 * scale, y - 91 * scale, 5 * scale, flower);
     drawCircle(x - 9 * scale, y - 108 * scale, 4.5 * scale, flower);
     drawCircle(x + 3 * scale, y - 122 * scale, 4 * scale, flower);
@@ -3718,6 +3930,57 @@
         const tx = x + (14 + i * (w / scale - 28) / 6) * scale;
         fillRect(tx - 4 * scale, y + 18 * scale, 8 * scale, h - 14 * scale, "#5f7a45");
         drawCircle(tx, y + 14 * scale, 24 * scale, i % 2 ? "#76b96c" : "#4a9f72");
+      }
+      return;
+    }
+
+    if (model === "confuciusTemple") {
+      fillRect(x + 8 * scale, y + 56 * scale, w - 16 * scale, 38 * scale, "#b44966");
+      drawQuad(x + 2 * scale, y + 43 * scale, x + w / 2, y + 17 * scale, x + w - 2 * scale, y + 43 * scale, x + w - 22 * scale, y + 54 * scale, "#8f3550");
+      drawQuad(x + 34 * scale, y + 26 * scale, x + w / 2, y + 4 * scale, x + w - 34 * scale, y + 26 * scale, x + w - 48 * scale, y + 35 * scale, "#c85f45");
+      fillRect(x + 22 * scale, y + 82 * scale, w - 44 * scale, 14 * scale, "#f4d16f");
+      return;
+    }
+
+    if (model === "blueprintPark") {
+      fillRect(x + 12 * scale, y + 31 * scale, w - 24 * scale, 76 * scale, "#4b91b6");
+      strokeRect(x + 24 * scale, y + 43 * scale, w - 48 * scale, 42 * scale, "#ffffff", Math.max(1, 2 * scale));
+      strokePerspectiveLine(x + 32 * scale, y + 75 * scale, x + w - 42 * scale, y + 52 * scale, "#ffffff", Math.max(1, 2 * scale));
+      strokePerspectiveLine(x + 42 * scale, y + 47 * scale, x + 42 * scale, y + 88 * scale, "#ffffff", Math.max(1, 2 * scale));
+      fillRect(x + 18 * scale, y + 106 * scale, w - 36 * scale, 9 * scale, "#2f5f8f");
+      return;
+    }
+
+    if (model === "tenDrum") {
+      fillRect(x + w * 0.66, y - 28 * scale, 22 * scale, 105 * scale, "#9b5844");
+      fillRect(x + w * 0.66 - 4 * scale, y - 36 * scale, 30 * scale, 8 * scale, "#6e3b32");
+      for (let i = 0; i < 3; i += 1) {
+        const drumX = x + (28 + i * 38) * scale;
+        drawCircle(drumX, y + 70 * scale, 19 * scale, "#d99b72");
+        strokeCircle(drumX, y + 70 * scale, 19 * scale, "#6e3b32", Math.max(1, 2 * scale));
+      }
+      drawBrickPattern(x + 8 * scale, y + 35 * scale, w * 0.62, 72 * scale, "#9b5844");
+      return;
+    }
+
+    if (model === "guanzilingHotSpring") {
+      drawQuad(x + 18 * scale, y + 44 * scale, x + w / 2, y + 18 * scale, x + w - 18 * scale, y + 44 * scale, x + w - 32 * scale, y + 54 * scale, "#7aa9b6");
+      fillRect(x + 24 * scale, y + 54 * scale, w - 48 * scale, 56 * scale, "#f3e6c4");
+      for (let i = 0; i < 3; i += 1) {
+        const sx = x + (44 + i * 34) * scale;
+        strokeCircle(sx, y + 24 * scale - i * 5 * scale, 10 * scale, "rgba(255,255,255,.72)", Math.max(1, 2 * scale));
+        strokePerspectiveLine(sx, y + 38 * scale, sx + 8 * scale, y + 20 * scale, "rgba(255,255,255,.7)", Math.max(1, 2 * scale));
+      }
+      return;
+    }
+
+    if (model === "xinhuaOldStreet" || model === "anpingOldStreet") {
+      const roof = model === "xinhuaOldStreet" ? "#934b42" : "#c85f45";
+      for (let i = 0; i < 4; i += 1) {
+        const sx = x + (10 + i * 40) * scale;
+        drawQuad(sx, y + 34 * scale, sx + 18 * scale, y + 21 * scale, sx + 39 * scale, y + 34 * scale, sx + 31 * scale, y + 43 * scale, roof);
+        drawCircle(sx + 19 * scale, y + 72 * scale, 11 * scale, "#fff1cf");
+        fillRect(sx + 8 * scale, y + 72 * scale, 22 * scale, 35 * scale, "#fff1cf");
       }
       return;
     }
@@ -5384,10 +5647,14 @@
       strokeRect(cx - 19, cy - 6, 38, 12, "#4b91b6", 3);
       strokeRect(cx - 6, cy - 19, 12, 38, "#4b91b6", 3);
     } else if (bonus.key === "rushBoost") {
-      fillRect(cx - 6, cy - 22, 12, 44, COLORS.orange);
-      fillRect(cx - 22, cy - 6, 44, 12, COLORS.orange);
-      fillRect(cx - 13, cy - 13, 26, 26, COLORS.yellow);
-      strokeRect(cx - 16, cy - 16, 32, 32, COLORS.ink, 2);
+      drawQuad(cx - 24, cy + 5, cx + 2, cy - 10, cx + 22, cy - 1, cx - 3, cy + 16, COLORS.orange);
+      fillRect(cx - 6, cy - 19, 18, 18, COLORS.yellow);
+      fillRect(cx + 11, cy - 1, 18, 8, COLORS.yellow);
+      strokePerspectiveLine(cx - 22, cy + 9, cx + 26, cy + 5, COLORS.ink, 3);
+      strokePerspectiveLine(cx - 16, cy + 15, cx + 5, cy + 18, COLORS.ink, 3);
+      for (let i = 0; i < 3; i += 1) {
+        fillRect(cx - 34 - i * 7, cy - 8 + i * 7, 12, 4, i % 2 ? COLORS.yellow : "#ffffff");
+      }
     } else if (bonus.key === "comboBoost") {
       for (let i = 0; i < 5; i += 1) {
         const a = -Math.PI / 2 + i * Math.PI * 0.4;
@@ -7061,6 +7328,32 @@
 
   function positiveModulo(value, divisor) {
     return ((value % divisor) + divisor) % divisor;
+  }
+
+  function hexToRgb(hex) {
+    const source = String(hex || "#000000");
+    const rgbMatch = source.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
+    if (rgbMatch) {
+      return { r: Number(rgbMatch[1]), g: Number(rgbMatch[2]), b: Number(rgbMatch[3]) };
+    }
+    const clean = source.replace("#", "");
+    const full = clean.length === 3 ? clean.split("").map((char) => char + char).join("") : clean.padEnd(6, "0").slice(0, 6);
+    const value = Number.parseInt(full, 16);
+    return {
+      r: (value >> 16) & 255,
+      g: (value >> 8) & 255,
+      b: value & 255,
+    };
+  }
+
+  function mixColor(from, to, amount) {
+    const a = hexToRgb(from);
+    const b = hexToRgb(to);
+    const t = clamp(amount, 0, 1);
+    const r = Math.round(a.r + (b.r - a.r) * t);
+    const g = Math.round(a.g + (b.g - a.g) * t);
+    const blue = Math.round(a.b + (b.b - a.b) * t);
+    return `rgb(${r},${g},${blue})`;
   }
 
   function random(min, max) {
