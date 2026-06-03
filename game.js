@@ -1,9 +1,10 @@
 (() => {
   const canvas = document.getElementById("sceneCanvas");
-  const ctx = canvas?.getContext("2d");
+  let ctx = canvas?.getContext("2d");
   if (!canvas || !ctx) return;
 
   const dom = {
+    root: document.querySelector(".game-root"),
     level: document.getElementById("levelValue"),
     score: document.getElementById("scoreValue"),
     combo: document.getElementById("comboValue"),
@@ -20,6 +21,16 @@
     fact: document.getElementById("factText"),
     leaderboard: document.getElementById("leaderboardList"),
     toast: document.getElementById("toast"),
+    pauseOverlay: document.getElementById("pauseOverlay"),
+    pauseLandmarkTitle: document.getElementById("pauseLandmarkTitle"),
+    pauseGameVisual: document.getElementById("pauseGameVisual"),
+    pauseRealVisual: document.getElementById("pauseRealVisual"),
+    pauseGameCaption: document.getElementById("pauseGameCaption"),
+    pauseRealCaption: document.getElementById("pauseRealCaption"),
+    pauseOverview: document.getElementById("pauseOverview"),
+    pauseRealLook: document.getElementById("pauseRealLook"),
+    pauseSourceLink: document.getElementById("pauseSourceLink"),
+    pauseContinueButton: document.getElementById("pauseContinueButton"),
     startOverlay: document.getElementById("startOverlay"),
     gameOverOverlay: document.getElementById("gameOverOverlay"),
     startButton: document.getElementById("startButton"),
@@ -60,6 +71,580 @@
     cream: "#fff4dc",
     purple: "#7d5ba6",
   };
+
+  const WEATHER_DEFS = {
+    sunny: { label: "晴天", cloud: 0.08, rain: 0, fog: 0, snow: 0, wind: 0, tint: "rgba(255,240,176,.08)" },
+    cloudy: { label: "陰天", cloud: 0.72, rain: 0, fog: 0.1, snow: 0, wind: 0.12, tint: "rgba(100,126,140,.12)" },
+    lightRain: { label: "小雨", cloud: 0.68, rain: 0.36, fog: 0.08, snow: 0, wind: 0.16, tint: "rgba(91,129,152,.13)" },
+    rain: { label: "中雨", cloud: 0.82, rain: 0.66, fog: 0.13, snow: 0, wind: 0.22, tint: "rgba(64,103,134,.18)" },
+    heavyRain: { label: "大雨", cloud: 0.92, rain: 1, fog: 0.16, snow: 0, wind: 0.34, tint: "rgba(42,79,112,.24)" },
+    snow: { label: "下雪", cloud: 0.76, rain: 0, fog: 0.18, snow: 0.78, wind: 0.12, tint: "rgba(218,238,248,.2)" },
+    fog: { label: "大霧天", cloud: 0.62, rain: 0, fog: 0.82, snow: 0, wind: 0.06, tint: "rgba(220,238,238,.3)" },
+    typhoon: { label: "颱風", cloud: 1, rain: 1.15, fog: 0.22, snow: 0, wind: 1, tint: "rgba(24,55,82,.32)" },
+  };
+
+  const WEATHER_PROFILES = [
+    { sunny: 54, cloudy: 15, lightRain: 14, rain: 6, heavyRain: 2, snow: 0, fog: 7, typhoon: 2 },
+    { sunny: 48, cloudy: 12, lightRain: 9, rain: 8, heavyRain: 8, snow: 0, fog: 4, typhoon: 11 },
+    { sunny: 58, cloudy: 14, lightRain: 8, rain: 5, heavyRain: 2, snow: 0, fog: 9, typhoon: 4 },
+    { sunny: 52, cloudy: 18, lightRain: 5, rain: 3, heavyRain: 1, snow: 7, fog: 13, typhoon: 1 },
+  ];
+
+  const PAUSE_LANDMARKS = [
+    {
+      name: "純粹好食門市",
+      kind: "ugoodays",
+      model: "ugoodaysStore",
+      color: "#f7fdff",
+      accent: "#7fc3de",
+      weight: 4,
+      overview: "遊戲裡最重要的純粹補給站，提醒玩家把好料吃對，把紅色添加物閃開。",
+      realLook: "白色門面搭配藍色純粹好食招牌，店面乾淨明亮，是品牌記憶點最高的地標。",
+      realTags: ["藍色招牌", "白色門面", "富農街"],
+      sourceLabel: "純粹好食官網",
+      sourceUrl: "https://www.ugoodays.com/",
+      photo: "./assets/landmarks/ugoodays-store.jpg",
+    },
+    {
+      name: "臺南車站",
+      kind: "station",
+      model: "tainanStation",
+      color: "#f3dfbf",
+      accent: "#6f9fb0",
+      overview: "臺南城市入口意象，放在快線旁讓跑酷路線更像真的穿過市區。",
+      realLook: "古典車站量體、中央鐘面與溫暖牆色，是臺南日常交通記憶的一部分。",
+      realTags: ["古典站體", "鐘面", "市區入口"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/attractions",
+    },
+    {
+      name: "南紡購物中心",
+      kind: "mall",
+      model: "nanfangMall",
+      color: "#e9f6f8",
+      accent: "#82c6d8",
+      overview: "現代商圈節點，讓道路兩側不只有古蹟，也有臺南生活感。",
+      realLook: "大片玻璃、俐落量體與購物中心招牌，視覺上偏現代明亮。",
+      realTags: ["現代商場", "玻璃量體", "後甲商圈"],
+      sourceLabel: "南紡購物中心",
+      sourceUrl: "https://www.tsrd.com.tw/footer/about",
+    },
+    {
+      name: "善化車站",
+      kind: "station",
+      model: "shanhuaStation",
+      color: "#f4e2c4",
+      accent: "#8cb8c7",
+      overview: "北臺南生活圈的車站地標，讓快線有更多城市縱深。",
+      realLook: "低矮站體、屋頂線條與站名牌，呈現樸實的地方車站感。",
+      realTags: ["地方車站", "站名牌", "屋頂線條"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/attractions",
+    },
+    {
+      name: "赤崁樓",
+      kind: "fort",
+      model: "chihkanTower",
+      color: "#d98975",
+      accent: "#b44966",
+      overview: "府城代表古蹟之一，在遊戲中用紅牆與層疊屋頂強化辨識度。",
+      realLook: "紅牆、飛簷與庭園基座，是臺南歷史景點中很有記憶點的樣貌。",
+      realTags: ["紅牆", "飛簷", "府城古蹟"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/674",
+      photo: "./assets/landmarks/chihkan-tower.jpg",
+    },
+    {
+      name: "河樂廣場",
+      kind: "plaza",
+      model: "helePlaza",
+      color: "#dff6ff",
+      accent: "#61c7de",
+      overview: "親水廣場讓路邊畫面多一點清爽感，呼應優格的輕盈印象。",
+      realLook: "下凹式水景、階梯與藍白水面，是市中心很醒目的開放空間。",
+      realTags: ["親水廣場", "階梯", "藍白水景"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/attractions",
+    },
+    {
+      name: "大魚的祝福",
+      kind: "fish",
+      model: "bigFish",
+      color: "#e7f7fa",
+      accent: "#7fc3de",
+      overview: "用魚形藝術裝置打破建築節奏，讓玩家路過時更容易記住。",
+      realLook: "大型魚形裝置結合光影與海洋意象，靠近安平港邊風景。",
+      realTags: ["魚形裝置", "光影", "海洋意象"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/5625",
+      photo: "./assets/landmarks/big-fish.jpg",
+    },
+    {
+      name: "安平古堡",
+      kind: "fort",
+      model: "anpingFort",
+      color: "#c57563",
+      accent: "#934b42",
+      overview: "紅磚城牆與堡壘感讓臺南古城氛圍更明顯。",
+      realLook: "紅磚牆、瞭望塔與開闊基地，是安平代表性的歷史景觀。",
+      realTags: ["紅磚牆", "瞭望塔", "安平古蹟"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/671",
+      photo: "./assets/landmarks/anping-fort.jpg",
+    },
+    {
+      name: "億載金城",
+      kind: "fort",
+      model: "eternalCastle",
+      color: "#d99b72",
+      accent: "#a85f4f",
+      overview: "遊戲裡以城門與砲臺感呈現，增加道路兩側的冒險味。",
+      realLook: "城門、土堤與砲臺輪廓明顯，帶有防禦工事的厚重感。",
+      realTags: ["城門", "砲臺", "防禦工事"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/673",
+      photo: "./assets/landmarks/eternal-castle.jpg",
+    },
+    {
+      name: "德記洋行",
+      kind: "colonial",
+      model: "taitMerchant",
+      color: "#f5f0df",
+      accent: "#9dbf8f",
+      overview: "洋行建築讓臺南街景多一點異國歷史層次。",
+      realLook: "白色洋樓、拱窗與綠意庭院，和安平樹屋形成很強的景點記憶。",
+      realTags: ["白色洋樓", "拱窗", "綠意庭院"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/687",
+      photo: "./assets/landmarks/tait-merchant.jpg",
+    },
+    {
+      name: "水仙宮市場",
+      kind: "market",
+      model: "shuixianMarket",
+      color: "#fff4dc",
+      accent: "#65a85f",
+      overview: "市場招牌讓跑酷路線更有臺南庶民小吃街的熱鬧感。",
+      realLook: "傳統市場攤位密集、招牌與騎樓交錯，是府城日常生活風景。",
+      realTags: ["傳統市場", "騎樓", "小吃街景"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/attractions",
+    },
+    {
+      name: "國華街",
+      kind: "street",
+      model: "guohuaStreet",
+      color: "#ffe5c7",
+      accent: "#ef8b53",
+      overview: "把臺南小吃街節奏放進路邊，讓玩家感覺一路跑進府城味。",
+      realLook: "騎樓、攤車與小店招牌連成街景，是臺南美食散步路線。",
+      realTags: ["騎樓", "攤車", "美食街"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/1351",
+      photo: "./assets/landmarks/shennong-street.jpg",
+    },
+    {
+      name: "富農街",
+      kind: "street",
+      model: "funongStreet",
+      color: "#ffe5c7",
+      accent: "#c85f45",
+      overview: "以街區型地標補上在地生活感，讓城市不只像觀光明信片。",
+      realLook: "住宅、小店與街邊招牌混合，呈現臺南日常街廓。",
+      realTags: ["日常街廓", "小店", "街邊招牌"],
+      sourceLabel: "純粹好食官網",
+      sourceUrl: "https://www.ugoodays.com/",
+    },
+    {
+      name: "神農街",
+      kind: "street",
+      model: "shennongStreet",
+      color: "#f4dfc8",
+      accent: "#8f5f42",
+      overview: "老街燈籠與窄巷感讓遊戲街景更有夜遊臺南的味道。",
+      realLook: "老屋立面、木窗、燈籠與窄街，是臺南老街代表場景。",
+      realTags: ["老屋", "燈籠", "窄街"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/1351",
+      photo: "./assets/landmarks/shennong-street.jpg",
+    },
+    {
+      name: "四草綠隧",
+      kind: "tunnel",
+      model: "sicaoTunnel",
+      color: "#dbe8c9",
+      accent: "#65a85f",
+      overview: "綠色隧道讓路邊風景更有療癒感，和品牌健康感相連。",
+      realLook: "紅樹林枝葉交疊成綠色拱廊，水道穿過其中。",
+      realTags: ["紅樹林", "綠色拱廊", "水道"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/1324",
+      photo: "./assets/landmarks/sicao-tunnel.jpg",
+    },
+    {
+      name: "漁光島",
+      kind: "island",
+      model: "yuguangIsland",
+      color: "#f7e2bd",
+      accent: "#f4d16f",
+      overview: "海岸意象讓快線偶爾換成放鬆的臺南海風節奏。",
+      realLook: "沙灘、樹影與海岸線，視覺比市區更開闊。",
+      realTags: ["沙灘", "樹影", "海岸線"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/5520",
+      photo: "./assets/landmarks/yuguang-island.jpg",
+    },
+    {
+      name: "林百貨",
+      kind: "deco",
+      model: "hayashi",
+      color: "#e9e1cf",
+      accent: "#8a9aa1",
+      overview: "老百貨建築帶出臺南摩登時代的城市記憶。",
+      realLook: "裝飾藝術風立面、窗格與復古招牌，是市區經典建築。",
+      realTags: ["裝飾藝術", "窗格", "復古百貨"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/739",
+      photo: "./assets/landmarks/hayashi.jpg",
+    },
+    {
+      name: "大天后宮",
+      kind: "temple",
+      model: "mazuTemple",
+      color: "#f5d4b2",
+      accent: "#d8243c",
+      overview: "廟宇屋簷與紅色柱列讓街景更有府城信仰特色。",
+      realLook: "紅柱、飛簷、廟埕與層次豐富的屋脊裝飾很醒目。",
+      realTags: ["紅柱", "飛簷", "廟埕"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/675",
+      photo: "./assets/landmarks/mazu-temple.jpg",
+    },
+    {
+      name: "奇美博物館",
+      kind: "museum",
+      model: "chimeiMuseum",
+      color: "#eef5f8",
+      accent: "#7aa9b6",
+      overview: "歐式博物館量體讓兩側風景更華麗，也讓路線更有變化。",
+      realLook: "白色建築、圓頂、柱廊與橋景，整體有歐式古典感。",
+      realTags: ["白色建築", "圓頂", "柱廊"],
+      sourceLabel: "奇美博物館",
+      sourceUrl: "https://www.chimeimuseum.com.tw/",
+      photo: "./assets/landmarks/chimei-museum.jpg",
+    },
+    {
+      name: "臺南美術館",
+      kind: "museum",
+      model: "tainanArtMuseum",
+      color: "#f3f5f0",
+      accent: "#c9a57c",
+      overview: "美術館讓路邊多一點幾何與藝文氣質。",
+      realLook: "幾何屋頂、白色量體與俐落線條，現代感很強。",
+      realTags: ["幾何屋頂", "白色量體", "藝文空間"],
+      sourceLabel: "臺南市美術館",
+      sourceUrl: "https://www.tnam.museum/cms/index.php",
+    },
+    {
+      name: "花園夜市",
+      kind: "market",
+      model: "gardenNightMarket",
+      color: "#ffe3b6",
+      accent: "#ef8b53",
+      overview: "夜市燈牌讓遊戲在夜間更熱鬧，提升跑酷路線的節奏感。",
+      realLook: "攤位、燈箱與人潮密集，是臺南夜晚很有代表性的景象。",
+      realTags: ["攤位", "燈箱", "夜市人潮"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/5572",
+      photo: "./assets/landmarks/garden-night-market.jpg",
+    },
+    {
+      name: "臺南孔廟",
+      kind: "temple",
+      model: "confuciusTemple",
+      color: "#f3d0b8",
+      accent: "#b44966",
+      overview: "以紅牆與院落感補足府城文化路線。",
+      realLook: "朱紅牆面、傳統屋瓦與安靜庭院，是臺南文化地標。",
+      realTags: ["朱紅牆", "傳統屋瓦", "庭院"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/800",
+      photo: "./assets/landmarks/confucius-temple.jpg",
+    },
+    {
+      name: "安平樹屋",
+      kind: "treehouse",
+      model: "anpingTreeHouse",
+      color: "#d8c1a2",
+      accent: "#65a85f",
+      overview: "樹根與老屋交纏的造型讓路邊畫面更有故事感。",
+      realLook: "榕樹根系包覆老屋牆面，形成很特別的自然與建築共生景觀。",
+      realTags: ["榕樹根", "老屋", "共生景觀"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/806",
+      photo: "./assets/landmarks/anping-tree-house.jpg",
+    },
+    {
+      name: "司法博物館",
+      kind: "museum",
+      model: "judicialMuseum",
+      color: "#eef4f4",
+      accent: "#7aa9b6",
+      overview: "以圓頂、拱窗與厚實牆面做成路邊模型，讓街景多一點古典司法建築的氣勢。",
+      realLook: "原臺南地方法院建築帶有圓頂、柱廊與對稱立面，是府城很有辨識度的國定古蹟。",
+      realTags: ["圓頂", "柱廊", "國定古蹟"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/680",
+      photo: "./assets/landmarks/judicial-museum.jpg",
+    },
+    {
+      name: "臺南市美術館",
+      kind: "museum",
+      model: "tainanArtMuseum",
+      color: "#f3f5f0",
+      accent: "#c9a57c",
+      overview: "用白色量體與幾何屋頂呈現藝術館氣質，讓跑酷路線有更現代的文化地標。",
+      realLook: "建築線條俐落，白色外觀與幾何造型醒目，和府城街區形成新舊對比。",
+      realTags: ["白色量體", "幾何造型", "藝術館"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/753",
+      photo: "./assets/landmarks/tainan-art-museum.jpg",
+    },
+    {
+      name: "藍晒圖文創園區",
+      kind: "deco",
+      model: "blueprintPark",
+      color: "#dceffc",
+      accent: "#4b91b6",
+      overview: "把藍白線稿牆面做成遊戲路邊裝置，讓道路旁多一個很容易認出的拍照點。",
+      realLook: "藍色牆面搭配白色線條，像把建築藍圖放大成街區裝置。",
+      realTags: ["藍色牆面", "白色線稿", "文創園區"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/740",
+      photo: "./assets/landmarks/blueprint-park.jpg",
+    },
+    {
+      name: "十鼓文創園區",
+      kind: "factory",
+      model: "tenDrum",
+      color: "#e7c0a7",
+      accent: "#a85f4f",
+      overview: "以紅磚糖廠、煙囪與鼓形裝置強化節奏感，讓街景更有跑酷舞台感。",
+      realLook: "舊糖廠空間保留紅磚、煙囪與工業感建築，轉化成文創與表演園區。",
+      realTags: ["紅磚糖廠", "煙囪", "文創園區"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/816",
+      photo: "./assets/landmarks/ten-drum.jpg",
+    },
+    {
+      name: "關子嶺溫泉",
+      kind: "resort",
+      model: "guanzilingHotSpring",
+      color: "#f3e6c4",
+      accent: "#7aa9b6",
+      overview: "用蒸氣、屋簷與溫泉旅宿造型做出山城休憩感，讓道路節奏有喘息感。",
+      realLook: "關子嶺以泥漿溫泉聞名，山景與溫泉旅宿是它最明顯的印象。",
+      realTags: ["泥漿溫泉", "山景", "旅宿"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/590",
+      photo: "./assets/landmarks/guanziling-hot-spring.jpg",
+    },
+    {
+      name: "新化老街",
+      kind: "street",
+      model: "xinhuaOldStreet",
+      color: "#f1d2bd",
+      accent: "#934b42",
+      overview: "以連續街屋與老街招牌呈現，增加道路兩側的日常府城味。",
+      realLook: "街屋立面、拱廊與老街店面連成一排，是新化很具代表性的街景。",
+      realTags: ["街屋立面", "拱廊", "老街"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/559",
+      photo: "./assets/landmarks/xinhua-old-street.jpg",
+    },
+    {
+      name: "安平老街",
+      kind: "street",
+      model: "anpingOldStreet",
+      color: "#f4dfc8",
+      accent: "#c85f45",
+      overview: "用小店、騎樓與紅瓦街屋做出安平人潮感，讓街景更熱鬧。",
+      realLook: "安平老街以小吃、店家與窄街巷聞名，街屋密集又有生活氣。",
+      realTags: ["小吃街", "騎樓", "安平街巷"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/812",
+      photo: "./assets/landmarks/anping-old-street.jpg",
+    },
+    {
+      name: "延平郡王祠",
+      kind: "temple",
+      model: "koxingaShrine",
+      color: "#f3d0b8",
+      accent: "#c85f45",
+      overview: "以朱紅屋簷、廟埕與柱列做成路邊模型，補強府城歷史感。",
+      realLook: "建築具有傳統廟宇屋簷與庭院配置，是紀念鄭成功的重要地標。",
+      realTags: ["朱紅屋簷", "廟埕", "鄭成功"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/792",
+      photo: "./assets/landmarks/koxinga-shrine.jpg",
+    },
+    {
+      name: "吳園藝文中心",
+      kind: "garden",
+      model: "wuGarden",
+      color: "#f3e6c4",
+      accent: "#65a85f",
+      overview: "用庭園、亭閣與綠意讓道路兩側不只有建築，也有臺南老園林的雅緻。",
+      realLook: "吳園保留庭園空間與歷史建築，呈現市中心少見的園林氛圍。",
+      realTags: ["庭園", "亭閣", "藝文中心"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/760",
+      photo: "./assets/landmarks/wu-garden.jpg",
+    },
+    {
+      name: "西市場",
+      kind: "market",
+      model: "westMarket",
+      color: "#f1d2bd",
+      accent: "#b44966",
+      overview: "以拱形入口與市場店面做出府城商業街景，讓路邊畫面更有生活密度。",
+      realLook: "西市場保有老市場立面與街區感，是中西區具代表性的歷史市場。",
+      realTags: ["老市場", "拱形入口", "街區商業"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/746",
+      photo: "./assets/landmarks/west-market.jpg",
+    },
+    {
+      name: "海安路藝術街",
+      kind: "street",
+      model: "haiAnArtStreet",
+      color: "#dceffc",
+      accent: "#7d5ba6",
+      overview: "把彩色牆面與街頭藝術放進道路兩側，讓城市風景更活潑。",
+      realLook: "海安路以街道藝術、裝置與夜間散步氛圍聞名，是臺南很有創意感的街廓。",
+      realTags: ["街道藝術", "彩色牆面", "散步街廓"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/1345",
+      photo: "./assets/landmarks/haian-art-street.jpg",
+    },
+    {
+      name: "月津港親水公園",
+      kind: "festival",
+      model: "yuejinHarbor",
+      color: "#dff6ff",
+      accent: "#f4d16f",
+      overview: "用水岸、燈籠與光點做出夜間節慶感，搭配日夜變化更有氣氛。",
+      realLook: "月津港親水公園有水岸步道與燈節意象，夜晚視覺尤其醒目。",
+      realTags: ["水岸", "燈節", "親水公園"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/4282",
+      photo: "./assets/landmarks/yuejin-harbor.jpg",
+    },
+    {
+      name: "山上花園水道博物館",
+      kind: "museum",
+      model: "waterworksMuseum",
+      color: "#e7c0a7",
+      accent: "#a85f4f",
+      overview: "用紅磚建築、水塔與拱窗做出工業遺產感，讓郊區路線更有變化。",
+      realLook: "園區保留水道設施、紅磚建築與水塔結構，是臺南很有特色的博物館。",
+      realTags: ["紅磚", "水塔", "水道博物館"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/5816",
+      photo: "./assets/landmarks/waterworks-museum.jpg",
+    },
+    {
+      name: "七股鹽山",
+      kind: "deco",
+      model: "qiguSaltMountain",
+      color: "#f7fdff",
+      accent: "#7fc3de",
+      overview: "以白色鹽山和鹽田感做出路邊奇景，讓臺南海線特色更明顯。",
+      realLook: "大面積白色鹽山像小山丘，是七股很具辨識度的觀光地標。",
+      realTags: ["白色鹽山", "海線", "鹽業地景"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/471",
+      photo: "./assets/landmarks/qigu-salt-mountain.jpg",
+    },
+    {
+      name: "國立臺灣歷史博物館",
+      kind: "museum",
+      model: "taiwanHistoryMuseum",
+      color: "#e8f0ee",
+      accent: "#8a9aa1",
+      overview: "以現代博物館量體、大片玻璃與斜屋頂呈現，增加新市區文化感。",
+      realLook: "建築外觀現代，寬闊基地與館舍量體清楚，是臺南代表性的博物館之一。",
+      realTags: ["現代館舍", "大片玻璃", "博物館"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/852",
+      photo: "./assets/landmarks/taiwan-history-museum.jpg",
+    },
+    {
+      name: "北門水晶教堂",
+      kind: "chapel",
+      model: "beimenCrystalChurch",
+      color: "#e7f7fa",
+      accent: "#7fc3de",
+      overview: "用白色三角水晶教堂造型做出很亮眼的海線地標。",
+      realLook: "白色晶體般的教堂造型坐落在水岸旁，外型簡潔又很容易辨識。",
+      realTags: ["白色教堂", "水岸", "晶體造型"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/5622",
+      photo: "./assets/landmarks/beimen-crystal-church.jpg",
+    },
+    {
+      name: "井仔腳瓦盤鹽田",
+      kind: "salt",
+      model: "jingzaijiaoSaltFields",
+      color: "#f7e2bd",
+      accent: "#7aa9b6",
+      overview: "用一格格瓦盤鹽田與小鹽堆做出海線地景，讓道路兩側更有地方特色。",
+      realLook: "鹽田格線、反光水面與夕陽景色是井仔腳最醒目的視覺印象。",
+      realTags: ["瓦盤鹽田", "格線水面", "海線夕景"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/587",
+      photo: "./assets/landmarks/jingzaijiao-salt-fields.jpg",
+    },
+    {
+      name: "麻豆代天府",
+      kind: "temple",
+      model: "madouDaitianTemple",
+      color: "#f5d4b2",
+      accent: "#d8243c",
+      overview: "用大型廟宇屋脊、紅柱與牌樓感呈現，讓道路旁的廟宇不再都長一樣。",
+      realLook: "麻豆代天府具有華麗廟宇立面與層次豐富的屋頂裝飾，是麻豆重要信仰地標。",
+      realTags: ["華麗廟宇", "紅柱", "麻豆地標"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/479",
+      photo: "./assets/landmarks/madou-daitian-temple.jpg",
+    },
+    {
+      name: "虎頭埤風景區",
+      kind: "lake",
+      model: "hutoupi",
+      color: "#d5ead4",
+      accent: "#4a9f72",
+      overview: "以湖面、拱橋和樹影做成風景區模型，讓街景有更自然的節奏。",
+      realLook: "虎頭埤以湖泊、步道和綠意聞名，是臺南很經典的風景區。",
+      realTags: ["湖泊", "步道", "綠意"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/562",
+      photo: "./assets/landmarks/hutoupi.jpg",
+    },
+    {
+      name: "蕭壠文化園區",
+      kind: "factory",
+      model: "soulanghCulturalPark",
+      color: "#e8d0b8",
+      accent: "#a85f4f",
+      overview: "用紅磚廠房、連續屋頂和藝文招牌做成路邊建築，補強郊區文創路線。",
+      realLook: "園區由糖廠空間轉型，保留廠房量體並加入藝文展演用途。",
+      realTags: ["糖廠廠房", "紅磚", "文化園區"],
+      sourceLabel: "臺南旅遊網",
+      sourceUrl: "https://www.twtainan.net/zh-tw/Attractions/Detail/484",
+      photo: "./assets/landmarks/soulangh-cultural-park.jpg",
+    },
+  ];
 
   const TYPES = {
     milk: { label: "鮮奶", short: "奶", color: "#7fc3de", bg: "#dff6ff", hold: "鮮奶", feature: "純淨基底", effect: "純淨+", verb: "補純" },
@@ -336,6 +921,7 @@
   const state = {
     phase: "ready",
     paused: false,
+    pauseLandmark: null,
     width: 0,
     height: 0,
     viewportWidth: 0,
@@ -423,6 +1009,11 @@
     survivalTime: 0,
     settlementReveal: 0,
     sceneryOffset: 0,
+    weatherType: "sunny",
+    weatherNextType: "sunny",
+    weatherBlend: 0,
+    weatherTimer: 24,
+    weatherSeed: 1,
     idleTime: 0,
     idleToastCooldown: 0,
     hazardPressure: 0,
@@ -433,6 +1024,7 @@
     entities: [],
     particles: [],
     bursts: [],
+    brandBursts: [],
     floats: [],
     packages: [],
   };
@@ -574,26 +1166,27 @@
     const openingDrain = opening?.timerDrain || 1;
     const openingHazardTarget = opening?.hazardTarget || 0;
     const flavorSpeed = state.flavorRushTime > 0 ? 1.14 + Math.min(0.26, state.customFlavors * 0.014 + state.combo * 0.0016) : 1;
-    const arcadePressure = Math.max(0, state.survivalTime / 16 + state.totalYogurts * 0.35);
-    const comboSpeed = 1 + Math.min(0.22, state.combo * 0.0024 + state.totalYogurts * 0.008 + arcadePressure * 0.006);
-    const comboDensity = Math.min(0.18, state.combo * 0.0018 + state.totalYogurts * 0.008 + arcadePressure * 0.003);
+    const arcadePressure = Math.max(0, state.survivalTime / 15 + state.totalYogurts * 0.42);
+    const lateRamp = clamp((state.survivalTime - 45) / 100 + Math.max(0, state.level - 10) * 0.035 + Math.max(0, state.totalYogurts - 4) * 0.025, 0, 0.9);
+    const comboSpeed = 1 + Math.min(0.3, state.combo * 0.0028 + state.totalYogurts * 0.011 + arcadePressure * 0.007 + lateRamp * 0.08);
+    const comboDensity = Math.min(0.24, state.combo * 0.0022 + state.totalYogurts * 0.01 + arcadePressure * 0.004 + lateRamp * 0.08);
     const rushDensity = state.flavorRushTime > 0 ? 0.09 : 0;
     const idleThreat = state.flavorRushTime > 0 ? 0 : clamp((state.idleTime - 0.85) * 0.34 + state.hazardPressure * 0.12, 0, 0.72);
     return {
       ...tier,
-      speed: (tier.speed * 0.78 + pressure * 8 + latePressure * 5 + Math.max(0, state.level - 18) * 8 + state.totalYogurts * 2.5 + arcadePressure * 2.6) * modifier.speed * openingSpeed * flavorSpeed * comboSpeed,
+      speed: (tier.speed * 0.78 + pressure * 8 + latePressure * 5 + Math.max(0, state.level - 18) * 8 + state.totalYogurts * 2.5 + arcadePressure * 2.6 + lateRamp * 85) * modifier.speed * openingSpeed * flavorSpeed * comboSpeed,
       hazard: state.survivalTime > 3.2 || idleThreat > 0.18,
       sameLane: clamp(tier.sameLane - 0.36 - pressure * 0.02 + (modifier.sameLane || 0), 0.16, 0.64),
       required: Math.max(1.05, (2.08 - arcadePressure * 0.014 - comboDensity * 0.24) * modifier.requiredRate),
       decoyMin: Math.max(0.95, 1.62 - arcadePressure * 0.01 - comboDensity * 0.14),
       decoyMax: Math.max(1.35, 2.38 - arcadePressure * 0.014 - comboDensity * 0.2),
-      hazardMin: Math.max(1.46, (2.75 - arcadePressure * 0.016 - latePressure * 0.01) * modifier.hazardRate - idleThreat * 0.22),
-      hazardMax: Math.max(1.95, (4.05 - arcadePressure * 0.022 - latePressure * 0.014) * modifier.hazardRate - idleThreat * 0.34),
+      hazardMin: Math.max(0.9, (2.75 - arcadePressure * 0.018 - latePressure * 0.012 - lateRamp * 0.48) * modifier.hazardRate - idleThreat * 0.22),
+      hazardMax: Math.max(1.28, (4.05 - arcadePressure * 0.026 - latePressure * 0.018 - lateRamp * 0.78) * modifier.hazardRate - idleThreat * 0.34),
       orderTime: Math.max(2.2, tier.orderTime * modifier.orderTime),
-      missPurity: Math.ceil((9 + Math.min(18, arcadePressure * 0.92)) * modifier.purityPenalty),
+      missPurity: Math.ceil((9 + Math.min(22, arcadePressure * 0.96 + lateRamp * 7)) * modifier.purityPenalty),
       missTime: (1.25 + Math.min(2.2, arcadePressure * 0.08)) * modifier.purityPenalty,
-      timerDrain: (0.72 + Math.min(0.68, arcadePressure * 0.018)) * modifier.timerDrain * openingDrain,
-      hazardTarget: clamp(tier.hazardTarget + modifier.hazardTarget + openingHazardTarget + idleThreat, 0, 0.98),
+      timerDrain: (0.72 + Math.min(0.86, arcadePressure * 0.019 + lateRamp * 0.42)) * modifier.timerDrain * openingDrain,
+      hazardTarget: clamp(tier.hazardTarget + modifier.hazardTarget + openingHazardTarget + idleThreat + lateRamp * 0.16, 0, 0.98),
       bonusChance: clamp(0.13 + comboDensity * 0.78 + rushDensity + modifier.bonusChance * 0.42, 0.1, state.flavorRushTime > 0 ? 0.42 : 0.28),
     };
   }
@@ -709,7 +1302,14 @@
     state.fever = clamp(state.fever + 14, 0, 100);
     state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 1.8);
     showToast(`本批挑戰達成：${mission.label} +${formatNumber(reward)}`);
-    floatText("挑戰達成！", player.x + 72, player.y - 132, COLORS.berry);
+    triggerBrandBurst("挑戰達成", {
+      sub: mission.label,
+      x: player.x + 72,
+      y: player.y - 148,
+      color: COLORS.berry,
+      style: "rush",
+      power: 1.32,
+    });
     floatText(`+${formatNumber(reward)}`, player.x + 72, player.y - 108, COLORS.leaf);
     emitPop(player.x + 56, player.y - 46, COLORS.berry, 22);
     triggerJuice(COLORS.berry, 1.55, { x: player.x + 58, y: player.y - 54, style: "stamp", hitStop: 0.11 });
@@ -743,7 +1343,7 @@
 
     emitLaneFlash(entity.lane, quality.color);
     if (quality.grade === "perfect") {
-      state.shake = Math.max(state.shake, 0.46);
+      state.shake = Math.max(state.shake, 0.16);
       emitPop(entity.x + entity.w / 2, entity.y - 30, quality.color, 24);
       emitRingBurst(entity.x + entity.w / 2, entity.y - 34, quality.color, 2, 24);
       beep(760 + Math.min(520, state.precisionStreak * 28), 0.045, "square", 0.035);
@@ -776,6 +1376,9 @@
     dom.shareButton.addEventListener("click", copyResult);
     dom.muteButton.addEventListener("click", toggleMute);
     dom.pauseButton?.addEventListener("click", togglePause);
+    dom.pauseContinueButton?.addEventListener("click", () => {
+      if (state.paused) togglePause();
+    });
     window.addEventListener("pointerdown", primeAudio, { passive: true });
     window.addEventListener("resize", resize);
     window.addEventListener("keydown", handleKeyDown);
@@ -1166,6 +1769,7 @@
     state.survivalTime = 0;
     state.settlementReveal = 0;
     state.sceneryOffset = 0;
+    resetWeather();
     state.idleTime = 0;
     state.idleToastCooldown = 0;
     state.hazardPressure = 0;
@@ -1174,6 +1778,7 @@
     state.entities = [];
     state.particles = [];
     state.bursts = [];
+    state.brandBursts = [];
     state.floats = [];
     state.packages = [];
     player.x = state.lanes[1] || state.width * 0.5;
@@ -1196,11 +1801,76 @@
     updatePauseUi();
     dom.startOverlay.classList.add("hidden");
     dom.gameOverOverlay.classList.add("hidden");
+    state.pauseLandmark = null;
+    hidePauseDomOverlay();
     renderRecipe();
     updateHud();
-    showToast("三路優格快線：吃好料、閃紅色、做官方優格");
+    showToast("優格快線：吃好料、閃紅色、做官方優格");
     startBgm(true);
     beep(560, 0.055, "square", 0.04);
+  }
+
+  function resetWeather() {
+    const seasonIndex = getWorldMood(0).seasonIndex;
+    const forcedWeather = new URLSearchParams(window.location.search).get("weather");
+    const type = WEATHER_DEFS[forcedWeather] ? forcedWeather : pickWeatherForSeason(seasonIndex);
+    state.weatherType = type;
+    state.weatherNextType = type;
+    state.weatherBlend = 0;
+    state.weatherTimer = getWeatherDuration(type);
+    state.weatherSeed = randomInt(1, 9999);
+  }
+
+  function pickWeatherForSeason(seasonIndex, avoidType = "") {
+    const profile = WEATHER_PROFILES[positiveModulo(seasonIndex, WEATHER_PROFILES.length)] || WEATHER_PROFILES[0];
+    const entries = Object.entries(profile);
+    const total = entries.reduce((sum, [, weight]) => sum + weight, 0);
+    let roll = random(0, total);
+    for (const [type, weight] of entries) {
+      roll -= weight;
+      if (roll <= 0) return type === avoidType && Math.random() < 0.28 ? "sunny" : type;
+    }
+    return "sunny";
+  }
+
+  function getWeatherDuration(type) {
+    if (type === "sunny") return random(28, 54);
+    if (type === "typhoon") return random(12, 24);
+    if (type === "heavyRain") return random(14, 26);
+    if (type === "fog") return random(16, 32);
+    if (type === "snow") return random(14, 28);
+    if (type === "cloudy") return random(22, 42);
+    return random(16, 34);
+  }
+
+  function updateWeather(dt) {
+    if (state.weatherBlend > 0) {
+      state.weatherBlend = Math.min(1, state.weatherBlend + dt / 6);
+      if (state.weatherBlend >= 1) {
+        state.weatherType = state.weatherNextType || state.weatherType || "sunny";
+        state.weatherNextType = state.weatherType;
+        state.weatherBlend = 0;
+        state.weatherSeed = randomInt(1, 9999);
+      }
+      return;
+    }
+    state.weatherTimer -= dt;
+    if (state.weatherTimer > 0) return;
+    const mood = getWorldMood();
+    const nextType = pickWeatherForSeason(mood.seasonIndex, state.weatherType);
+    state.weatherTimer = getWeatherDuration(nextType);
+    if (nextType === state.weatherType) return;
+    state.weatherNextType = nextType;
+    state.weatherBlend = 0.001;
+  }
+
+  function getWeatherVisual() {
+    return {
+      current: state.weatherType || "sunny",
+      next: state.weatherNextType || state.weatherType || "sunny",
+      blend: clamp(state.weatherBlend || 0, 0, 1),
+      seed: state.weatherSeed || 1,
+    };
   }
 
   function spawnOrder(forceFirst = false) {
@@ -1261,8 +1931,8 @@
     state.requiredTimer = Math.min(state.requiredTimer, 0.16);
     state.decoyTimer = Math.min(state.decoyTimer, 0.28);
     state.hazardTimer = Math.max(state.hazardTimer, 0.9);
-    showToast("三路加速，追好料閃紅色");
-    floatText("三路衝刺", player.x + 50, player.y - 132, COLORS.orange);
+    showToast("優格快線加速，追好料閃紅色");
+    floatText("快線衝刺", player.x + 50, player.y - 132, COLORS.orange);
     emitRingBurst(player.x + 38, player.y - 50, COLORS.orange, 3, 36);
     triggerJuice(COLORS.orange, 1.35, { x: player.x + 38, y: player.y - 48, style: "speed", hitStop: 0.08 });
   }
@@ -1304,6 +1974,7 @@
       }
     }
     state.survivalTime += worldDt;
+    updateWeather(worldDt);
     applyDailyCalorieBurn(worldDt);
     state.level = Math.max(1, 1 + Math.floor(state.survivalTime / 12) + Math.floor(state.totalYogurts / 3));
     state.timeRemaining = Math.max(0, state.timeRemaining - worldDt * diff.timerDrain);
@@ -1318,7 +1989,7 @@
     state.decoyTimer -= worldDt;
     state.hazardTimer -= worldDt;
     state.rewardWaveCooldown = Math.max(0, (state.rewardWaveCooldown || 0) - worldDt);
-    state.shake = Math.max(0, state.shake - fxDt * 9);
+    state.shake = Math.max(0, state.shake - fxDt * 12);
     player.actionTimer = Math.max(0, player.actionTimer - fxDt);
     player.invuln = Math.max(0, player.invuln - fxDt);
     player.jumpTimer = Math.max(0, player.jumpTimer - fxDt);
@@ -1419,6 +2090,14 @@
     }
     state.bursts = state.bursts.filter((burst) => burst.life > 0);
 
+    for (const burst of state.brandBursts) {
+      burst.life -= fxDt;
+      burst.x += (burst.vx || 0) * fxDt;
+      burst.y += (burst.vy || 0) * fxDt;
+      burst.angle += (burst.spin || 0) * fxDt;
+    }
+    state.brandBursts = state.brandBursts.filter((burst) => burst.life > 0);
+
     for (const particle of state.particles) {
       particle.x += particle.vx * fxDt;
       particle.y += particle.vy * fxDt;
@@ -1518,14 +2197,17 @@
     let totalUnits = 0;
     let missingUnits = 0;
     const missing = [];
+    const needs = [];
     for (const [key, count] of Object.entries(recipe.needs)) {
       const have = state.inventory[key] || 0;
+      const ready = have >= count;
+      const lack = Math.max(0, count - have);
       totalUnits += count;
       ownedUnits += Math.min(have, count);
-      if (have < count) {
-        const need = count - have;
-        missingUnits += need;
-        missing.push({ key, count: need, lane: laneForKey(key) });
+      needs.push({ key, count, have: Math.min(have, count), missing: lack, ready, lane: laneForKey(key) });
+      if (!ready) {
+        missingUnits += lack;
+        missing.push({ key, count: lack, lane: laneForKey(key) });
       }
     }
     return {
@@ -1535,6 +2217,7 @@
       totalUnits,
       missingUnits,
       missing,
+      needs,
       ready: missingUnits === 0,
     };
   }
@@ -1683,13 +2366,14 @@
   function spawnHazard() {
     const idleThreat = state.idleTime > 1.05 || state.hazardPressure > 0.5;
     const activeHazards = state.entities.filter((item) => item.type === "hazard" && !item.done && !item.remove && item.y < player.y + 120).length;
-    const hazardCap = state.survivalTime < 12 ? 1 : state.survivalTime < 28 ? 2 : 4;
+    const lateRamp = clamp((state.survivalTime - 45) / 95 + Math.max(0, state.level - 12) * 0.035, 0, 0.85);
+    const hazardCap = state.survivalTime < 12 ? 1 : state.survivalTime < 28 ? 2 : state.survivalTime < 70 ? 3 : 4;
     if (activeHazards >= hazardCap) return;
     const diff = getDifficulty();
-    const chaseChance = state.survivalTime < 10 ? 0.1 : clamp(diff.hazardTarget * 0.42 + state.hazardPressure * 0.08 + (idleThreat ? 0.1 : 0), 0, 0.58);
-    const clusterChance = clamp(-0.1 + state.level * 0.007 + state.survivalTime * 0.001 + state.hazardPressure * 0.028, 0, 0.22);
+    const chaseChance = state.survivalTime < 10 ? 0.1 : clamp(diff.hazardTarget * 0.42 + state.hazardPressure * 0.08 + lateRamp * 0.14 + (idleThreat ? 0.1 : 0), 0, 0.7);
+    const clusterChance = clamp(-0.1 + state.level * 0.008 + state.survivalTime * 0.0014 + state.hazardPressure * 0.03 + lateRamp * 0.18, 0, 0.38);
     const playable = getPlayableLanes();
-    const count = state.level >= 12 && Math.random() < clusterChance ? 2 : 1;
+    const count = (state.level >= 10 || state.survivalTime > 65) && Math.random() < clusterChance ? 2 : 1;
     const used = new Set();
     for (let i = 0; i < count; i += 1) {
       let lane = i === 0 && Math.random() < chaseChance ? player.lane : randomPlayableLane();
@@ -1698,7 +2382,7 @@
       const hazardPool = LANE_RULES[lane].hazards;
       const hazardKey = hazardPool[randomInt(0, hazardPool.length - 1)];
       const hazard = HAZARDS.find((item) => item.key === hazardKey) || HAZARDS[randomInt(0, HAZARDS.length - 1)];
-      const speedOffset = random(-8, 14) + Math.min(34, state.hazardPressure * 12 + Math.max(0, state.idleTime - 1) * 8 + state.level * 0.8);
+      const speedOffset = random(-8, 14) + Math.min(50, state.hazardPressure * 12 + Math.max(0, state.idleTime - 1) * 8 + state.level * 0.95 + lateRamp * 22);
       spawnEntity({ type: "hazard", key: hazard.key, lane, hazard, speedOffset, dodge: "avoid", gapLane: null });
       if (lane === player.lane && state.survivalTime > 12) emitLaneFlash(lane, hazard.color);
     }
@@ -1870,7 +2554,8 @@
     const x = options.x ?? player.x;
     const y = options.y ?? player.y - 44;
     state.hitStop = Math.max(state.hitStop, options.hitStop ?? 0.035 + power * 0.045);
-    state.shake = Math.max(state.shake, 0.18 + power * 0.32);
+    const shakePower = options.shake ?? (options.style === "hazard" ? 0.28 : power >= 1.9 ? 0.08 + power * 0.12 : 0);
+    if (shakePower > 0) state.shake = Math.max(state.shake, shakePower);
     state.flash = Math.max(state.flash, 0.18 + power * 0.12);
     state.flashColor = color;
     state.zoomKick = Math.max(state.zoomKick, 0.35 + power * 0.78);
@@ -1878,6 +2563,49 @@
     state.comboSurge = Math.max(state.comboSurge, 0.3 + power * 0.38);
     emitImpactBurst(x, y, color, options.style || "spark", 0.8 + power * 0.35);
     if (power >= 0.9) emitScreenSparks(x, y, color, Math.round(10 + power * 10));
+  }
+
+  function triggerBrandBurst(label, options = {}) {
+    const color = options.color || COLORS.aquaDeep;
+    const power = options.power || 1;
+    const x = options.x ?? player.x + 52;
+    const y = options.y ?? player.y - 132;
+    state.brandBursts.push({
+      label,
+      sub: options.sub || "純粹優格多一點",
+      x,
+      y,
+      vx: options.vx || 0,
+      vy: options.vy ?? -12,
+      color,
+      style: options.style || "shine",
+      power,
+      angle: random(0, Math.PI),
+      spin: random(-1.6, 1.6),
+      life: options.life || 1.05 + power * 0.18,
+      maxLife: options.life || 1.05 + power * 0.18,
+    });
+    if (state.brandBursts.length > 5) state.brandBursts.splice(0, state.brandBursts.length - 5);
+    emitRingBurst(x, y - 6, color, power >= 1.5 ? 4 : 3, 34 + power * 8);
+    emitImpactBurst(x, y - 6, color, options.style === "rush" ? "confetti" : options.style === "shield" ? "shield" : "stamp", 1.05 + power * 0.25);
+    emitImpactParticles(x, y - 8, [color, COLORS.aqua, COLORS.yellow, "#ffffff"], Math.round(16 + power * 18), {
+      spread: Math.PI * 2,
+      speedMin: 120,
+      speedMax: 360 + power * 80,
+      friction: 0.955,
+      gravity: 70,
+      spin: 18,
+      shape: options.style === "rush" ? "confetti" : "spark",
+      sizeMin: 4,
+      sizeMax: 11,
+      lifeMin: 0.42,
+      lifeMax: 0.9,
+      jitter: 26,
+    });
+    state.flash = Math.max(state.flash, 0.2 + power * 0.08);
+    state.flashColor = color;
+    state.speedLineTime = Math.max(state.speedLineTime, 0.48 + power * 0.22);
+    state.comboSurge = Math.max(state.comboSurge, 0.45 + power * 0.25);
   }
 
   function collectArcadeItem(entity) {
@@ -1904,6 +2632,7 @@
     addFlavorChargeArcade(entity, def, crafted);
     handleComboPrize();
     triggerQuickComboSurge(entity, def);
+    renderRecipe();
     if (state.fever >= 100 && state.feverTime <= 0 && state.combo >= 24 && state.totalYogurts >= 3) activateFever();
 
     emitPop(entity.x + entity.w / 2, entity.y - 28, def.color, 14);
@@ -1940,10 +2669,18 @@
     if (state.combo % 10 === 0) {
       state.magnetTime = Math.max(state.magnetTime, 1.35);
       emitScreenSparks(player.x, player.y - 54, def.color, 12);
+      triggerBrandBurst("好料連發", {
+        sub: `${state.combo} 連吃`,
+        x: player.x + 58,
+        y: player.y - 136,
+        color: def.color,
+        style: "shine",
+        power: 1.05,
+      });
     }
     emitRingBurst(player.x, player.y - 48, def.color, state.combo % 10 === 0 ? 3 : 2, state.combo % 10 === 0 ? 38 : 28);
     emitPop(player.x, player.y - 36, def.color, state.combo % 10 === 0 ? 24 : 16);
-    floatText(`連吃 x${state.combo}`, player.x + 58, player.y - 118, def.color);
+    if (state.combo % 10 !== 0) floatText(`連吃 x${state.combo}`, player.x + 58, player.y - 118, def.color);
     floatText(`+${surgeValue}`, player.x + 58, player.y - 94, COLORS.leaf);
     beep(760 + Math.min(360, state.combo * 6), 0.045, "triangle", 0.028);
   }
@@ -2181,6 +2918,7 @@
 
   function craftYogurts(entity, sourceDef) {
     let crafted = 0;
+    let lastRecipe = null;
     const recipes = [...YOGURT_RECIPES].sort((a, b) => {
       const officialDelta = Number(OFFICIAL_YOGURT_IDS.has(b.id)) - Number(OFFICIAL_YOGURT_IDS.has(a.id));
       return officialDelta || b.points - a.points;
@@ -2202,6 +2940,7 @@
         state.fever = clamp(state.fever + 6, 0, 100);
         state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 0.7);
         state.packages.push({ x: player.x + 70, y: player.y - 20, color: recipe.color, bob: 0 });
+        lastRecipe = recipe;
         floatText(`${recipe.label} +${points}`, player.x + 94, player.y - 96 - crafted * 20, recipe.color);
         emitPop(player.x + 70, player.y - 38, recipe.color, 22);
         emitRingBurst(player.x + 70, player.y - 48, recipe.color, 3, 30);
@@ -2219,6 +2958,14 @@
         bonusCount: crafted >= 2 || state.totalYogurts % 4 === 0 ? 1 : 0,
         cooldown: 1.65,
         text: "優格補給",
+      });
+      triggerBrandBurst(crafted >= 2 ? "優格連做" : "做出優格", {
+        sub: crafted >= 2 ? `${crafted} 杯純粹補給` : lastRecipe?.label || "純粹好食",
+        x: player.x + 76,
+        y: player.y - 146,
+        color: lastRecipe?.color || sourceDef?.color || COLORS.aquaDeep,
+        style: crafted >= 2 ? "rush" : "shine",
+        power: crafted >= 2 ? 1.35 : 1.12,
       });
       showToast(`做出 ${crafted} 杯優格，繼續自搭`);
       beep(820, 0.07, "triangle", 0.035);
@@ -2299,7 +3046,9 @@
     applyElementFeature(step, def, entity, quality);
     addFlavorCharge(step, def, entity, quality);
     state.stepIndex += 1;
-    state.shake = 0.34;
+    if (quality.grade === "perfect" || state.combo > 0 && state.combo % 16 === 0) {
+      state.shake = Math.max(state.shake, quality.grade === "perfect" ? 0.12 : 0.08);
+    }
     emitPop(entity.x + entity.w / 2, entity.y - 28, def.color, 18);
     emitElementImpact(step.key, entity, def.color, quality.grade === "perfect");
     triggerJuice(def.color, quality.grade === "perfect" ? 1.15 : quality.grade === "good" ? 0.78 : 0.46, {
@@ -2377,7 +3126,7 @@
       fever = perfect ? 7 : 3;
       text = "可可暴擊";
     } else if (step.key === "salt") {
-      state.shake = Math.max(state.shake, 0.55);
+      state.shake = Math.max(state.shake, 0.18);
       time = perfect ? 0.75 : 0.35;
       fever = 4;
       text = "鹹甜反衝";
@@ -2503,8 +3252,15 @@
     clearHazardsForFlavorRush();
 
     showToast(`自搭配口味：${label} x${multiplier.toFixed(1)} 爽速`);
-    floatText("JUICY RUSH", x, y - 84, COLORS.berry);
-    floatText(`${label} x${multiplier.toFixed(1)}`, x, y - 58, COLORS.purple);
+    triggerBrandBurst("自搭配爆發", {
+      sub: `${label} x${multiplier.toFixed(1)}`,
+      x,
+      y: y - 98,
+      color: COLORS.berry,
+      style: "rush",
+      power: 1.75,
+      life: 1.45,
+    });
     floatText(`+${formatNumber(bonus)}`, x, y - 34, COLORS.leaf);
     emitFlavorRushStart(x, y - 18, color, first, second);
     emitPop(x, y - 18, color, 42);
@@ -2538,12 +3294,19 @@
       state.score += bonus;
       state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 1.2);
       state.fever = clamp(state.fever + 9, 0, 100);
-      floatText("品牌熱度！", player.x + 72, player.y - 148, COLORS.purple);
+      triggerBrandBurst("品牌熱度", {
+        sub: `純粹亮點 x${state.brandHeat}`,
+        x: player.x + 72,
+        y: player.y - 150,
+        color: COLORS.purple,
+        style: "shine",
+        power: 1.22,
+      });
       floatText(`+${formatNumber(bonus)}`, player.x + 72, player.y - 122, COLORS.leaf);
       emitRingBurst(player.x + 58, player.y - 46, COLORS.purple, 3, 32);
       emitFeatureSpark(player.x + 58, player.y - 42, COLORS.purple, 18);
     } else if (text) {
-      floatText("品牌亮點 +1", entity.x + entity.w / 2, entity.y - 146, COLORS.purple);
+      emitBadgeBurst(entity.x + entity.w / 2, entity.y - 92, COLORS.purple, "純");
     }
   }
 
@@ -2567,7 +3330,14 @@
     state.carry = "空手";
     state.packages.push({ x: player.x + 70, y: player.y - 20, color: order.color, bob: 0 });
     showToast(`${modifier.label} ${perfect ? "精品出貨" : "完成出貨"}：${order.name} +${formatNumber(bonus)}`);
-    floatText(perfect ? "精品出貨！" : "出貨！", player.x + 90, player.y - 92, order.color);
+    triggerBrandBurst(perfect ? "精品出貨" : "完成出貨", {
+      sub: order.name,
+      x: player.x + 86,
+      y: player.y - 138,
+      color: order.color,
+      style: perfect ? "rush" : "shine",
+      power: perfect ? 1.45 : 1.18,
+    });
     if (state.level === 3 || state.level === 5 || state.level === 8 || state.level === 11 || state.level === 16 || state.level === 20 || state.level === 25) {
       floatText(getDifficulty().name, player.x + 96, player.y - 122, COLORS.berry);
     }
@@ -2688,6 +3458,14 @@
     state.zoomKick = Math.max(state.zoomKick, 0.62);
     emitScreenSparks(entity.x + entity.w / 2, entity.y - 46, bonus.color, bonus.key === "comboBoost" || bonus.key === "rushBoost" ? 18 : 10);
     triggerJuice(bonus.color, bonus.key === "rushBoost" || bonus.key === "roadSweep" ? 1.65 : 1.38, { x: entity.x + entity.w / 2, y: entity.y - 46, style: "magnet", hitStop: 0.095 });
+    triggerBrandBurst(text || bonus.label, {
+      sub: bonus.feature || "純粹補給",
+      x: entity.x + entity.w / 2,
+      y: entity.y - 126,
+      color: bonus.color,
+      style: bonus.key === "rushBoost" || bonus.key === "roadSweep" ? "rush" : bonus.key === "cleanBoost" || bonus.key === "streetGuard" ? "shield" : "shine",
+      power: bonus.key === "rushBoost" || bonus.key === "roadSweep" || bonus.key === "pureWave" ? 1.35 : 1.08,
+    });
     floatText(`+${value}`, entity.x, entity.y - 88, COLORS.leaf);
     beep(700, 0.04, "triangle", 0.03);
   }
@@ -2701,12 +3479,19 @@
     state.timeRemaining = Math.min(getDifficulty().timeCap, state.timeRemaining + 0.65);
     state.fever = clamp(state.fever + 10, 0, 100);
     if (milestone % 24 === 0) state.shield = Math.min(3, state.shield + 1);
-    floatText(`${milestone}連吃!`, player.x + 62, player.y - 136, COLORS.berry);
     floatText(`+${prize}`, player.x + 62, player.y - 112, COLORS.leaf);
     emitPop(player.x + 56, player.y - 42, COLORS.yellow, 24);
     emitRingBurst(player.x + 56, player.y - 48, COLORS.yellow, 3, 34);
     emitLaneFlash(player.lane, COLORS.yellow);
     triggerJuice(COLORS.yellow, milestone % 20 === 0 ? 1.75 : 1.35, { x: player.x + 56, y: player.y - 48, style: "confetti", hitStop: 0.1 });
+    triggerBrandBurst(`${milestone}連吃`, {
+      sub: "純粹節奏達成",
+      x: player.x + 66,
+      y: player.y - 146,
+      color: COLORS.yellow,
+      style: milestone % 16 === 0 ? "rush" : "shine",
+      power: milestone % 32 === 0 ? 1.45 : milestone % 16 === 0 ? 1.22 : 1.05,
+    });
     beep(880 + Math.min(420, milestone * 4), 0.07, "square", 0.035);
   }
 
@@ -2740,7 +3525,7 @@
     state.purity = clamp(state.purity - diff.missPurity, 0, 100);
     state.timeRemaining = Math.max(0, state.timeRemaining - diff.missTime);
     state.fever = Math.max(0, state.fever - 8);
-    state.shake = 0.65;
+    state.shake = 0.52;
     player.invuln = 0.7;
     if (entity) {
       gainHazardWeight(entity);
@@ -2760,11 +3545,19 @@
   function activateFever() {
     state.feverTime = 7.2;
     state.fever = 100;
-    state.shake = 0.8;
+    state.shake = 0.42;
     state.batchPureRushes += 1;
     bumpMission("pureRushes");
     showToast("純淨能量滿格：PURE RUSH！");
-    floatText("PURE!", player.x + 54, player.y - 110, COLORS.orange);
+    triggerBrandBurst("PURE RUSH", {
+      sub: "純淨能量滿格",
+      x: player.x + 54,
+      y: player.y - 144,
+      color: COLORS.orange,
+      style: "rush",
+      power: 1.58,
+      life: 1.35,
+    });
     emitRingBurst(player.x + 40, player.y - 46, COLORS.orange, 4, 38);
     emitLaneFlash(player.lane, COLORS.orange);
     triggerJuice(COLORS.orange, 2.25, { x: player.x + 42, y: player.y - 54, style: "speed", hitStop: 0.16 });
@@ -2776,7 +3569,7 @@
     ensureAudio();
     controls.action = true;
     player.actionTimer = 0.22;
-    state.shake = Math.max(state.shake, 0.12);
+    state.shake = Math.max(state.shake, 0.06);
     window.setTimeout(() => {
       controls.action = false;
     }, 90);
@@ -2895,8 +3688,8 @@
   }
 
   function draw() {
-    const shakeX = state.shake ? random(-state.shake * 8, state.shake * 8) : 0;
-    const shakeY = state.shake ? random(-state.shake * 5, state.shake * 5) : 0;
+    const shakeX = state.shake ? random(-state.shake * 5.2, state.shake * 5.2) : 0;
+    const shakeY = state.shake ? random(-state.shake * 3.4, state.shake * 3.4) : 0;
     ctx.save();
     ctx.translate(Math.round(shakeX), Math.round(shakeY));
     if (state.zoomKick > 0) {
@@ -2916,6 +3709,7 @@
     drawTouchCursor();
     for (const burst of state.bursts) drawBurst(burst);
     for (const particle of state.particles) drawParticle(particle);
+    for (const burst of state.brandBursts) drawBrandBurst(burst);
     for (const text of state.floats) drawFloat(text);
     if (state.feverTime > 0) drawFeverOverlay();
     if (state.flavorCountdown > 0 || state.flavorRushTime > 0) drawFlavorRushOverlay();
@@ -2982,23 +3776,357 @@
 
   function drawPauseOverlay() {
     if (!state.paused || state.phase !== "playing") return;
+    if (dom.pauseOverlay) return;
     const w = state.width;
     const h = state.height;
+    const compact = isMobileLayout() || w < 620;
+    const landmark = state.pauseLandmark || pickPauseLandmark();
+    state.pauseLandmark = landmark;
     ctx.save();
     fillRect(0, 0, w, h, "rgba(36,50,58,.28)");
-    const cardW = Math.min(360, w - 40);
-    const cardH = 144;
+    const cardW = Math.min(compact ? w - 28 : 690, w - 36);
+    const cardH = Math.min(compact ? 462 : 392, h - 58);
     const x = (w - cardW) / 2;
-    const y = Math.max(118, h * 0.34);
+    const preferredY = compact ? Math.max(256, h * 0.31) : Math.max(236, h * 0.26);
+    const y = clamp(preferredY, 24, Math.max(24, h - cardH - 18));
     fillRect(x + 8, y + 8, cardW, cardH, "rgba(36,50,58,.18)");
     fillRect(x, y, cardW, cardH, "rgba(255,255,255,.94)");
     strokeRect(x, y, cardW, cardH, COLORS.ink, 4);
-    fillRect(x + 24, y + 28, 18, 58, COLORS.aquaDeep);
-    fillRect(x + 54, y + 28, 18, 58, COLORS.aquaDeep);
-    drawText("已暫停", x + cardW / 2 + 24, y + 54, 34, COLORS.ink, "center");
-    drawText("按 P 或點右上角繼續", x + cardW / 2, y + 101, 16, COLORS.aquaDeep, "center");
-    drawText("紅色危險物先放一邊，回來繼續躲。", x + cardW / 2, y + 126, 14, "#60717b", "center");
+    const headerH = compact ? 86 : 92;
+    fillRect(x + 16, y + 16, cardW - 32, headerH - 18, "rgba(223,246,255,.7)");
+    strokeRect(x + 16, y + 16, cardW - 32, headerH - 18, COLORS.aquaDeep, 3);
+    fillRect(x + 28, y + 31, 14, 44, COLORS.aquaDeep);
+    fillRect(x + 50, y + 31, 14, 44, COLORS.aquaDeep);
+    drawText("已暫停", x + (compact ? 102 : 112), y + 42, compact ? 25 : 30, COLORS.ink, "left");
+    drawText("按 P 或點右上角繼續", x + (compact ? 102 : 112), y + 70, compact ? 13 : 15, COLORS.aquaDeep, "left");
+    drawText("臺南地標小檔案", x + cardW - 26, y + 43, compact ? 16 : 20, landmark.accent || COLORS.aquaDeep, "right");
+    drawText(landmark.name, x + cardW - 26, y + 70, compact ? 13 : 16, COLORS.ink, "right");
+    drawPauseLandmarkFeature(landmark, x + 18, y + headerH + 14, cardW - 36, cardH - headerH - 30, compact);
     ctx.restore();
+  }
+
+  function pickPauseLandmark(previousModel = "") {
+    const withPhotos = PAUSE_LANDMARKS.filter((landmark) => landmark.photo);
+    const pool = withPhotos.length ? withPhotos : PAUSE_LANDMARKS;
+    const weighted = [];
+    for (const landmark of pool) {
+      const weight = Math.max(1, landmark.weight || 1);
+      for (let i = 0; i < weight; i += 1) weighted.push(landmark);
+    }
+    if (!weighted.length) return pool[0] || PAUSE_LANDMARKS[0];
+    let picked = weighted[randomInt(0, weighted.length - 1)];
+    if (previousModel && weighted.length > 1) {
+      for (let i = 0; i < 5 && picked.model === previousModel; i += 1) {
+        picked = weighted[randomInt(0, weighted.length - 1)];
+      }
+    }
+    return picked;
+  }
+
+  function renderPauseDomOverlay() {
+    if (!dom.pauseOverlay) return;
+    const landmark = state.pauseLandmark || pickPauseLandmark();
+    state.pauseLandmark = landmark;
+    dom.pauseOverlay.classList.remove("hidden");
+    if (dom.pauseLandmarkTitle) dom.pauseLandmarkTitle.textContent = landmark.name;
+    if (dom.pauseOverview) dom.pauseOverview.textContent = landmark.overview || "遊戲中的臺南地標，讓路線更有城市感。";
+    if (dom.pauseRealLook) dom.pauseRealLook.textContent = `真實樣貌：${landmark.realLook || "依地標外觀特徵整理成遊戲示意。"}`;
+    if (dom.pauseGameCaption) {
+      dom.pauseGameCaption.textContent = "";
+      dom.pauseGameCaption.hidden = true;
+    }
+    if (dom.pauseRealCaption) dom.pauseRealCaption.textContent = (landmark.realTags || []).slice(0, 3).join("、") || "依線上資料整理真實外觀特徵。";
+    if (dom.pauseSourceLink) {
+      dom.pauseSourceLink.textContent = `資料來源：${landmark.sourceLabel || "線上景點資料"}`;
+      dom.pauseSourceLink.href = landmark.sourceUrl || "https://www.twtainan.net/zh-tw/attractions";
+    }
+    const gameSnapshot = createPauseGameLandmarkSnapshot(landmark);
+    renderPauseVisual(dom.pauseGameVisual, landmark, false, gameSnapshot);
+    renderPauseVisual(dom.pauseRealVisual, landmark, true);
+  }
+
+  function hidePauseDomOverlay() {
+    dom.pauseOverlay?.classList.add("hidden");
+  }
+
+  function renderPauseVisual(target, landmark, real, gameSnapshot = "") {
+    if (!target) return;
+    const kind = landmark.kind || "building";
+    target.className = `pause-visual ${real ? "is-real" : "is-game"} kind-${kind}`;
+    target.style.setProperty("--landmark-color", landmark.color || "#f7fdff");
+    target.style.setProperty("--landmark-accent", landmark.accent || COLORS.aquaDeep);
+    const tags = (real ? landmark.realTags : [landmark.modelLabel || "遊戲建模", landmark.kind || "地標", "路邊展示"]).slice(0, 3);
+    if (real && landmark.photo) {
+      target.innerHTML = `
+        <img class="pause-real-photo" src="${escapeHtml(landmark.photo)}" alt="${escapeHtml(landmark.name)}真實照片" />
+        <div class="pause-real-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+      `;
+      return;
+    }
+    if (!real && gameSnapshot) {
+      target.innerHTML = `<img class="pause-game-shot" src="${escapeHtml(gameSnapshot)}" alt="${escapeHtml(landmark.name)}遊戲路邊模型" />`;
+      return;
+    }
+    target.innerHTML = `
+      <div class="pause-real-tags">${tags.map((tag) => `<span>${escapeHtml(tag)}</span>`).join("")}</div>
+      <div class="pause-building" data-label="${escapeHtml(real ? "真實特徵" : landmark.name)}"></div>
+    `;
+  }
+
+  function createPauseGameLandmarkSnapshot(landmark) {
+    if (!canvas || !ctx) return "";
+    const previewW = 700;
+    const previewH = 300;
+    const pixelScale = Math.min(window.devicePixelRatio || state.dpr || 1, 2);
+    const snapshot = document.createElement("canvas");
+    snapshot.width = Math.max(1, Math.round(previewW * pixelScale));
+    snapshot.height = Math.max(1, Math.round(previewH * pixelScale));
+    const snapshotCtx = snapshot.getContext("2d");
+    if (!snapshotCtx) return "";
+    const previousCtx = ctx;
+    const previousState = {
+      width: state.width,
+      height: state.height,
+      viewportWidth: state.viewportWidth,
+      viewportHeight: state.viewportHeight,
+      sceneScale: state.sceneScale,
+      dpr: state.dpr,
+      routeForkTimer: state.routeForkTimer,
+      routeForkCueTimer: state.routeForkCueTimer,
+      routeForkCount: state.routeForkCount,
+    };
+    try {
+      ctx = snapshotCtx;
+      state.width = previewW;
+      state.height = previewH;
+      state.viewportWidth = previewW;
+      state.viewportHeight = previewH;
+      state.sceneScale = 1;
+      state.dpr = pixelScale;
+      state.routeForkTimer = 0;
+      state.routeForkCueTimer = 0;
+      state.routeForkCount = 0;
+      ctx.setTransform(pixelScale, 0, 0, pixelScale, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+      drawPauseGameLandmarkScene(landmark, previewW, previewH, state.time || 0);
+      return snapshot.toDataURL("image/png");
+    } catch {
+      return "";
+    } finally {
+      ctx = previousCtx;
+      Object.assign(state, previousState);
+      ctx.setTransform(state.dpr * state.sceneScale, 0, 0, state.dpr * state.sceneScale, 0, 0);
+      ctx.imageSmoothingEnabled = false;
+    }
+  }
+
+  function drawPauseGameLandmarkScene(landmark, w, h, t) {
+    const mood = getWorldMood(t);
+    const weather = getWeatherVisual();
+    fillRect(0, 0, w, h, mood.skyBase);
+    fillRect(0, 0, w, h * 0.42, mood.skyTop);
+    drawDayNightSky(w, h, mood, t);
+    drawWeatherSky(w, h, mood, weather, t);
+
+    ctx.save();
+    ctx.globalAlpha = (1 - mood.night * 0.5) * (1 - getWeatherCloudAmount(weather) * 0.26);
+    for (let i = 0; i < 5; i += 1) {
+      const x = ((i * 220 - t * 14) % (w + 260)) - 150;
+      drawCloud(x, 54 + (i % 3) * 36 + Math.sin(t * 0.25 + i) * 4);
+    }
+    ctx.restore();
+
+    const road = getRoadMetrics();
+    fillRect(0, road.horizonY - 42, w, h - road.horizonY + 42, mood.ground);
+    fillRect(0, road.horizonY - 42, w, 18, mood.seasonWash);
+    fillRect(0, road.horizonY - 38, w, 8, `rgba(38,138,161,${0.16 + mood.night * 0.12})`);
+    drawSeasonDetails(w, h, road, mood, t);
+    drawCuteBrandDecals(w, road.horizonY - 90, t);
+    drawPseudoRoad(w, h, t);
+    drawPauseSnapshotRoadsideLandmark(landmark, road, w);
+    drawMoodOverlay(w, h, mood);
+    drawWeatherEffects(w, h, mood, weather, t);
+    drawConveyor(w, h, t);
+  }
+
+  function drawPauseSnapshotRoadsideLandmark(landmark, road, w) {
+    const modelKey = landmark.model || landmark.kind || landmark.name || "";
+    const side = modelKey.length % 2 === 0 ? -1 : 1;
+    const depth = 0.46;
+    const eased = depth ** 1.12;
+    const y = road.horizonY + (road.nearY - road.horizonY) * eased;
+    const roadW = roadWidthAtDepth(Math.min(eased, 1.18));
+    const roadEdge = road.centerX + side * roadW * 0.5;
+    const scale = ((isMobileLayout() ? 0.42 : 0.54) + eased * (isMobileLayout() ? 0.98 : 1.34)) * 1.06;
+    const modelSize = getRoadsideModelSize(landmark);
+    const modelW = modelSize.w * scale;
+    const groundY = y + (landmark.kind === "flora" ? 62 : 74) * scale;
+    const sideGap = landmark.kind === "flora" ? 0 : 2 + eased * 2;
+    let x = side < 0 ? roadEdge - sideGap - modelW : roadEdge + sideGap;
+    x = clamp(x, 10, Math.max(10, w - modelW - 10));
+
+    drawRoadsideGreenBelts(road, 0.18, {
+      "-1": side < 0 ? [depth] : [],
+      "1": side > 0 ? [depth] : [],
+    });
+    ctx.save();
+    ctx.globalAlpha *= 0.98;
+    drawRoadsideModel(landmark, x, groundY, scale, side, 17, roadEdge);
+    ctx.restore();
+  }
+
+  function drawPauseLandmarkFeature(landmark, x, y, w, h, compact) {
+    const gap = compact ? 8 : 12;
+    const previewH = Math.min(compact ? 148 : 168, h * (compact ? 0.42 : 0.5));
+    const panelW = (w - gap) / 2;
+    drawPausePreviewPanel("遊戲樣貌", x, y, panelW, previewH, landmark.accent || COLORS.aquaDeep, () => {
+      drawPauseGameLandmark(landmark, x + 8, y + 28, panelW - 16, previewH - 36);
+    });
+    drawPausePreviewPanel("真實樣貌", x + panelW + gap, y, panelW, previewH, landmark.accent || COLORS.aquaDeep, () => {
+      drawPauseRealLandmark(landmark, x + panelW + gap + 8, y + 28, panelW - 16, previewH - 36);
+    });
+
+    const textY = y + previewH + (compact ? 22 : 26);
+    drawText(landmark.name, x + 4, textY, compact ? 22 : 26, landmark.accent || COLORS.aquaDeep, "left");
+    const detailX = x + 4;
+    const detailW = w - 8;
+    let nextY = drawWrappedText(landmark.overview, detailX, textY + (compact ? 25 : 30), detailW, compact ? 16 : 18, compact ? 12 : 14, COLORS.ink, compact ? 2 : 2);
+    nextY += compact ? 8 : 10;
+    fillRect(x + 2, nextY - 5, w - 4, 2, "rgba(38,138,161,.18)");
+    drawText("真實特色", x + 4, nextY + 17, compact ? 13 : 15, COLORS.berry, "left");
+    drawWrappedText(landmark.realLook, detailX + (compact ? 70 : 82), nextY + 17, detailW - (compact ? 76 : 90), compact ? 16 : 18, compact ? 12 : 14, "#60717b", compact ? 2 : 2);
+  }
+
+  function drawPausePreviewPanel(label, x, y, w, h, color, drawer) {
+    fillRect(x + 4, y + 5, w, h, "rgba(36,50,58,.12)");
+    fillRect(x, y, w, h, "rgba(255,255,255,.88)");
+    strokeRect(x, y, w, h, COLORS.ink, 3);
+    fillRect(x, y, w, 24, color);
+    drawText(label, x + w / 2, y + 13, 13, "#ffffff", "center");
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(x + 6, y + 27, w - 12, h - 33);
+    ctx.clip();
+    drawer();
+    ctx.restore();
+  }
+
+  function drawPauseGameLandmark(landmark, x, y, w, h) {
+    const size = getRoadsideModelSize(landmark);
+    const scale = Math.min(w / Math.max(90, size.w * 1.16), h / Math.max(88, size.h * 1.08), 0.88);
+    fillRect(x, y, w, h, "#e7f7fa");
+    fillRect(x, y + h * 0.62, w, h * 0.38, "#fff4dc");
+    drawQuad(x + w * 0.12, y + h, x + w * 0.34, y + h * 0.34, x + w * 0.72, y + h * 0.34, x + w * 0.92, y + h, "rgba(126,195,222,.54)");
+    strokePerspectiveLine(x + w * 0.34, y + h * 0.34, x + w * 0.12, y + h, COLORS.aquaDeep, 2);
+    strokePerspectiveLine(x + w * 0.72, y + h * 0.34, x + w * 0.92, y + h, COLORS.aquaDeep, 2);
+    const modelW = size.w * scale;
+    const groundY = y + h - 12;
+    const modelX = x + w * 0.5 - modelW * 0.5;
+    drawRoadsideModel(landmark, modelX, groundY, scale, 1, 7, x + w * 0.32);
+  }
+
+  function drawPauseRealLandmark(landmark, x, y, w, h) {
+    fillRect(x, y, w, h, "#eff9fb");
+    fillRect(x, y + h * 0.62, w, h * 0.38, "#efe0c9");
+    const model = landmark.model || landmark.kind;
+    const accent = landmark.accent || COLORS.aquaDeep;
+    const cx = x + w / 2;
+    const ground = y + h - 12;
+    const bw = w * 0.66;
+    const bh = h * 0.54;
+    const bx = cx - bw / 2;
+    const by = ground - bh;
+    if (model === "ugoodaysStore") {
+      fillRect(bx - 12, by - 14, bw + 24, bh + 14, "#f7fdff");
+      strokeRect(bx - 12, by - 14, bw + 24, bh + 14, COLORS.ink, 2);
+      fillRect(bx - 8, by - 10, bw + 16, 26, "#ffffff");
+      for (let i = 0; i < 14; i += 1) fillRect(bx - 4 + i * ((bw + 8) / 14), by - 10, 2, 26, "rgba(36,50,58,.12)");
+      drawBrandLogo(bx + 2, by - 8, Math.min(86, bw * 0.58), 36, COLORS.aquaDeep);
+      fillRect(bx - 8, by + 20, bw + 16, 18, COLORS.aqua);
+      fillRect(bx + 4, by + 45, bw * 0.42, bh - 48, "#dceffc");
+      fillRect(bx + bw * 0.54, by + 45, bw * 0.34, bh - 48, "#e3d4c4");
+      fillRect(bx + bw * 0.57, by + 52, bw * 0.28, 9, "#b44966");
+      strokeRect(bx + 4, by + 45, bw * 0.42, bh - 48, COLORS.ink, 2);
+      strokeRect(bx + bw * 0.54, by + 45, bw * 0.34, bh - 48, COLORS.ink, 2);
+    } else if (landmark.kind === "station") {
+      fillRect(bx, by + 20, bw, bh - 20, "#f4e2c4");
+      drawTriangle(bx + bw * 0.33, by + 20, cx, by - 10, bx + bw * 0.67, by + 20, "#8cb8c7");
+      fillRect(cx - 15, by + 22, 30, 30, "#f7fdff");
+      strokeCircle(cx, by + 37, 10, accent, 2);
+      for (let i = 0; i < 3; i += 1) strokeRect(bx + 12 + i * bw * 0.3, by + 60, 22, 28, "#6f9fb0", 2);
+      strokeRect(bx, by + 20, bw, bh - 20, COLORS.ink, 2);
+    } else if (landmark.kind === "mall") {
+      fillRect(bx - 8, by + 12, bw + 16, bh - 12, "#dff2f6");
+      for (let i = 0; i < 4; i += 1) fillRect(bx + 5 + i * bw * 0.23, by + 24, bw * 0.16, bh - 38, i % 2 ? "#ffffff" : "#bce3ed");
+      fillRect(bx + bw * 0.42, by + 4, bw * 0.46, 24, "#ffffff");
+      drawText("南紡", bx + bw * 0.65, by + 18, 15, accent, "center");
+      strokeRect(bx - 8, by + 12, bw + 16, bh - 12, COLORS.ink, 2);
+    } else if (landmark.kind === "fort") {
+      fillRect(bx, by + 36, bw, bh - 36, "#c57563");
+      for (let i = 0; i < 6; i += 1) fillRect(bx + i * bw / 6 + 3, by + 45, bw / 8, 10, "#d99b72");
+      fillRect(bx + bw * 0.14, by + 8, bw * 0.28, 34, "#b44966");
+      fillRect(bx + bw * 0.58, by + 16, bw * 0.24, 26, "#934b42");
+      strokeRect(bx, by + 36, bw, bh - 36, COLORS.ink, 2);
+    } else if (landmark.kind === "temple") {
+      drawQuad(bx - 8, by + 22, bx + bw * 0.2, by - 4, bx + bw * 0.8, by - 4, bx + bw + 8, by + 22, "#b44966");
+      drawQuad(bx, by + 36, bx + bw * 0.14, by + 18, bx + bw * 0.86, by + 18, bx + bw, by + 36, "#d8243c");
+      fillRect(bx + 10, by + 38, bw - 20, bh - 38, "#f3d0b8");
+      for (let i = 0; i < 4; i += 1) fillRect(bx + 22 + i * bw * 0.2, by + 52, 8, bh - 52, "#8f3550");
+      strokeRect(bx + 10, by + 38, bw - 20, bh - 38, COLORS.ink, 2);
+    } else if (landmark.kind === "fish") {
+      drawCircle(cx, by + bh * 0.52, Math.min(w, h) * 0.22, "#dff6ff");
+      strokeCircle(cx, by + bh * 0.52, Math.min(w, h) * 0.22, accent, 3);
+      drawTriangle(cx - bw * 0.34, by + bh * 0.5, cx - bw * 0.52, by + bh * 0.36, cx - bw * 0.5, by + bh * 0.68, accent);
+      for (let i = 0; i < 6; i += 1) drawCircle(cx - 24 + i * 10, by + bh * 0.47 + (i % 2) * 9, 4, i % 2 ? COLORS.leaf : COLORS.aquaDeep);
+    } else if (landmark.kind === "museum") {
+      fillRect(bx, by + 30, bw, bh - 30, "#eef5f8");
+      drawQuad(bx - 10, by + 30, bx + bw * 0.16, by + 6, bx + bw * 0.84, by + 6, bx + bw + 10, by + 30, "#ffffff");
+      for (let i = 0; i < 5; i += 1) fillRect(bx + 18 + i * bw * 0.16, by + 48, 8, bh - 52, "#c8dce3");
+      strokeRect(bx, by + 30, bw, bh - 30, COLORS.ink, 2);
+    } else if (landmark.kind === "treehouse" || landmark.kind === "tunnel") {
+      fillRect(bx + 10, by + 46, bw - 20, bh - 46, "#d8c1a2");
+      strokeRect(bx + 10, by + 46, bw - 20, bh - 46, COLORS.ink, 2);
+      for (let i = 0; i < 6; i += 1) {
+        const tx = bx + 12 + i * bw * 0.15;
+        fillRect(tx, by + 16 + (i % 2) * 9, 8, bh - 18, "#7a5e44");
+        drawCircle(tx + 4, by + 18, 22, i % 2 ? "#65a85f" : "#4a9f72");
+      }
+    } else if (landmark.kind === "market" || landmark.kind === "street") {
+      for (let i = 0; i < 3; i += 1) {
+        const sx = bx + i * bw * 0.32;
+        fillRect(sx, by + 36 + i * 4, bw * 0.3, bh - 36 - i * 4, i % 2 ? "#ffe5c7" : "#fff4dc");
+        drawQuad(sx - 4, by + 36 + i * 4, sx + bw * 0.15, by + 18 + i * 2, sx + bw * 0.32, by + 36 + i * 4, sx + bw * 0.28, by + 44 + i * 4, i % 2 ? COLORS.orange : COLORS.berry);
+        strokeRect(sx, by + 36 + i * 4, bw * 0.3, bh - 36 - i * 4, COLORS.ink, 2);
+      }
+    } else {
+      fillRect(bx, by + 20, bw, bh - 20, landmark.color || "#ffffff");
+      drawQuad(bx - 8, by + 20, bx + bw * 0.22, by, bx + bw * 0.78, by, bx + bw + 8, by + 20, accent);
+      for (let i = 0; i < 4; i += 1) strokeRect(bx + 14 + i * bw * 0.2, by + 45, 18, 24, accent, 2);
+      strokeRect(bx, by + 20, bw, bh - 20, COLORS.ink, 2);
+    }
+    fillRect(x + 10, ground + 2, w - 20, 4, "rgba(36,50,58,.18)");
+  }
+
+  function drawWrappedText(text, x, y, maxWidth, lineHeight, size, color, maxLines = 3) {
+    ctx.save();
+    ctx.font = `900 ${size}px "Microsoft JhengHei", "Noto Sans TC", sans-serif`;
+    const chars = String(text || "").split("");
+    const lines = [];
+    let line = "";
+    for (const char of chars) {
+      const next = line + char;
+      if (line && ctx.measureText(next).width > maxWidth) {
+        lines.push(line);
+        line = char;
+      } else {
+        line = next;
+      }
+      if (lines.length >= maxLines) break;
+    }
+    if (line && lines.length < maxLines) lines.push(line);
+    ctx.restore();
+    lines.forEach((lineText, index) => drawText(lineText, x, y + index * lineHeight, size, color, "left"));
+    return y + Math.max(0, lines.length - 1) * lineHeight;
   }
 
   function drawBackground() {
@@ -3006,12 +4134,14 @@
     const h = state.height;
     const t = state.time;
     const mood = getWorldMood(t);
+    const weather = getWeatherVisual();
     fillRect(0, 0, w, h, mood.skyBase);
     fillRect(0, 0, w, h * 0.42, mood.skyTop);
     drawDayNightSky(w, h, mood, t);
+    drawWeatherSky(w, h, mood, weather, t);
 
     ctx.save();
-    ctx.globalAlpha = 1 - mood.night * 0.5;
+    ctx.globalAlpha = (1 - mood.night * 0.5) * (1 - getWeatherCloudAmount(weather) * 0.26);
     for (let i = 0; i < 7; i += 1) {
       const x = ((i * 260 - t * 14) % (w + 300)) - 180;
       drawCloud(x, 72 + (i % 3) * 42 + Math.sin(t * 0.25 + i) * 5);
@@ -3029,40 +4159,55 @@
     drawPseudoRoad(w, h, t);
     drawTainanRoadside(w, h, t);
     drawMoodOverlay(w, h, mood);
+    drawWeatherEffects(w, h, mood, weather, t);
     drawConveyor(w, h, t);
   }
 
   function getWorldMood(t = state.time) {
     const dayProgress = positiveModulo(t / 68 + 0.5, 1);
     const sunAmount = 0.5 + Math.sin(dayProgress * Math.PI * 2 - Math.PI / 2) * 0.5;
-    const night = clamp((0.42 - sunAmount) / 0.42, 0, 1);
-    const dusk = clamp(1 - Math.abs(sunAmount - 0.42) / 0.2, 0, 1) * (1 - night * 0.45);
-    const seasonProgress = positiveModulo(t / 272, 1);
-    const seasonIndex = Math.floor(seasonProgress * 4) % 4;
+    const nightRaw = clamp((0.56 - sunAmount) / 0.52, 0, 1);
+    const night = nightRaw * nightRaw * (3 - nightRaw * 2);
+    const duskRaw = clamp(1 - Math.abs(sunAmount - 0.48) / 0.22, 0, 1);
+    const dusk = duskRaw * duskRaw * (3 - duskRaw * 2) * (1 - night * 0.38);
+    const seasonProgress = positiveModulo(t / 288, 1);
+    const seasonPhase = seasonProgress * 4;
+    const seasonIndex = Math.floor(seasonPhase) % 4;
+    const seasonNextIndex = positiveModulo(seasonIndex + 1, 4);
+    const seasonFrac = seasonPhase - Math.floor(seasonPhase);
+    const seasonBlendRaw = clamp((seasonFrac - 0.64) / 0.36, 0, 1);
+    const seasonBlend = seasonBlendRaw * seasonBlendRaw * (3 - seasonBlendRaw * 2);
     const seasons = [
-      { name: "春", leaf: "#89b381", flower: "#f19aa0", ground: "#fff4dc", wash: "rgba(241,154,160,.16)" },
-      { name: "夏", leaf: "#65a85f", flower: "#ef6f53", ground: "#fff0d8", wash: "rgba(101,168,95,.16)" },
-      { name: "秋", leaf: "#c9a15f", flower: "#f4b84f", ground: "#f7e2bd", wash: "rgba(244,184,79,.16)" },
-      { name: "冬", leaf: "#7aa9b6", flower: "#dceffc", ground: "#eef6f7", wash: "rgba(127,195,222,.15)" },
+      { name: "春", leaf: "#7bbf6a", flower: "#f19aa0", ground: "#fff5dc", wash: "#f6a6b5" },
+      { name: "夏", leaf: "#3f9e58", flower: "#ef6f53", ground: "#fff0c9", wash: "#65a85f" },
+      { name: "秋", leaf: "#c78f3a", flower: "#f4b84f", ground: "#f5d7a5", wash: "#f4a13e" },
+      { name: "冬", leaf: "#75a8b8", flower: "#e8f7ff", ground: "#e8f5f8", wash: "#7fc3de" },
     ];
     const season = seasons[seasonIndex];
+    const nextSeason = seasons[seasonNextIndex];
+    const seasonLeaf = mixColor(season.leaf, nextSeason.leaf, seasonBlend);
+    const seasonFlower = mixColor(season.flower, nextSeason.flower, seasonBlend);
+    const seasonGround = mixColor(season.ground, nextSeason.ground, seasonBlend);
+    const seasonWashColor = mixColor(season.wash, nextSeason.wash, seasonBlend);
+    const washRgb = hexToRgb(seasonWashColor);
     const skyDayTop = mixColor("#bfeef8", "#ffd8b3", dusk * 0.45);
     const skyDayBase = mixColor("#9bdcf0", "#f8c8a0", dusk * 0.42);
-    const skyTop = mixColor(skyDayTop, "#203858", night);
-    const skyBase = mixColor(skyDayBase, "#4b6c88", night);
+    const skyTop = mixColor(skyDayTop, "#152747", night);
+    const skyBase = mixColor(skyDayBase, "#36546f", night);
     return {
       dayProgress,
       sunAmount,
       night,
       dusk,
       seasonIndex,
-      seasonName: season.name,
-      seasonLeaf: season.leaf,
-      seasonFlower: season.flower,
-      seasonWash: season.wash,
+      seasonBlend,
+      seasonName: seasonBlend > 0.5 ? nextSeason.name : season.name,
+      seasonLeaf,
+      seasonFlower,
+      seasonWash: `rgba(${washRgb.r},${washRgb.g},${washRgb.b},${0.18 + (1 - night) * 0.1})`,
       skyTop,
       skyBase,
-      ground: mixColor(season.ground, "#d7e6ea", night * 0.3),
+      ground: mixColor(seasonGround, "#c7d8df", night * 0.42),
     };
   }
 
@@ -3078,7 +4223,7 @@
       drawCircle(sunX + 9, sunY - 8, 42, "rgba(255,255,255,.18)");
     }
     if (mood.night > 0.08) {
-      ctx.globalAlpha = mood.night * 0.75;
+      ctx.globalAlpha = mood.night * 0.9;
       const moonX = w - sunX;
       const moonY = road.horizonY - 116 - Math.sin((mood.dayProgress + 0.5) * Math.PI) * Math.max(50, h * 0.1);
       drawCircle(moonX, moonY, 24, "#fff8d7");
@@ -3092,22 +4237,201 @@
     ctx.restore();
   }
 
-  function drawSeasonDetails(w, h, road, mood, t) {
+  function getWeatherCloudAmount(weather) {
+    const current = WEATHER_DEFS[weather.current] || WEATHER_DEFS.sunny;
+    const next = WEATHER_DEFS[weather.next] || current;
+    return current.cloud * (1 - weather.blend) + next.cloud * weather.blend;
+  }
+
+  function drawWeatherSky(w, h, mood, weather, t) {
+    drawWeatherSkyLayer(weather.current, 1 - weather.blend, w, h, mood, t, weather.seed);
+    if (weather.blend > 0) drawWeatherSkyLayer(weather.next, weather.blend, w, h, mood, t, weather.seed + 97);
+  }
+
+  function drawWeatherSkyLayer(type, amount, w, h, mood, t, seed) {
+    if (amount <= 0.01) return;
+    const def = WEATHER_DEFS[type] || WEATHER_DEFS.sunny;
+    const road = getRoadMetrics();
     ctx.save();
-    ctx.globalAlpha = 0.44 + mood.dusk * 0.12;
-    for (let i = 0; i < 14; i += 1) {
-      const x = positiveModulo(i * 137 - state.sceneryOffset * 0.11, w + 140) - 70;
-      const y = road.horizonY - 24 + (i % 4) * 18;
-      const color = i % 2 ? mood.seasonFlower : mood.seasonLeaf;
-      if (mood.seasonIndex === 3) {
-        drawCircle(x, y, 3 + (i % 3), "rgba(255,255,255,.78)");
-      } else if (mood.seasonIndex === 2) {
-        drawQuad(x, y, x + 8, y + 4, x + 2, y + 12, x - 6, y + 4, color);
-      } else {
-        drawCircle(x, y, 4 + (i % 2), color);
-        drawCircle(x + 5, y + 2, 3, mood.seasonFlower);
+    if (type === "sunny") {
+      const day = 1 - mood.night;
+      if (day > 0.12) {
+        ctx.globalAlpha = amount * day * 0.18;
+        fillRect(0, 0, w, h * 0.72, def.tint);
+        ctx.globalAlpha = amount * day * 0.12;
+        for (let i = 0; i < 5; i += 1) {
+          const x = positiveModulo(i * 220 + t * 12, w + 240) - 120;
+          drawQuad(x, road.horizonY - 150, x + 46, road.horizonY - 150, x + 180, h, x + 84, h, "rgba(255,248,198,.3)");
+        }
+      }
+      ctx.restore();
+      return;
+    }
+
+    ctx.globalAlpha = amount;
+    fillRect(0, 0, w, h, def.tint);
+    if (def.cloud > 0.18) {
+      const cloudRows = type === "typhoon" || type === "heavyRain" ? 4 : 3;
+      for (let row = 0; row < cloudRows; row += 1) {
+        const y = 30 + row * 52 + mood.night * 10;
+        const count = type === "typhoon" ? 8 : 6;
+        for (let i = 0; i < count; i += 1) {
+          const drift = t * (type === "typhoon" ? 42 : 18 + row * 4);
+          const x = positiveModulo(seed * 31 + i * 210 - drift + row * 70, w + 260) - 130;
+          ctx.globalAlpha = amount * (0.16 + def.cloud * 0.34) * (1 - row * 0.1);
+          drawCloud(x, y + Math.sin(t * 0.22 + i) * 5);
+          ctx.globalAlpha = amount * (0.08 + def.cloud * 0.16);
+          fillRect(x - 44, y + 24, 188, 18 + row * 2, type === "typhoon" ? "rgba(31,50,66,.45)" : "rgba(255,255,255,.6)");
+        }
       }
     }
+    ctx.restore();
+  }
+
+  function drawWeatherEffects(w, h, mood, weather, t) {
+    drawWeatherEffectLayer(weather.current, 1 - weather.blend, w, h, mood, t, weather.seed);
+    if (weather.blend > 0) drawWeatherEffectLayer(weather.next, weather.blend, w, h, mood, t, weather.seed + 197);
+  }
+
+  function drawWeatherEffectLayer(type, amount, w, h, mood, t, seed) {
+    if (amount <= 0.01) return;
+    const def = WEATHER_DEFS[type] || WEATHER_DEFS.sunny;
+    ctx.save();
+    if (def.rain > 0) drawRainLayer(w, h, t, seed, amount * def.rain, type === "typhoon");
+    if (def.snow > 0) drawSnowLayer(w, h, t, seed, amount * def.snow);
+    if (def.fog > 0) drawFogLayer(w, h, t, seed, amount * def.fog);
+    if (def.wind > 0.2) drawWindLayer(w, h, t, seed, amount * def.wind, type === "typhoon");
+    if (type === "cloudy") {
+      ctx.globalAlpha = amount * 0.08;
+      fillRect(0, 0, w, h, "rgba(95,116,126,.22)");
+    }
+    ctx.restore();
+  }
+
+  function drawRainLayer(w, h, t, seed, intensity, typhoon) {
+    const drops = Math.round((typhoon ? 130 : 72) * intensity);
+    const slant = typhoon ? -44 : -16;
+    ctx.save();
+    ctx.strokeStyle = typhoon ? "rgba(210,240,255,.62)" : "rgba(210,240,255,.52)";
+    ctx.lineWidth = typhoon ? 2.2 : 1.5;
+    ctx.globalAlpha = clamp(0.35 + intensity * 0.45, 0.35, 0.88);
+    ctx.beginPath();
+    for (let i = 0; i < drops; i += 1) {
+      const base = seed * 37 + i * 97;
+      const x = positiveModulo(base + t * (typhoon ? 520 : 260), w + 180) - 90;
+      const y = positiveModulo(seed * 19 + i * 53 + t * (typhoon ? 760 : 430), h + 160) - 80;
+      const len = (typhoon ? 34 : 22) + (i % 5) * 4;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + slant, y + len);
+    }
+    ctx.stroke();
+    ctx.globalAlpha = intensity * 0.18;
+    fillRect(0, getRoadMetrics().horizonY - 8, w, h, "rgba(127,195,222,.24)");
+    ctx.restore();
+  }
+
+  function drawSnowLayer(w, h, t, seed, intensity) {
+    const flakes = Math.round(64 * intensity);
+    ctx.save();
+    ctx.globalAlpha = clamp(0.38 + intensity * 0.45, 0.38, 0.88);
+    for (let i = 0; i < flakes; i += 1) {
+      const x = positiveModulo(seed * 41 + i * 83 + Math.sin(t * 0.7 + i) * 34, w + 80) - 40;
+      const y = positiveModulo(seed * 13 + i * 47 + t * (48 + i % 5 * 10), h + 90) - 45;
+      const size = 3 + i % 4;
+      fillRect(x, y, size, size, i % 3 ? "rgba(255,255,255,.86)" : "rgba(220,246,255,.9)");
+    }
+    ctx.restore();
+  }
+
+  function drawFogLayer(w, h, t, seed, intensity) {
+    const road = getRoadMetrics();
+    ctx.save();
+    ctx.globalAlpha = clamp(intensity * 0.42, 0, 0.7);
+    fillRect(0, road.horizonY - 72, w, h - road.horizonY + 96, "rgba(232,246,246,.78)");
+    for (let i = 0; i < 7; i += 1) {
+      const y = road.horizonY - 40 + i * 58;
+      const x = positiveModulo(seed * 29 + i * 173 - t * (18 + i * 3), w + 260) - 130;
+      ctx.globalAlpha = intensity * (0.13 + i * 0.025);
+      fillRect(x, y, w * 0.62, 18 + i * 5, "rgba(255,255,255,.72)");
+    }
+    ctx.restore();
+  }
+
+  function drawWindLayer(w, h, t, seed, intensity, typhoon) {
+    ctx.save();
+    ctx.strokeStyle = typhoon ? "rgba(255,255,255,.62)" : "rgba(255,255,255,.42)";
+    ctx.lineWidth = typhoon ? 3 : 2;
+    ctx.globalAlpha = clamp(intensity * 0.42, 0.08, 0.72);
+    ctx.beginPath();
+    const lines = typhoon ? 22 : 12;
+    for (let i = 0; i < lines; i += 1) {
+      const y = positiveModulo(seed * 17 + i * 71 + t * (typhoon ? 190 : 90), h + 90) - 45;
+      const x = positiveModulo(seed * 43 + i * 131 - t * (typhoon ? 420 : 220), w + 220) - 110;
+      ctx.moveTo(x, y);
+      ctx.lineTo(x + (typhoon ? 96 : 64), y - (typhoon ? 24 : 12));
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawSeasonDetails(w, h, road, mood, t) {
+    ctx.save();
+    const seasonName = mood.seasonName;
+    if (seasonName === "春") {
+      ctx.globalAlpha = 0.52 + mood.dusk * 0.12;
+      const count = isMobileLayout() ? 24 : 38;
+      for (let i = 0; i < count; i += 1) {
+        const drift = Math.sin(t * 0.55 + i * 1.7) * 34;
+        const x = positiveModulo(i * 83 + drift - state.sceneryOffset * 0.045, w + 160) - 80;
+        const y = positiveModulo(i * 57 + t * (24 + i % 5 * 4), h + 120) - 70;
+        const size = 4 + i % 4;
+        drawPetal(x, y, size, i % 3 ? "#f19aa0" : "#ffd7e6", t * 0.9 + i);
+      }
+    } else if (seasonName === "夏") {
+      ctx.globalAlpha = 0.32;
+      for (let i = 0; i < 16; i += 1) {
+        const x = positiveModulo(i * 121 - state.sceneryOffset * 0.07, w + 120) - 60;
+        const y = road.horizonY - 18 + (i % 5) * 24 + Math.sin(t + i) * 5;
+        drawCircle(x, y, 3 + i % 2, i % 2 ? "#f4d16f" : "#ffffff");
+      }
+      ctx.globalAlpha = 0.12;
+      fillRect(0, road.horizonY - 62, w, h - road.horizonY + 62, "rgba(244,184,79,.28)");
+    } else if (seasonName === "秋") {
+      ctx.globalAlpha = 0.5 + mood.dusk * 0.14;
+      const count = isMobileLayout() ? 18 : 30;
+      for (let i = 0; i < count; i += 1) {
+        const x = positiveModulo(i * 101 + Math.sin(t * 0.75 + i) * 38 - state.sceneryOffset * 0.07, w + 140) - 70;
+        const y = positiveModulo(i * 53 + t * (18 + i % 3 * 4), h + 100) - 45;
+        drawLeaf(x, y, 5 + i % 4, i % 2 ? "#c78f3a" : "#ef8b53", t + i);
+      }
+    } else {
+      ctx.globalAlpha = 0.5;
+      for (let i = 0; i < 22; i += 1) {
+        const x = positiveModulo(i * 97 - state.sceneryOffset * 0.06, w + 120) - 60;
+        const y = road.horizonY - 36 + (i % 5) * 23 + Math.sin(t * 0.45 + i) * 4;
+        drawCircle(x, y, 3 + (i % 3), "rgba(255,255,255,.78)");
+      }
+      ctx.globalAlpha = 0.16;
+      fillRect(0, road.horizonY - 28, w, 34, "rgba(232,246,255,.72)");
+    }
+    ctx.restore();
+  }
+
+  function drawPetal(x, y, size, color, spin) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(spin) * 0.9);
+    drawQuad(-size, 0, 0, -size * 0.7, size * 1.5, 0, 0, size * 0.9, color);
+    drawCircle(size * 0.35, -size * 0.05, size * 0.42, "rgba(255,255,255,.44)");
+    ctx.restore();
+  }
+
+  function drawLeaf(x, y, size, color, spin) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(spin) * 0.7);
+    drawQuad(0, -size, size * 1.3, 0, 0, size * 1.8, -size * 1.1, 0, color);
+    strokePerspectiveLine(0, -size * 0.7, 0, size * 1.3, "rgba(143,95,66,.5)", Math.max(1, size * 0.22));
     ctx.restore();
   }
 
@@ -3118,7 +4442,8 @@
       fillRect(0, 0, w, h, `rgba(244,139,83,${mood.dusk * 0.08})`);
     }
     if (mood.night > 0.04) {
-      fillRect(0, 0, w, h, `rgba(24,45,76,${mood.night * 0.22})`);
+      fillRect(0, 0, w, h, `rgba(16,31,58,${mood.night * 0.34})`);
+      fillRect(0, 0, w, h * 0.45, `rgba(8,18,38,${mood.night * 0.18})`);
     }
     ctx.restore();
   }
@@ -3173,7 +4498,6 @@
         const color = lane === player.lane ? "rgba(255,255,255,.76)" : `rgba(255,255,255,${0.18 + fork * 0.22})`;
         strokePerspectiveLine(farX, lane === 1 ? road.horizonY + 4 : splitY, laneX, road.nearY + 60, color, lane === player.lane ? 4 : 2);
       }
-      drawRouteForkBanner(road, fork);
     } else {
       strokePerspectiveLine(road.centerX, road.horizonY + 4, road.centerX, road.nearY + 60, "rgba(255,255,255,.38)", 2);
     }
@@ -3194,16 +4518,8 @@
   }
 
   function drawRouteForkBanner(road, fork) {
-    const y = road.horizonY + (road.nearY - road.horizonY) * 0.17;
-    const text = "三路快線";
-    const width = isMobileLayout() ? 108 : 142;
-    const height = isMobileLayout() ? 24 : 30;
-    ctx.save();
-    ctx.globalAlpha = 0.54 + fork * 0.38;
-    fillRect(road.centerX - width / 2, y - height / 2, width, height, "rgba(255,255,255,.9)");
-    strokeRect(road.centerX - width / 2, y - height / 2, width, height, COLORS.aquaDeep, 3);
-    drawText(text, road.centerX, y + 5, isMobileLayout() ? 13 : 16, COLORS.aquaDeep, "center");
-    ctx.restore();
+    void road;
+    void fork;
   }
 
   function strokePerspectiveLine(x1, y1, x2, y2, color, width) {
@@ -3251,6 +4567,22 @@
       { name: "安平老街", kind: "street", model: "anpingOldStreet", color: "#f4dfc8", accent: "#c85f45" },
       { name: "安平樹屋", kind: "treehouse", model: "anpingTreeHouse", color: "#d8c1a2", accent: "#65a85f" },
       { name: "安平砲臺", kind: "fort", model: "anpingBattery", color: "#c7846d", accent: "#934b42" },
+      { name: "延平郡王祠", kind: "temple", model: "koxingaShrine", color: "#f3d0b8", accent: "#c85f45" },
+      { name: "吳園藝文中心", kind: "garden", model: "wuGarden", color: "#f3e6c4", accent: "#65a85f" },
+      { name: "西市場", kind: "market", model: "westMarket", color: "#f1d2bd", accent: "#b44966" },
+      { name: "海安路藝術街", kind: "street", model: "haiAnArtStreet", color: "#dceffc", accent: "#7d5ba6" },
+      { name: "保安路", kind: "street", model: "baoAnRoad", color: "#ffe5c7", accent: "#ef8b53" },
+      { name: "台江國家公園", kind: "wetland", model: "taijiangPark", color: "#d5ead4", accent: "#4a9f72" },
+      { name: "月津港燈節", kind: "festival", model: "yuejinHarbor", color: "#dff6ff", accent: "#f4d16f" },
+      { name: "臺南市圖", kind: "library", model: "tainanLibrary", color: "#eef4f4", accent: "#8a9aa1" },
+      { name: "山上水道", kind: "museum", model: "waterworksMuseum", color: "#e7c0a7", accent: "#a85f4f" },
+      { name: "七股鹽山", kind: "deco", model: "qiguSaltMountain", color: "#f7fdff", accent: "#7fc3de" },
+      { name: "臺史博", kind: "museum", model: "taiwanHistoryMuseum", color: "#e8f0ee", accent: "#8a9aa1" },
+      { name: "北門水晶教堂", kind: "chapel", model: "beimenCrystalChurch", color: "#e7f7fa", accent: "#7fc3de" },
+      { name: "井仔腳鹽田", kind: "salt", model: "jingzaijiaoSaltFields", color: "#f7e2bd", accent: "#7aa9b6" },
+      { name: "麻豆代天府", kind: "temple", model: "madouDaitianTemple", color: "#f5d4b2", accent: "#d8243c" },
+      { name: "虎頭埤", kind: "lake", model: "hutoupi", color: "#d5ead4", accent: "#4a9f72" },
+      { name: "蕭壠文化園區", kind: "factory", model: "soulanghCulturalPark", color: "#e8d0b8", accent: "#a85f4f" },
       { name: "鳳凰木綠廊", kind: "flora", model: "flameTree", color: "#dbe8c9", accent: "#ef6f53" },
       { name: "府城榕樹蔭", kind: "flora", model: "banyanShade", color: "#dfe9cf", accent: "#65a85f" },
       { name: "四草紅樹林", kind: "flora", model: "mangrove", color: "#d5ead4", accent: "#4a9f72" },
@@ -3260,11 +4592,11 @@
     ];
     const buildingLandmarks = landmarks.filter((landmark) => landmark.kind !== "flora");
     const floraLandmarks = landmarks.filter((landmark) => landmark.kind === "flora");
-    const roadsideSequence = ["building", "flora", "building", "flora", "building", "flora", "flora", "building", "flora", "building"];
+    const roadsideSequence = ["building", "building", "flora", "building", "building", "flora", "building", "building", "flora", "building", "building", "flora", "building"];
     const entries = [];
     const mobile = isMobileLayout();
-    const slotCount = mobile ? 16 : 28;
-    const scroll = state.sceneryOffset * (mobile ? 0.00072 : 0.00078);
+    const slotCount = mobile ? 20 : 36;
+    const scroll = state.sceneryOffset * (mobile ? 0.00074 : 0.0008);
     const trackLength = 2.08;
     const usedBuildingModels = new Set();
     for (let slot = 0; slot < slotCount; slot += 1) {
@@ -3288,28 +4620,35 @@
       entries.push({ type: kind, landmark, depth, side, index: landmarkIndex + cycle * slotCount });
     }
     entries.sort((a, b) => a.depth - b.depth);
+    const buildingDepthsBySide = {
+      "-1": entries.filter((entry) => entry.type !== "flora" && entry.side < 0).map((entry) => entry.depth),
+      "1": entries.filter((entry) => entry.type !== "flora" && entry.side > 0).map((entry) => entry.depth),
+    };
+    drawRoadsideGreenBelts(road, scroll, buildingDepthsBySide);
     const drawRoadsideEntry = (entry) => {
+      if (entry.type === "flora") {
+        const sameSideBuildings = buildingDepthsBySide[String(entry.side)] || [];
+        if (sameSideBuildings.some((depth) => Math.abs(depth - entry.depth) < 0.3)) return;
+      }
       const eased = Math.max(0, entry.depth) ** 1.12;
       const y = road.horizonY + (road.nearY - road.horizonY) * eased;
       const roadW = roadWidthAtDepth(Math.min(eased, 1.18));
       const mobile = isMobileLayout();
-      const scale = (mobile ? 0.38 : 0.48) + eased * (mobile ? 0.88 : 1.2);
+      const scale = (mobile ? 0.42 : 0.54) + eased * (mobile ? 0.98 : 1.34);
       const alpha = clamp(0.72 + Math.min(1, eased) * 0.28, 0.72, 1);
       const roadEdge = road.centerX + entry.side * roadW * 0.5;
-      const sideGap = entry.type === "flora"
-        ? (mobile ? 0.5 + eased * 1.1 : 0.75 + eased * 1.4)
-        : (mobile ? 0.75 + eased * 1.4 : 1 + eased * 1.8);
-      const clearBuildingOffset = entry.type === "flora" ? (mobile ? 36 + eased * 18 : 48 + eased * 24) * scale : 0;
-      const drawRoadEdge = roadEdge + entry.side * clearBuildingOffset;
+      const sideGap = entry.type === "flora" ? 0 : (mobile ? 0.75 + eased * 1.4 : 1 + eased * 1.8);
+      const drawRoadEdge = roadEdge;
       ctx.save();
       ctx.globalAlpha *= entry.type === "flora" ? alpha * 0.9 : alpha;
       const modelSize = getRoadsideModelSize(entry.landmark);
       const modelW = modelSize.w * scale;
       const modelH = modelSize.h * scale;
-      const groundY = y + 62 * scale;
+      const groundY = y + (entry.type === "flora" ? 62 : 74) * scale;
       const visualTop = groundY - modelH - (entry.type === "flora" ? 126 * scale : 86 * scale);
       const visualBottom = groundY + 40 * scale;
-      if (visualBottom < -80 || visualTop > h + 80) {
+      const lowerCull = h + Math.max(260, modelH + 150 * scale);
+      if (visualBottom < -140 || visualTop > lowerCull) {
         ctx.restore();
         return;
       }
@@ -3321,49 +4660,50 @@
     entries.filter((entry) => entry.type !== "flora").forEach(drawRoadsideEntry);
   }
 
-  function drawRoadsideGreenBelts(road, scroll) {
+  function drawRoadsideGreenBelts(road, scroll, blockedDepthsBySide = {}) {
     const mobile = isMobileLayout();
-    const mood = getWorldMood();
-    const stripOffset = mobile ? 18 : 26;
-    const stripWidth = mobile ? 62 : 78;
-    const stripSegments = 14;
+    const stripOffset = mobile ? 16 : 22;
+    const stripWidth = mobile ? 42 : 54;
 
     for (const side of [-1, 1]) {
       ctx.save();
-      ctx.globalAlpha *= 0.66;
-
-      for (let i = 0; i < stripSegments; i += 1) {
-        const d1 = i / stripSegments;
-        const d2 = (i + 1) / stripSegments;
-        const e1 = d1 ** 1.18;
-        const e2 = d2 ** 1.18;
-        const y1 = road.horizonY + (road.nearY - road.horizonY) * e1;
-        const y2 = road.horizonY + (road.nearY - road.horizonY) * e2;
-        const edge1 = road.centerX + side * roadWidthAtDepth(e1) * 0.5;
-        const edge2 = road.centerX + side * roadWidthAtDepth(e2) * 0.5;
-        const inner1 = edge1 + side * stripOffset * (0.7 + e1 * 0.5);
-        const inner2 = edge2 + side * stripOffset * (0.7 + e2 * 0.5);
-        const outer1 = inner1 + side * stripWidth * (0.55 + e1 * 0.7);
-        const outer2 = inner2 + side * stripWidth * (0.55 + e2 * 0.7);
-        drawQuad(
-          inner1,
-          y1,
-          outer1,
-          y1 + 4,
-          outer2,
-          y2 + 4,
-          inner2,
-          y2,
-          i % 2 ? mixColor(mood.seasonLeaf, "#ffffff", 0.22) : mixColor(mood.seasonLeaf, "#2f6f49", 0.16)
-        );
-      }
-
-      drawRoadsideVegetationColumns(road, side, scroll, stripOffset, stripWidth);
+      drawRoadsideGroundMarks(road, side, scroll, stripOffset, stripWidth, blockedDepthsBySide);
+      ctx.globalAlpha *= 0.9;
+      drawRoadsideVegetationColumns(road, side, scroll, stripOffset, stripWidth, blockedDepthsBySide);
       ctx.restore();
     }
   }
 
-  function drawRoadsideVegetationColumns(road, side, scroll, stripOffset, stripWidth) {
+  function drawRoadsideGroundMarks(road, side, scroll, stripOffset, stripWidth, blockedDepthsBySide = {}) {
+    const mobile = isMobileLayout();
+    const mood = getWorldMood();
+    const marks = mobile ? 7 : 10;
+
+    ctx.save();
+    for (let i = 0; i < marks; i += 1) {
+      const depth = positiveModulo(i / marks + scroll * 0.72, 1);
+      if (depth < 0.04 || depth > 0.98) continue;
+      if (roadsideDepthBlocked(blockedDepthsBySide, side, depth, 0.12)) continue;
+      const eased = depth ** 1.18;
+      const y = road.horizonY + (road.nearY - road.horizonY) * eased;
+      const edge = road.centerX + side * roadWidthAtDepth(eased) * 0.5;
+      const scale = (mobile ? 0.3 : 0.34) + eased * (mobile ? 0.42 : 0.5);
+      const x = edge + side * (stripOffset + stripWidth * 0.38) * (0.78 + eased * 0.25);
+      const markW = (mobile ? 18 : 25) * scale;
+      const markH = Math.max(2, 4 * scale);
+      const markX = side < 0 ? x - markW : x;
+      ctx.globalAlpha = 0.16 + eased * 0.1;
+      fillRect(markX, y + 40 * scale, markW, markH, mixColor(mood.seasonLeaf, "#ffffff", 0.32));
+    }
+    ctx.restore();
+  }
+
+  function roadsideDepthBlocked(blockedDepthsBySide, side, depth, margin) {
+    const depths = blockedDepthsBySide[String(side)] || [];
+    return depths.some((item) => item >= 0 && Math.abs(item - depth) < margin);
+  }
+
+  function drawRoadsideVegetationColumns(road, side, scroll, stripOffset, stripWidth, blockedDepthsBySide = {}) {
     const mobile = isMobileLayout();
     const columns = mobile ? 3 : 4;
     const rows = mobile ? 15 : 20;
@@ -3375,6 +4715,7 @@
       for (let row = 0; row < rows; row += 1) {
         const rawDepth = positiveModulo(row / rows * cycle + plantScroll + col * 0.08, cycle) - 0.08;
         if (rawDepth < 0.02 || rawDepth > 0.96) continue;
+        if (roadsideDepthBlocked(blockedDepthsBySide, side, rawDepth, 0.17)) continue;
         plants.push({ col, row, depth: rawDepth });
       }
     }
@@ -3648,6 +4989,22 @@
       anpingOldStreet: { w: 174, h: 108 },
       anpingTreeHouse: { w: 156, h: 116 },
       anpingBattery: { w: 166, h: 96 },
+      koxingaShrine: { w: 180, h: 124 },
+      wuGarden: { w: 172, h: 114 },
+      westMarket: { w: 178, h: 118 },
+      haiAnArtStreet: { w: 184, h: 112 },
+      baoAnRoad: { w: 172, h: 106 },
+      taijiangPark: { w: 182, h: 116 },
+      yuejinHarbor: { w: 178, h: 108 },
+      tainanLibrary: { w: 176, h: 132 },
+      waterworksMuseum: { w: 178, h: 126 },
+      qiguSaltMountain: { w: 174, h: 110 },
+      taiwanHistoryMuseum: { w: 190, h: 128 },
+      beimenCrystalChurch: { w: 166, h: 132 },
+      jingzaijiaoSaltFields: { w: 186, h: 104 },
+      madouDaitianTemple: { w: 188, h: 134 },
+      hutoupi: { w: 190, h: 112 },
+      soulanghCulturalPark: { w: 188, h: 124 },
       flameTree: { w: 164, h: 138 },
       banyanShade: { w: 176, h: 142 },
       mangrove: { w: 170, h: 124 },
@@ -3666,50 +5023,35 @@
     const mood = getWorldMood();
     const accent = landmark.accent || mood.seasonLeaf || COLORS.leaf;
     const road = getRoadMetrics();
-    const farY = groundY - h * 0.78;
+    const farY = groundY - h * 0.9;
+    const nearOuter = roadEdge + side * Math.min(72 * scale, w * 0.48);
     const farDepth = roadDepthAtY(farY);
     const farRoadEdge = road.centerX + side * roadWidthAtDepth(farDepth) * 0.5;
-    const innerX = side < 0 ? x + w : x;
-    const stripNearInner = roadEdge + side * 2 * scale;
-    const stripNearOuter = roadEdge + side * Math.min(118 * scale, w * 0.88);
-    const stripFarInner = farRoadEdge + side * 2 * scale;
-    const stripFarOuter = farRoadEdge + side * Math.min(104 * scale, w * 0.82);
+    const farOuter = farRoadEdge + side * Math.min(54 * scale, w * 0.42);
 
     ctx.save();
-    drawQuad(
-      stripNearInner,
-      groundY + 8 * scale,
-      stripNearOuter,
-      groundY + 8 * scale,
-      stripNearOuter + side * 20 * scale,
-      groundY + 25 * scale,
-      stripNearInner,
-      groundY + 24 * scale,
-      "rgba(36,50,58,.2)"
-    );
-    drawQuad(stripNearInner, groundY - 7 * scale, stripNearOuter, groundY - 7 * scale, stripFarOuter, farY, stripFarInner, farY, model === "lotusPond" ? "rgba(127,195,222,.54)" : mixColor(mood.seasonLeaf, "#ffffff", 0.5));
-    drawQuad(stripNearInner, groundY - 7 * scale, stripFarInner, farY, stripFarInner, farY + 22 * scale, stripNearInner, groundY + 13 * scale, "rgba(101,168,95,.34)");
-    strokePerspectiveLine(stripNearInner, groundY - 7 * scale, stripFarInner, farY, "rgba(36,50,58,.25)", Math.max(1, 2 * scale));
-    strokePerspectiveLine(stripNearOuter, groundY - 7 * scale, stripFarOuter, farY, "rgba(36,50,58,.25)", Math.max(1, 2 * scale));
+    drawQuad(roadEdge + side * 2 * scale, groundY + 12 * scale, nearOuter, groundY + 12 * scale, farOuter, farY, farRoadEdge + side * 2 * scale, farY, model === "lotusPond" ? "rgba(127,195,222,.5)" : mixColor(mood.seasonLeaf, "#ffffff", 0.48));
+    drawQuad(roadEdge + side * 2 * scale, groundY + 16 * scale, nearOuter, groundY + 16 * scale, nearOuter + side * 14 * scale, groundY + 28 * scale, roadEdge + side * 2 * scale, groundY + 27 * scale, "rgba(36,50,58,.18)");
+    strokePerspectiveLine(roadEdge + side * 4 * scale, groundY - 4 * scale, farRoadEdge + side * 4 * scale, farY, "rgba(36,50,58,.24)", Math.max(1, 2 * scale));
+    strokePerspectiveLine(nearOuter, groundY - 2 * scale, farOuter, farY, "rgba(36,50,58,.2)", Math.max(1, 2 * scale));
 
-    const rows = model === "lotusPond" ? 7 : 5;
+    const rows = model === "lotusPond" ? 6 : 5;
     for (let i = 0; i < rows; i += 1) {
       const t = i / Math.max(1, rows - 1);
-      const y = groundY - 6 * scale - t * (h - 18 * scale);
+      const y = groundY - 2 * scale - t * (h * 0.82);
       const rowDepth = roadDepthAtY(y);
       const rowEdge = road.centerX + side * roadWidthAtDepth(rowDepth) * 0.5;
-      const rowScale = scale * (1.02 - t * 0.2);
-      const laneOffset = (34 + (i % 2) * 5) * scale;
-      const centerX = rowEdge + side * laneOffset + Math.sin(index * 1.7 + i) * 2 * scale;
+      const rowScale = scale * (1.06 - t * 0.24);
+      const laneOffset = (24 + (model === "lotusPond" ? 7 : 0)) * scale;
+      const centerX = rowEdge + side * laneOffset;
       drawRoadsideFloraPatch(model, centerX, y, rowScale, accent, i);
     }
 
-    const tagW = Math.min(w - 12 * scale, 118 * scale);
-    const tagX = side < 0 ? innerX - tagW - 12 * scale : innerX + 12 * scale;
+    const tagW = Math.min(w - 12 * scale, 104 * scale);
+    const tagX = side < 0 ? roadEdge - tagW - 10 * scale : roadEdge + 10 * scale;
     fillRect(tagX, groundY - 38 * scale, tagW, 25 * scale, "rgba(255,255,255,.88)");
     strokeRect(tagX, groundY - 38 * scale, tagW, 25 * scale, accent, Math.max(1, 2.5 * scale));
     drawText(landmark.name, tagX + tagW / 2, groundY - 19 * scale, Math.max(9, 13 * scale), accent, "center");
-    drawText(landmark.name, x + w / 2, groundY + 17 * scale, Math.max(10, 14 * scale), accent, "center");
     ctx.restore();
   }
 
@@ -3765,6 +5107,7 @@
     const innerEdgeX = side < 0 ? x + w : x;
 
     ctx.save();
+    drawRoadsideBuildingFooting(x, groundY, w, scale, side, roadEdge, landmark);
     const shadowInnerX = side < 0 ? x + w : x;
     const shadowOuterX = side < 0 ? x - 42 * scale : x + w + 42 * scale;
     drawQuad(
@@ -3778,6 +5121,10 @@
       groundY + 22 * scale,
       "rgba(36,50,58,.22)"
     );
+    if (drawDistinctiveRoadsideModel(landmark, x, frontY, groundY, w, h, scale, side, index)) {
+      ctx.restore();
+      return;
+    }
     const roofOuterFrontX = side < 0 ? x - 8 * scale : x + w + 8 * scale;
     const roofInnerFrontX = side < 0 ? x + w : x;
     drawQuad(
@@ -3825,8 +5172,568 @@
     drawRoadsideSign(landmark, x, frontY, w, scale);
     const baseOuterX = side < 0 ? x - 12 * scale : x + w + 12 * scale;
     drawQuad(innerEdgeX, groundY - 1 * scale, baseOuterX, groundY - 1 * scale, baseOuterX + side * 12 * scale, groundY + 9 * scale, innerEdgeX, groundY + 9 * scale, "rgba(36,50,58,.16)");
-    drawText(landmark.name, x + w / 2, groundY + 18 * scale, Math.max(10, 15 * scale), landmark.accent || COLORS.aquaDeep, "center");
     ctx.restore();
+  }
+
+  function drawRoadsideBuildingFooting(x, groundY, w, scale, side, roadEdge, landmark) {
+    const innerX = side < 0 ? x + w : x;
+    const outerX = side < 0 ? x - 14 * scale : x + w + 14 * scale;
+    const edgeX = roadEdge + side * 3 * scale;
+    const baseColor = mixColor(landmark.color || "#fff4dc", "#d7e6bf", 0.28);
+    ctx.save();
+    ctx.globalAlpha *= 0.92;
+    drawQuad(
+      edgeX,
+      groundY - 3 * scale,
+      outerX,
+      groundY - 3 * scale,
+      outerX + side * 22 * scale,
+      groundY + 15 * scale,
+      edgeX + side * 20 * scale,
+      groundY + 15 * scale,
+      baseColor
+    );
+    ctx.globalAlpha *= 0.75;
+    drawQuad(
+      innerX,
+      groundY + 1 * scale,
+      outerX + side * 8 * scale,
+      groundY + 1 * scale,
+      outerX + side * 28 * scale,
+      groundY + 20 * scale,
+      innerX + side * 8 * scale,
+      groundY + 20 * scale,
+      "rgba(36,50,58,.18)"
+    );
+    strokePerspectiveLine(edgeX, groundY - 3 * scale, outerX, groundY - 3 * scale, "rgba(36,50,58,.16)", Math.max(1, 1.5 * scale));
+    ctx.restore();
+  }
+
+  function drawDistinctiveRoadsideModel(landmark, x, y, groundY, w, h, scale, side, index) {
+    const model = landmark.model || landmark.kind;
+    const accent = landmark.accent || COLORS.aquaDeep;
+    const ink = COLORS.ink;
+    const sideShade = side < 0 ? "rgba(80,105,114,.22)" : "rgba(36,50,58,.18)";
+    const embeddedSignModels = new Set(["ugoodaysStore", "tainanStation", "shanhuaStation", "nanfangMall", "chihkanTower", "mazuTemple", "confuciusTemple"]);
+    const drawBasePlate = () => {
+      drawQuad(x + w * 0.08, groundY - 3 * scale, x + w * 0.92, groundY - 3 * scale, x + w * 0.98 + side * 14 * scale, groundY + 11 * scale, x + w * 0.02 + side * 14 * scale, groundY + 11 * scale, "rgba(36,50,58,.16)");
+    };
+    const drawSmallName = () => {
+      if (embeddedSignModels.has(model)) return;
+      const tagW = Math.min(w * 0.86, Math.max(72 * scale, landmark.name.length * 12 * scale));
+      const tagH = 19 * scale;
+      const tagX = x + w / 2 - tagW / 2;
+      const tagY = groundY + 3 * scale;
+      fillRect(tagX + 3 * scale, tagY + 3 * scale, tagW, tagH, "rgba(36,50,58,.12)");
+      fillRect(tagX, tagY, tagW, tagH, "rgba(255,255,255,.9)");
+      strokeRect(tagX, tagY, tagW, tagH, accent, Math.max(1, 2 * scale));
+      drawText(landmark.name, x + w / 2, tagY + tagH * 0.64, Math.max(8, 12 * scale), accent, "center");
+    };
+    const drawSideDepth = (left, top, width, height, color = sideShade) => {
+      const sideX = side * Math.min(36 * scale, width * 0.22);
+      const sideY = -Math.min(24 * scale, height * 0.2);
+      if (side < 0) {
+        drawQuad(left, top, left + sideX, top + sideY, left + sideX, top + height + sideY, left, top + height, color);
+      } else {
+        drawQuad(left + width, top, left + width + sideX, top + sideY, left + width + sideX, top + height + sideY, left + width, top + height, color);
+      }
+    };
+    const drawPillar = (px, py, height, color = "#fff8dc") => {
+      fillRect(px - 5 * scale, py, 10 * scale, height, color);
+      fillRect(px - 8 * scale, py - 3 * scale, 16 * scale, 4 * scale, color);
+      fillRect(px - 8 * scale, py + height, 16 * scale, 5 * scale, color);
+      strokeRect(px - 5 * scale, py, 10 * scale, height, "rgba(36,50,58,.16)", Math.max(1, 1.5 * scale));
+    };
+    const drawArcade = (px, py, width, height, color = "#fff1cf") => {
+      drawCircle(px + width / 2, py, width / 2, color);
+      fillRect(px, py, width, height, color);
+      strokeRect(px, py, width, height, "rgba(36,50,58,.16)", Math.max(1, 1.5 * scale));
+    };
+    const drawLayeredRoof = (cx, top, width, tiers, roofColor) => {
+      for (let tier = 0; tier < tiers; tier += 1) {
+        const yy = top + tier * 22 * scale;
+        const roofW = width - tier * 30 * scale;
+        const roofH = (17 + tier * 2) * scale;
+        drawQuad(cx - roofW / 2, yy + roofH, cx, yy, cx + roofW / 2, yy + roofH, cx + roofW / 2 - 18 * scale, yy + roofH + 9 * scale, roofColor);
+        fillRect(cx - roofW * 0.36, yy + roofH + 10 * scale, roofW * 0.72, 7 * scale, "#f4d16f");
+      }
+    };
+    const drawShopRow = (awningColor, count = 4) => {
+      drawBasePlate();
+      for (let i = 0; i < count; i += 1) {
+        const gap = 5 * scale;
+        const shopW = (w - gap * (count + 1)) / count;
+        const sx = x + gap + i * (shopW + gap);
+        const top = y + (26 + (i % 2) * 6) * scale;
+        drawSideDepth(sx, top, shopW, groundY - top, i % 2 ? "rgba(200,95,69,.22)" : "rgba(38,138,161,.16)");
+        fillRect(sx, top, shopW, groundY - top, i % 2 ? "#fff4dc" : "#f7fdff");
+        drawQuad(sx - 3 * scale, top - 14 * scale, sx + shopW / 2, top - 25 * scale, sx + shopW + 3 * scale, top - 14 * scale, sx + shopW - 4 * scale, top - 4 * scale, i % 2 ? awningColor : accent);
+        fillRect(sx + 7 * scale, top + 22 * scale, shopW - 14 * scale, 16 * scale, i % 2 ? "#dff6ff" : "#fff1cf");
+        fillRect(sx + shopW * 0.32, groundY - 31 * scale, shopW * 0.36, 31 * scale, "#8fcfe0");
+        if (i % 2 === 0) drawCircle(sx + shopW * 0.5, top + 8 * scale, 5 * scale, "#f4d16f");
+      }
+      drawSmallName();
+    };
+
+    ctx.save();
+    if (model === "ugoodaysStore") {
+      drawBasePlate();
+      drawSideDepth(x + 12 * scale, y + 44 * scale, w - 24 * scale, h - 38 * scale, "rgba(127,195,222,.18)");
+      fillRect(x + 10 * scale, y + 53 * scale, w - 20 * scale, h - 45 * scale, "#f7fdff");
+      drawQuad(x + 6 * scale, y + 8 * scale, x + 22 * scale, y - 8 * scale, x + w - 7 * scale, y - 8 * scale, x + w - 2 * scale, y + 48 * scale, "#ffffff");
+      for (let i = 0; i < 17; i += 1) fillRect(x + (18 + i * 11) * scale, y + 11 * scale, 3 * scale, 44 * scale, "rgba(36,50,58,.12)");
+      fillRect(x + 13 * scale, y + 56 * scale, w - 26 * scale, 11 * scale, "#8fcfe0");
+      fillRect(x + 16 * scale, y + 72 * scale, 72 * scale, 43 * scale, "#5e554d");
+      for (let i = 0; i < 6; i += 1) fillRect(x + 20 * scale, y + (79 + i * 6) * scale, 64 * scale, 3 * scale, "#2f2c29");
+      strokeRect(x + 98 * scale, y + 74 * scale, 43 * scale, 59 * scale, COLORS.aquaDeep, Math.max(2, 3 * scale));
+      fillRect(x + 101 * scale, y + 77 * scale, 37 * scale, 53 * scale, "#eefcff");
+      strokeRect(x + 148 * scale, y + 78 * scale, 56 * scale, 52 * scale, COLORS.aqua, Math.max(1, 2 * scale));
+      drawCircle(x + 86 * scale, y + 31 * scale, 22 * scale, COLORS.aqua);
+      drawCircle(x + 76 * scale, y + 36 * scale, 5 * scale, "#ffffff");
+      drawCircle(x + 94 * scale, y + 37 * scale, 5 * scale, "#ffffff");
+      fillRect(x + 81 * scale, y + 44 * scale, 18 * scale, 4 * scale, "#ffffff");
+      drawText("純粹好食", x + w * 0.66, y + 33 * scale, Math.max(13, 21 * scale), COLORS.aquaDeep, "center");
+      drawText("UGOODAYS", x + w * 0.66, y + 49 * scale, Math.max(6, 9 * scale), COLORS.aqua, "center");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "tainanStation" || model === "shanhuaStation") {
+      drawBasePlate();
+      const roof = model === "tainanStation" ? "#8f3550" : "#6f9fb0";
+      const body = model === "tainanStation" ? "#fff1cf" : "#f7fdff";
+      const towerW = (model === "tainanStation" ? 40 : 34) * scale;
+      drawSideDepth(x + 10 * scale, y + 42 * scale, w - 20 * scale, h - 38 * scale, "rgba(143,53,80,.18)");
+      fillRect(x + 13 * scale, y + 50 * scale, w - 26 * scale, groundY - y - 50 * scale, body);
+      drawQuad(x + 7 * scale, y + 39 * scale, x + w * 0.5, y + 17 * scale, x + w - 7 * scale, y + 39 * scale, x + w - 20 * scale, y + 49 * scale, roof);
+      fillRect(x + w / 2 - towerW / 2, y + 2 * scale, towerW, 62 * scale, body);
+      drawQuad(x + w / 2 - 26 * scale, y + 2 * scale, x + w / 2, y - 20 * scale, x + w / 2 + 26 * scale, y + 2 * scale, x + w / 2 + 16 * scale, y + 10 * scale, roof);
+      drawCircle(x + w / 2, y + 28 * scale, 10 * scale, "#ffffff");
+      strokeCircle(x + w / 2, y + 28 * scale, 10 * scale, accent, Math.max(1, 2 * scale));
+      for (let i = 0; i < 5; i += 1) {
+        const archX = x + (20 + i * (w / scale - 40) / 4) * scale;
+        drawArcade(archX - 11 * scale, groundY - 36 * scale, 22 * scale, 24 * scale);
+      }
+      fillRect(x + w / 2 - 19 * scale, groundY - 35 * scale, 38 * scale, 35 * scale, "#8fcfe0");
+      drawText(model === "tainanStation" ? "臺南車站" : "善化車站", x + w / 2, y + 76 * scale, Math.max(8, 13 * scale), accent, "center");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "nanfangMall") {
+      drawBasePlate();
+      drawSideDepth(x + 10 * scale, y + 42 * scale, w * 0.58, h - 34 * scale, "rgba(130,198,216,.22)");
+      fillRect(x + 10 * scale, y + 44 * scale, w * 0.58, h - 42 * scale, "#f7fdff");
+      drawQuad(x + w * 0.52, y + 17 * scale, x + w * 0.89, y - 8 * scale, x + w * 0.94, y + 102 * scale, x + w * 0.6, y + 118 * scale, "#bfeef8");
+      drawQuad(x + 22 * scale, y + 32 * scale, x + w * 0.54, y + 17 * scale, x + w * 0.58, y + 104 * scale, x + 32 * scale, y + 118 * scale, "rgba(130,198,216,.36)");
+      for (let row = 0; row < 3; row += 1) for (let col = 0; col < 4; col += 1) fillRect(x + (28 + col * 28) * scale, y + (58 + row * 24) * scale, 16 * scale, 12 * scale, row % 2 ? "#fff4dc" : "#dff6ff");
+      fillRect(x + w * 0.66, y + 17 * scale, 48 * scale, 15 * scale, "#ffffff");
+      drawText("南紡", x + w * 0.66 + 24 * scale, y + 28 * scale, Math.max(8, 13 * scale), accent, "center");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "chihkanTower" || model === "mazuTemple" || model === "confuciusTemple") {
+      drawBasePlate();
+      const roof = model === "mazuTemple" ? "#d8243c" : model === "confuciusTemple" ? "#8f3550" : "#b44966";
+      const body = model === "confuciusTemple" ? "#b44966" : "#fff1cf";
+      fillRect(x + 18 * scale, y + 54 * scale, w - 36 * scale, groundY - y - 54 * scale, body);
+      drawLayeredRoof(x + w / 2, y - 5 * scale, w * 0.98, model === "chihkanTower" ? 3 : 2, roof);
+      for (let i = 0; i < 4; i += 1) {
+        const px = x + (34 + i * (w / scale - 68) / 3) * scale;
+        drawPillar(px, y + 72 * scale, groundY - y - 76 * scale, model === "confuciusTemple" ? "#f4d16f" : "#a85d3b");
+      }
+      if (model === "chihkanTower") drawBrickPattern(x + 24 * scale, y + 60 * scale, w - 48 * scale, 42 * scale, "#d7a66e");
+      drawText(model === "chihkanTower" ? "赤崁樓" : model === "mazuTemple" ? "大天后宮" : "台南孔廟", x + w / 2, y + 48 * scale, Math.max(8, 13 * scale), model === "confuciusTemple" ? "#fff1cf" : roof, "center");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "chimeiMuseum" || model === "judicialMuseum" || model === "tainanArtMuseum") {
+      drawBasePlate();
+      if (model === "tainanArtMuseum") {
+        drawQuad(x + 10 * scale, y + 52 * scale, x + w * 0.62, y + 18 * scale, x + w - 6 * scale, y + 52 * scale, x + w - 22 * scale, groundY, "#f3f5f0");
+        drawQuad(x + 36 * scale, y + 72 * scale, x + w * 0.64, y + 38 * scale, x + w - 28 * scale, y + 78 * scale, x + w - 44 * scale, groundY - 10 * scale, "#d9c3a7");
+        strokePerspectiveLine(x + 18 * scale, y + 58 * scale, x + w - 18 * scale, y + 58 * scale, accent, Math.max(1, 2 * scale));
+      } else {
+        const domeY = y + 22 * scale;
+        fillRect(x + 14 * scale, y + 58 * scale, w - 28 * scale, groundY - y - 58 * scale, model === "judicialMuseum" ? "#e7c0a7" : "#f7fdff");
+        drawCircle(x + w / 2, domeY, 31 * scale, "#ffffff");
+        fillRect(x + w / 2 - 36 * scale, domeY, 72 * scale, 30 * scale, "#ffffff");
+        if (model === "judicialMuseum") drawBrickPattern(x + 18 * scale, y + 62 * scale, w - 36 * scale, groundY - y - 68 * scale, "#8f4d3c");
+        for (let i = 0; i < 6; i += 1) drawPillar(x + (32 + i * (w / scale - 64) / 5) * scale, y + 72 * scale, groundY - y - 76 * scale, "#eef5f8");
+      }
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "anpingFort" || model === "eternalCastle" || model === "anpingBattery") {
+      drawBasePlate();
+      const brickColor = model === "eternalCastle" ? "#b55f44" : "#c57563";
+      fillRect(x + 10 * scale, y + 62 * scale, w - 20 * scale, groundY - y - 62 * scale, brickColor);
+      drawBrickPattern(x + 10 * scale, y + 62 * scale, w - 20 * scale, groundY - y - 64 * scale, "#6e3b32");
+      for (let i = 0; i < 5; i += 1) fillRect(x + (12 + i * (w / scale - 24) / 4) * scale, y + 49 * scale, 16 * scale, 18 * scale, brickColor);
+      if (model === "anpingFort") {
+        fillRect(x + w * 0.42, y + 5 * scale, 44 * scale, 65 * scale, "#fff1cf");
+        fillRect(x + w * 0.42 - 6 * scale, y - 6 * scale, 56 * scale, 10 * scale, "#b44966");
+      } else if (model === "eternalCastle") {
+        fillRect(x + 14 * scale, y + 36 * scale, 42 * scale, 34 * scale, "#a74d3c");
+        fillRect(x + w - 56 * scale, y + 36 * scale, 42 * scale, 34 * scale, "#a74d3c");
+        fillRect(x + w * 0.62, y + 54 * scale, 38 * scale, 9 * scale, "#3d4b53");
+        fillRect(x + w * 0.81, y + 56 * scale, 24 * scale, 5 * scale, "#3d4b53");
+      }
+      fillRect(x + w * 0.42, groundY - 34 * scale, w * 0.16, 34 * scale, "#7b3f35");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "bigFish") {
+      drawBasePlate();
+      drawFishSculpture(x + w / 2, y + h * 0.5, 1.02 * scale, accent);
+      fillRect(x + 18 * scale, groundY - 16 * scale, w - 36 * scale, 8 * scale, "#9ccfd8");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "helePlaza" || model === "yuguangIsland") {
+      drawBasePlate();
+      if (model === "helePlaza") {
+        for (let i = 0; i < 5; i += 1) fillRect(x + (12 + i * 12) * scale, groundY - (22 + i * 13) * scale, w - (24 + i * 24) * scale, 12 * scale, i % 2 ? "#ffffff" : "#dff6ff");
+        fillRect(x + 42 * scale, groundY - 28 * scale, w - 84 * scale, 16 * scale, "#8fcfe0");
+      } else {
+        fillRect(x + 6 * scale, groundY - 31 * scale, w - 12 * scale, 28 * scale, "#f7e2bd");
+        fillRect(x + 22 * scale, groundY - 42 * scale, w - 44 * scale, 12 * scale, COLORS.aqua);
+        drawCircle(x + w * 0.72, groundY - 62 * scale, 24 * scale, COLORS.yellow);
+      }
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "sicaoTunnel" || model === "anpingTreeHouse") {
+      drawBasePlate();
+      fillRect(x + 5 * scale, groundY - 30 * scale, w - 10 * scale, 26 * scale, model === "sicaoTunnel" ? "#8fcfe0" : "#d8c1a2");
+      const road = getRoadMetrics();
+      for (let i = 0; i < 5; i += 1) {
+        const t = i / 4;
+        const yy = groundY - 10 * scale - t * 92 * scale;
+        const depth = roadDepthAtY(yy);
+        const edge = road.centerX + side * roadWidthAtDepth(depth) * 0.5;
+        const tx = edge + side * (24 + t * 5) * scale;
+        const treeScale = scale * (1.05 - t * 0.22);
+        fillRect(tx - 5 * treeScale, yy - 62 * treeScale, 10 * treeScale, 66 * treeScale, "#5f7a45");
+        strokePerspectiveLine(tx, yy - 8 * treeScale, tx + side * 15 * treeScale, yy + 12 * treeScale, "#8b6b4e", Math.max(1, 3 * treeScale));
+        drawCircle(tx - side * 4 * treeScale, yy - 74 * treeScale, 22 * treeScale, i % 2 ? "#76b96c" : "#4a9f72");
+        drawCircle(tx + side * 10 * treeScale, yy - 86 * treeScale, 19 * treeScale, "#8ac277");
+      }
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "hayashi" || model === "taitMerchant" || model === "governorResidence") {
+      drawBasePlate();
+      const body = model === "hayashi" ? "#e9e1cf" : model === "taitMerchant" ? "#f5f0df" : "#f3e6c4";
+      fillRect(x + 16 * scale, y + 42 * scale, w - 32 * scale, groundY - y - 42 * scale, body);
+      drawQuad(x + 8 * scale, y + 32 * scale, x + w / 2, y + 14 * scale, x + w - 8 * scale, y + 32 * scale, x + w - 24 * scale, y + 44 * scale, model === "governorResidence" ? "#4a5b62" : "#8f5f42");
+      if (model === "hayashi") {
+        fillRect(x + w * 0.58, y + 2 * scale, 32 * scale, 48 * scale, "#c8945e");
+        fillRect(x + w * 0.58 + 7 * scale, y - 12 * scale, 18 * scale, 14 * scale, "#8a9aa1");
+      }
+      for (let i = 0; i < 4; i += 1) drawArcade(x + (25 + i * 30) * scale, groundY - 38 * scale, 20 * scale, 25 * scale);
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "blueprintPark") {
+      drawBasePlate();
+      fillRect(x + 10 * scale, y + 36 * scale, w - 20 * scale, groundY - y - 39 * scale, "#4b91b6");
+      strokeRect(x + 28 * scale, y + 50 * scale, w - 56 * scale, 46 * scale, "#ffffff", Math.max(1, 2 * scale));
+      strokePerspectiveLine(x + 36 * scale, y + 84 * scale, x + w - 42 * scale, y + 60 * scale, "#ffffff", Math.max(1, 2 * scale));
+      strokePerspectiveLine(x + 46 * scale, y + 54 * scale, x + 46 * scale, y + 98 * scale, "#ffffff", Math.max(1, 2 * scale));
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "tenDrum") {
+      drawBasePlate();
+      drawBrickPattern(x + 10 * scale, y + 45 * scale, w * 0.62, groundY - y - 48 * scale, "#9b5844");
+      fillRect(x + w * 0.68, y - 20 * scale, 24 * scale, groundY - y - 18 * scale, "#9b5844");
+      fillRect(x + w * 0.68 - 5 * scale, y - 29 * scale, 34 * scale, 9 * scale, "#6e3b32");
+      for (let i = 0; i < 3; i += 1) {
+        const drumX = x + (30 + i * 40) * scale;
+        drawCircle(drumX, groundY - 38 * scale, 19 * scale, "#d99b72");
+        strokeCircle(drumX, groundY - 38 * scale, 19 * scale, "#6e3b32", Math.max(1, 2 * scale));
+      }
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "guanzilingHotSpring") {
+      drawBasePlate();
+      drawQuad(x + 18 * scale, y + 50 * scale, x + w / 2, y + 18 * scale, x + w - 18 * scale, y + 50 * scale, x + w - 32 * scale, y + 62 * scale, "#7aa9b6");
+      fillRect(x + 26 * scale, y + 62 * scale, w - 52 * scale, groundY - y - 62 * scale, "#f3e6c4");
+      for (let i = 0; i < 3; i += 1) {
+        const sx = x + (48 + i * 36) * scale;
+        strokeCircle(sx, y + 34 * scale - i * 5 * scale, 10 * scale, "rgba(255,255,255,.72)", Math.max(1, 2 * scale));
+        strokePerspectiveLine(sx, y + 48 * scale, sx + 8 * scale, y + 28 * scale, "rgba(255,255,255,.7)", Math.max(1, 2 * scale));
+      }
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "koxingaShrine") {
+      drawBasePlate();
+      fillRect(x + 18 * scale, y + 55 * scale, w - 36 * scale, groundY - y - 55 * scale, "#f6ddc3");
+      drawQuad(x + 5 * scale, y + 48 * scale, x + w / 2, y + 18 * scale, x + w - 5 * scale, y + 48 * scale, x + w - 24 * scale, y + 60 * scale, "#b84238");
+      drawQuad(x + 38 * scale, y + 28 * scale, x + w / 2, y + 6 * scale, x + w - 38 * scale, y + 28 * scale, x + w - 52 * scale, y + 38 * scale, "#d85a47");
+      fillRect(x + 30 * scale, groundY - 44 * scale, w - 60 * scale, 14 * scale, "#f4d16f");
+      for (let i = 0; i < 5; i += 1) drawPillar(x + (35 + i * 27) * scale, groundY - 72 * scale, 58 * scale, "#fff1cf");
+      fillRect(x + w / 2 - 18 * scale, groundY - 43 * scale, 36 * scale, 43 * scale, "#8f3550");
+      drawText("郡王祠", x + w / 2, y + 79 * scale, Math.max(8, 13 * scale), "#8f3550", "center");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "wuGarden") {
+      drawBasePlate();
+      fillRect(x + 8 * scale, groundY - 34 * scale, w - 16 * scale, 28 * scale, "#cde8dc");
+      strokePerspectiveLine(x + 18 * scale, groundY - 33 * scale, x + w - 18 * scale, groundY - 33 * scale, "#7fc3de", Math.max(2, 3 * scale));
+      drawQuad(x + 38 * scale, y + 45 * scale, x + w / 2, y + 20 * scale, x + w - 38 * scale, y + 45 * scale, x + w - 53 * scale, y + 55 * scale, "#8f5f42");
+      fillRect(x + 50 * scale, y + 55 * scale, w - 100 * scale, groundY - y - 56 * scale, "#fff1cf");
+      for (let i = 0; i < 3; i += 1) drawPillar(x + (66 + i * 23) * scale, y + 60 * scale, groundY - y - 62 * scale, "#f7fdff");
+      for (let i = 0; i < 4; i += 1) drawCircle(x + (22 + i * 40) * scale, groundY - (24 + i % 2 * 10) * scale, 16 * scale, i % 2 ? "#89b381" : "#65a85f");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "westMarket") {
+      drawBasePlate();
+      fillRect(x + 12 * scale, y + 48 * scale, w - 24 * scale, groundY - y - 48 * scale, "#f1d2bd");
+      drawQuad(x + 10 * scale, y + 42 * scale, x + w / 2, y + 15 * scale, x + w - 10 * scale, y + 42 * scale, x + w - 27 * scale, y + 53 * scale, "#934b42");
+      drawCircle(x + w / 2, y + 71 * scale, 34 * scale, "#fff4dc");
+      fillRect(x + w / 2 - 35 * scale, y + 72 * scale, 70 * scale, groundY - y - 72 * scale, "#fff4dc");
+      strokeCircle(x + w / 2, y + 71 * scale, 34 * scale, "#b44966", Math.max(2, 3 * scale));
+      for (let i = 0; i < 4; i += 1) fillRect(x + (24 + i * 34) * scale, groundY - 42 * scale, 18 * scale, 33 * scale, i % 2 ? "#dff6ff" : "#fff1cf");
+      drawText("西市場", x + w / 2, y + 55 * scale, Math.max(8, 13 * scale), "#b44966", "center");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "haiAnArtStreet") {
+      drawBasePlate();
+      fillRect(x + 10 * scale, y + 42 * scale, w - 20 * scale, groundY - y - 42 * scale, "#f7fdff");
+      drawQuad(x + 8 * scale, y + 35 * scale, x + w * 0.5, y + 20 * scale, x + w - 8 * scale, y + 35 * scale, x + w - 20 * scale, y + 47 * scale, "#7d5ba6");
+      const murals = ["#7fc3de", "#f19aa0", "#f4d16f", "#65a85f", "#ef8b53"];
+      for (let i = 0; i < 5; i += 1) {
+        const mx = x + (18 + i * 30) * scale;
+        fillRect(mx, y + (57 + i % 2 * 8) * scale, 24 * scale, 36 * scale, murals[i]);
+        strokeRect(mx, y + (57 + i % 2 * 8) * scale, 24 * scale, 36 * scale, "#ffffff", Math.max(1, 2 * scale));
+      }
+      strokePerspectiveLine(x + 24 * scale, groundY - 24 * scale, x + w - 26 * scale, y + 55 * scale, "#ffffff", Math.max(1, 2 * scale));
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "taijiangPark") {
+      drawBasePlate();
+      fillRect(x + 8 * scale, groundY - 30 * scale, w - 16 * scale, 24 * scale, "#b9dccd");
+      fillRect(x + 24 * scale, y + 58 * scale, w - 48 * scale, groundY - y - 58 * scale, "#f7fdff");
+      drawQuad(x + 18 * scale, y + 45 * scale, x + w * 0.55, y + 20 * scale, x + w - 10 * scale, y + 45 * scale, x + w - 32 * scale, y + 57 * scale, "#4a9f72");
+      for (let i = 0; i < 6; i += 1) {
+        const rx = x + (18 + i * 24) * scale;
+        fillRect(rx, groundY - 50 * scale, 4 * scale, 42 * scale, "#7b6f44");
+        drawCircle(rx + 7 * scale, groundY - 62 * scale, 10 * scale, i % 2 ? "#65a85f" : "#89b381");
+      }
+      for (let i = 0; i < 3; i += 1) {
+        const bx = x + (52 + i * 36) * scale;
+        drawQuad(bx, y + 38 * scale, bx + 12 * scale, y + 31 * scale, bx + 23 * scale, y + 38 * scale, bx + 12 * scale, y + 35 * scale, "#ffffff");
+      }
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "yuejinHarbor") {
+      drawBasePlate();
+      fillRect(x + 6 * scale, groundY - 36 * scale, w - 12 * scale, 30 * scale, "#bfeef8");
+      strokePerspectiveLine(x + 14 * scale, groundY - 29 * scale, x + w - 14 * scale, groundY - 29 * scale, "#7fc3de", Math.max(2, 3 * scale));
+      for (let i = 0; i < 5; i += 1) {
+        const lx = x + (24 + i * 31) * scale;
+        fillRect(lx - 2 * scale, groundY - 78 * scale, 4 * scale, 55 * scale, "#8f5f42");
+        drawCircle(lx, groundY - 84 * scale, 11 * scale, i % 2 ? "#f4d16f" : "#f19aa0");
+        fillRect(lx - 7 * scale, groundY - 84 * scale, 14 * scale, 5 * scale, "#ffffff");
+      }
+      drawQuad(x + 22 * scale, groundY - 42 * scale, x + w / 2, groundY - 62 * scale, x + w - 22 * scale, groundY - 42 * scale, x + w - 36 * scale, groundY - 36 * scale, "#fff4dc");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "tainanLibrary") {
+      drawBasePlate();
+      drawSideDepth(x + 20 * scale, y + 28 * scale, w - 40 * scale, groundY - y - 28 * scale, "rgba(80,105,114,.16)");
+      fillRect(x + 20 * scale, y + 28 * scale, w - 40 * scale, groundY - y - 28 * scale, "#eef4f4");
+      for (let i = 0; i < 8; i += 1) fillRect(x + (30 + i * 14) * scale, y + 34 * scale, 5 * scale, groundY - y - 42 * scale, i % 2 ? "#cbd6d6" : "#ffffff");
+      drawQuad(x + 7 * scale, y + 20 * scale, x + w - 7 * scale, y + 20 * scale, x + w - 26 * scale, y + 37 * scale, x + 24 * scale, y + 37 * scale, "#8a9aa1");
+      fillRect(x + 40 * scale, y + 72 * scale, w - 80 * scale, 22 * scale, "#dff6ff");
+      drawText("市圖", x + w / 2, y + 90 * scale, Math.max(10, 15 * scale), "#4b5960", "center");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "waterworksMuseum") {
+      drawBasePlate();
+      drawBrickPattern(x + 14 * scale, y + 58 * scale, w - 28 * scale, groundY - y - 58 * scale, "#9b5844");
+      fillRect(x + w * 0.62, y - 8 * scale, 34 * scale, groundY - y - 8 * scale, "#9b5844");
+      drawCircle(x + w * 0.62 + 17 * scale, y - 16 * scale, 23 * scale, "#d99b72");
+      strokeCircle(x + w * 0.62 + 17 * scale, y - 16 * scale, 23 * scale, "#6e3b32", Math.max(2, 3 * scale));
+      for (let i = 0; i < 4; i += 1) drawArcade(x + (26 + i * 28) * scale, groundY - 44 * scale, 20 * scale, 30 * scale, "#fff1cf");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "qiguSaltMountain") {
+      drawBasePlate();
+      fillRect(x + 10 * scale, groundY - 28 * scale, w - 20 * scale, 22 * scale, "#dff6ff");
+      for (let i = 0; i < 4; i += 1) {
+        const mx = x + (20 + i * 34) * scale;
+        drawQuad(mx - 28 * scale, groundY - 26 * scale, mx, groundY - (76 + i % 2 * 13) * scale, mx + 31 * scale, groundY - 26 * scale, mx + 22 * scale, groundY - 13 * scale, "#ffffff");
+        strokePerspectiveLine(mx - 20 * scale, groundY - 26 * scale, mx, groundY - (66 + i % 2 * 12) * scale, "rgba(127,195,222,.42)", Math.max(1, 2 * scale));
+      }
+      drawCircle(x + w * 0.72, groundY - 86 * scale, 17 * scale, "#f4d16f");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "taiwanHistoryMuseum") {
+      drawBasePlate();
+      drawSideDepth(x + 14 * scale, y + 40 * scale, w - 28 * scale, groundY - y - 40 * scale, "rgba(80,105,114,.18)");
+      fillRect(x + 18 * scale, y + 48 * scale, w - 36 * scale, groundY - y - 48 * scale, "#e8f0ee");
+      drawQuad(x + 10 * scale, y + 40 * scale, x + w * 0.34, y + 15 * scale, x + w - 12 * scale, y + 30 * scale, x + w - 28 * scale, y + 52 * scale, "#8a9aa1");
+      drawQuad(x + 28 * scale, y + 58 * scale, x + w * 0.44, y + 43 * scale, x + w - 30 * scale, y + 55 * scale, x + w - 48 * scale, groundY - 18 * scale, "rgba(127,195,222,.42)");
+      for (let i = 0; i < 5; i += 1) {
+        const px = x + (34 + i * 28) * scale;
+        fillRect(px, y + 76 * scale, 15 * scale, 28 * scale, i % 2 ? "#fff4dc" : "#dff6ff");
+      }
+      fillRect(x + 44 * scale, groundY - 38 * scale, w - 88 * scale, 18 * scale, "#ffffff");
+      drawText("臺史博", x + w / 2, groundY - 24 * scale, Math.max(8, 13 * scale), accent, "center");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "beimenCrystalChurch") {
+      drawBasePlate();
+      fillRect(x + 8 * scale, groundY - 30 * scale, w - 16 * scale, 24 * scale, "#bfeef8");
+      drawQuad(x + w * 0.18, groundY - 24 * scale, x + w * 0.5, y + 2 * scale, x + w * 0.82, groundY - 24 * scale, x + w * 0.7, groundY - 8 * scale, "#ffffff");
+      drawQuad(x + w * 0.25, groundY - 28 * scale, x + w * 0.5, y + 20 * scale, x + w * 0.75, groundY - 28 * scale, x + w * 0.63, groundY - 12 * scale, "rgba(191,238,248,.74)");
+      strokePerspectiveLine(x + w * 0.5, y + 4 * scale, x + w * 0.5, groundY - 20 * scale, accent, Math.max(2, 3 * scale));
+      strokePerspectiveLine(x + w * 0.31, groundY - 31 * scale, x + w * 0.5, y + 4 * scale, accent, Math.max(2, 3 * scale));
+      strokePerspectiveLine(x + w * 0.69, groundY - 31 * scale, x + w * 0.5, y + 4 * scale, accent, Math.max(2, 3 * scale));
+      for (let i = 0; i < 4; i += 1) drawCircle(x + (20 + i * 38) * scale, groundY - 14 * scale, 5 * scale, "#ffffff");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "jingzaijiaoSaltFields") {
+      drawBasePlate();
+      fillRect(x + 6 * scale, groundY - 52 * scale, w - 12 * scale, 44 * scale, "#bfeef8");
+      for (let i = 0; i <= 5; i += 1) {
+        const gx = x + (12 + i * (w / scale - 24) / 5) * scale;
+        strokePerspectiveLine(gx, groundY - 51 * scale, gx - side * 8 * scale, groundY - 9 * scale, "rgba(143,95,66,.42)", Math.max(1, 2 * scale));
+      }
+      for (let i = 0; i <= 3; i += 1) {
+        const gy = groundY - (48 - i * 12) * scale;
+        strokePerspectiveLine(x + 8 * scale, gy, x + w - 10 * scale, gy - 3 * scale, "rgba(143,95,66,.42)", Math.max(1, 2 * scale));
+      }
+      drawQuad(x + 24 * scale, groundY - 54 * scale, x + 45 * scale, groundY - 83 * scale, x + 67 * scale, groundY - 54 * scale, x + 58 * scale, groundY - 43 * scale, "#ffffff");
+      drawQuad(x + w - 68 * scale, groundY - 47 * scale, x + w - 49 * scale, groundY - 70 * scale, x + w - 27 * scale, groundY - 47 * scale, x + w - 36 * scale, groundY - 37 * scale, "#ffffff");
+      drawCircle(x + w * 0.78, y + 24 * scale, 18 * scale, "#f4d16f");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "madouDaitianTemple") {
+      drawBasePlate();
+      fillRect(x + 14 * scale, y + 58 * scale, w - 28 * scale, groundY - y - 58 * scale, "#f5d4b2");
+      drawLayeredRoof(x + w / 2, y - 6 * scale, w * 1.03, 3, "#d8243c");
+      drawQuad(x + 8 * scale, y + 63 * scale, x + w / 2, y + 33 * scale, x + w - 8 * scale, y + 63 * scale, x + w - 30 * scale, y + 75 * scale, "#b44966");
+      for (let i = 0; i < 6; i += 1) drawPillar(x + (28 + i * (w / scale - 56) / 5) * scale, groundY - 64 * scale, 56 * scale, i % 2 ? "#d8243c" : "#fff1cf");
+      drawCircle(x + 34 * scale, y + 45 * scale, 10 * scale, "#f4d16f");
+      drawCircle(x + w - 34 * scale, y + 45 * scale, 10 * scale, "#f4d16f");
+      fillRect(x + w / 2 - 20 * scale, groundY - 42 * scale, 40 * scale, 42 * scale, "#8f3550");
+      drawText("代天府", x + w / 2, y + 56 * scale, Math.max(8, 13 * scale), "#fff1cf", "center");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "hutoupi") {
+      drawBasePlate();
+      fillRect(x + 8 * scale, groundY - 38 * scale, w - 16 * scale, 30 * scale, "#8fcfe0");
+      strokePerspectiveLine(x + 18 * scale, groundY - 29 * scale, x + w - 20 * scale, groundY - 32 * scale, "#dff6ff", Math.max(2, 3 * scale));
+      drawCircle(x + 34 * scale, groundY - 55 * scale, 24 * scale, "#65a85f");
+      drawCircle(x + 58 * scale, groundY - 64 * scale, 27 * scale, "#89b381");
+      drawCircle(x + w - 44 * scale, groundY - 60 * scale, 26 * scale, "#4a9f72");
+      drawQuad(x + 72 * scale, groundY - 38 * scale, x + w * 0.5, groundY - 62 * scale, x + w - 72 * scale, groundY - 38 * scale, x + w - 82 * scale, groundY - 30 * scale, "#fff4dc");
+      strokePerspectiveLine(x + 82 * scale, groundY - 39 * scale, x + w - 82 * scale, groundY - 39 * scale, "#8f5f42", Math.max(2, 3 * scale));
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "soulanghCulturalPark") {
+      drawBasePlate();
+      fillRect(x + 10 * scale, y + 58 * scale, w - 20 * scale, groundY - y - 58 * scale, "#e8d0b8");
+      drawBrickPattern(x + 10 * scale, y + 58 * scale, w - 20 * scale, groundY - y - 60 * scale, "#9b5844");
+      for (let i = 0; i < 4; i += 1) {
+        const sx = x + (12 + i * (w / scale - 24) / 4) * scale;
+        drawQuad(sx, y + 55 * scale, sx + 20 * scale, y + 34 * scale, sx + 42 * scale, y + 55 * scale, sx + 32 * scale, y + 64 * scale, i % 2 ? "#a85f4f" : "#c57563");
+      }
+      fillRect(x + w * 0.68, y + 19 * scale, 24 * scale, groundY - y - 19 * scale, "#9b5844");
+      fillRect(x + w * 0.68 - 5 * scale, y + 10 * scale, 34 * scale, 9 * scale, "#6e3b32");
+      for (let i = 0; i < 4; i += 1) drawArcade(x + (25 + i * 34) * scale, groundY - 43 * scale, 22 * scale, 29 * scale, "#fff1cf");
+      drawSmallName();
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "baoAnRoad") {
+      drawShopRow("#d48c32", 4);
+      ctx.restore();
+      return true;
+    }
+
+    if (model === "shuixianMarket" || model === "guohuaStreet" || model === "funongStreet" || model === "shennongStreet" || model === "gardenNightMarket" || model === "xinhuaOldStreet" || model === "anpingOldStreet") {
+      const awning = model === "gardenNightMarket" ? "#d8484f" : model === "funongStreet" ? "#c85f45" : model === "shennongStreet" ? "#8f5f42" : model === "xinhuaOldStreet" ? "#934b42" : "#ef8b53";
+      drawShopRow(awning, model === "gardenNightMarket" ? 5 : 4);
+      ctx.restore();
+      return true;
+    }
+
+    ctx.restore();
+    return false;
   }
 
   function drawSideWindows(x, y, depth, h, scale, side, color) {
@@ -5050,7 +6957,7 @@
     const target = isNextTargetEntity(entity);
     ctx.save();
     ctx.translate(x + 34, y + 34);
-    ctx.scale(0.94, 0.94);
+    ctx.scale(entity.type === "bonus" ? 0.96 : 0.9, entity.type === "bonus" ? 0.96 : 0.9);
     ctx.translate(-(x + 34), -(y + 34));
     drawGoodItemAura(entity, x + 34, y + 34, color, target);
     drawPixelShadow(x + 10, entity.y - 10, entity.w + 8);
@@ -5162,6 +7069,27 @@
     ctx.restore();
   }
 
+  function drawIngredientObjectShadow(key, x, y, def) {
+    const cx = x + 34;
+    const cy = y + 38;
+    const color = def.color || COLORS.aquaDeep;
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    fillRect(cx - 25, cy + 27, 50, 7, "rgba(36,50,58,.34)");
+    ctx.globalAlpha = 0.16;
+    if (key === "milk") {
+      drawQuad(cx - 20, cy + 22, cx + 13, cy + 24, cx + 21, cy + 31, cx - 18, cy + 31, color);
+    } else if (key === "culture") {
+      strokeCircle(cx, cy + 2, 31, color, 4);
+      strokeCircle(cx + 4, cy + 6, 25, "#ffffff", 2);
+    } else if (key === "calcium") {
+      strokeRect(cx - 28, cy - 20, 56, 43, color, 4);
+    } else {
+      drawCircle(cx + 3, cy + 4, 29, color);
+    }
+    ctx.restore();
+  }
+
   function drawIngredientDepthCue(key, x, y, def) {
     const cx = x + 34;
     const cy = y + 38;
@@ -5189,109 +7117,132 @@
 
   function drawIngredientIcon(key, x, y, required) {
     const def = TYPES[key];
-    if (required) drawTargetPips(x, y, def.color);
-    drawStickerBase(x, y, def, required);
-    drawIngredientDepthCue(key, x, y, def);
+    if (required) {
+      drawTargetPips(x, y, def.color);
+      drawStickerBase(x, y, def, required);
+      drawIngredientDepthCue(key, x, y, def);
+    } else {
+      drawIngredientObjectShadow(key, x, y, def);
+    }
+    const iconScale = required ? 1.06 : 1.22;
+    ctx.save();
+    ctx.translate(x + 34, y + 38);
+    ctx.scale(iconScale, iconScale);
+    ctx.translate(-(x + 34), -(y + 38));
     if (key === "milk") {
-      fillRect(x + 21, y + 18, 26, 43, "#f7fdff");
-      fillRect(x + 21, y + 18, 13, 9, "#ffffff");
-      fillRect(x + 34, y + 18, 13, 9, "#cfefff");
-      fillRect(x + 24, y + 30, 20, 17, "#dff6ff");
-      drawCircle(x + 29, y + 51, 5, "#ffffff");
-      drawCircle(x + 38, y + 51, 5, "#ffffff");
-      strokeRect(x + 21, y + 18, 26, 43, COLORS.aquaDeep, 3);
-      strokeRect(x + 24, y + 30, 20, 17, COLORS.aquaDeep, 2);
+      drawQuad(x + 22, y + 18, x + 31, y + 10, x + 48, y + 17, x + 39, y + 27, "#ffffff");
+      fillRect(x + 20, y + 24, 30, 39, "#f7fdff");
+      fillRect(x + 25, y + 33, 20, 18, "#dff6ff");
+      fillRect(x + 23, y + 54, 24, 6, COLORS.aqua);
+      drawCircle(x + 31, y + 45, 6, "#ffffff");
+      drawCircle(x + 39, y + 45, 4, "#ffffff");
+      strokeRect(x + 20, y + 24, 30, 39, COLORS.aquaDeep, 3);
+      strokePerspectiveLine(x + 22, y + 18, x + 31, y + 10, COLORS.aquaDeep, 3);
+      strokePerspectiveLine(x + 31, y + 10, x + 48, y + 17, COLORS.aquaDeep, 3);
+      strokePerspectiveLine(x + 48, y + 17, x + 50, y + 63, COLORS.aquaDeep, 3);
     } else if (key === "culture") {
-      drawCapsule(x + 16, y + 28, 36, 15, "#ffffff", COLORS.yellow, COLORS.aquaDeep);
-      drawCircle(x + 24, y + 50, 7, "#caeef6");
-      drawCircle(x + 38, y + 51, 8, "#caeef6");
-      strokeCircle(x + 24, y + 50, 7, COLORS.aquaDeep, 2);
-      strokeCircle(x + 38, y + 51, 8, COLORS.aquaDeep, 2);
-      for (let i = 0; i < 7; i += 1) {
-        const bx = x + 16 + (i % 4) * 10;
-        const by = y + 19 + Math.floor(i / 4) * 10;
-        drawCircle(bx, by, 3, i % 2 ? COLORS.aquaDeep : COLORS.leaf);
-        fillRect(bx + 4, by - 1, 5, 2, i % 2 ? COLORS.aquaDeep : COLORS.leaf);
+      drawCircle(x + 34, y + 38, 24, "#e9fbff");
+      drawCircle(x + 34, y + 38, 18, "#caeef6");
+      strokeCircle(x + 34, y + 38, 24, COLORS.aquaDeep, 4);
+      strokeCircle(x + 34, y + 38, 18, "#ffffff", 2);
+      for (let i = 0; i < 10; i += 1) {
+        const a = i * 0.78 + state.time * 0.8;
+        const bx = x + 34 + Math.cos(a) * (7 + i % 3 * 4);
+        const by = y + 38 + Math.sin(a) * (5 + i % 2 * 5);
+        drawCircle(bx, by, i % 3 === 0 ? 4 : 3, i % 2 ? COLORS.aquaDeep : COLORS.leaf);
+        fillRect(bx + 3, by - 1, 5, 2, i % 2 ? COLORS.aquaDeep : COLORS.leaf);
       }
     } else if (key === "protein") {
-      fillRect(x + 17, y + 28, 34, 28, "#fff5eb");
-      fillRect(x + 22, y + 20, 24, 10, COLORS.orange);
-      drawCircle(x + 32, y + 41, 11, "#ffd2b4");
-      fillRect(x + 24, y + 38, 19, 6, COLORS.orange);
-      strokeRect(x + 17, y + 28, 34, 28, COLORS.ink, 3);
-      strokeRect(x + 22, y + 20, 24, 10, COLORS.ink, 2);
+      fillRect(x + 17, y + 24, 34, 36, "#fff5eb");
+      fillRect(x + 22, y + 16, 24, 10, COLORS.orange);
+      drawCircle(x + 34, y + 41, 13, "#ffd2b4");
+      fillRect(x + 24, y + 38, 20, 7, COLORS.orange);
+      drawText("P", x + 34, y + 48, 16, "#ffffff", "center");
+      strokeRect(x + 17, y + 24, 34, 36, COLORS.ink, 3);
+      strokeRect(x + 22, y + 16, 24, 10, COLORS.ink, 2);
     } else if (key === "calcium") {
-      fillRect(x + 15, y + 33, 38, 13, "#dceffc");
-      fillRect(x + 27, y + 21, 13, 37, "#dceffc");
-      drawCircle(x + 17, y + 29, 7, "#ffffff");
-      drawCircle(x + 50, y + 29, 7, "#ffffff");
-      drawCircle(x + 17, y + 51, 7, "#ffffff");
-      drawCircle(x + 50, y + 51, 7, "#ffffff");
-      strokeRect(x + 15, y + 33, 38, 13, "#4b91b6", 3);
-      strokeRect(x + 27, y + 21, 13, 37, "#4b91b6", 3);
+      drawCircle(x + 22, y + 29, 9, "#ffffff");
+      drawCircle(x + 22, y + 47, 9, "#ffffff");
+      drawCircle(x + 47, y + 29, 9, "#ffffff");
+      drawCircle(x + 47, y + 47, 9, "#ffffff");
+      fillRect(x + 22, y + 29, 25, 18, "#dceffc");
+      fillRect(x + 19, y + 35, 31, 7, "#f7fdff");
+      strokeCircle(x + 22, y + 29, 9, "#4b91b6", 3);
+      strokeCircle(x + 22, y + 47, 9, "#4b91b6", 3);
+      strokeCircle(x + 47, y + 29, 9, "#4b91b6", 3);
+      strokeCircle(x + 47, y + 47, 9, "#4b91b6", 3);
+      strokeRect(x + 22, y + 29, 25, 18, "#4b91b6", 3);
+      drawText("Ca", x + 34, y + 43, 13, "#4b91b6", "center");
     } else if (key === "fruit") {
-      drawCircle(x + 25, y + 43, 12, COLORS.berry);
-      drawCircle(x + 43, y + 45, 11, COLORS.orange);
-      drawCircle(x + 35, y + 32, 9, COLORS.leaf);
-      strokeCircle(x + 25, y + 43, 12, COLORS.ink, 2);
-      strokeCircle(x + 43, y + 45, 11, COLORS.ink, 2);
-      fillRect(x + 30, y + 27, 13, 5, "#ffffff");
+      drawCircle(x + 24, y + 45, 13, COLORS.berry);
+      drawCircle(x + 44, y + 45, 12, COLORS.orange);
+      drawCircle(x + 35, y + 31, 10, COLORS.leaf);
+      drawCircle(x + 33, y + 42, 7, "#f4d16f");
+      strokeCircle(x + 24, y + 45, 13, COLORS.ink, 2);
+      strokeCircle(x + 44, y + 45, 12, COLORS.ink, 2);
+      fillRect(x + 31, y + 25, 14, 5, "#ffffff");
+      drawTriangle(x + 36, y + 29, x + 48, y + 23, x + 43, y + 34, COLORS.leaf);
     } else if (key === "honey") {
-      fillRect(x + 17, y + 27, 34, 30, COLORS.yellow);
-      fillRect(x + 22, y + 19, 24, 10, "#fff8c6");
-      fillRect(x + 25, y + 35, 18, 9, "#fff8c6");
-      fillRect(x + 48, y + 20, 4, 27, "#7a5123");
-      fillRect(x + 44, y + 27, 12, 5, "#7a5123");
-      fillRect(x + 45, y + 34, 10, 5, "#7a5123");
-      fillRect(x + 53, y + 42, 5, 9, COLORS.yellow);
-      strokeRect(x + 17, y + 27, 34, 30, COLORS.ink, 3);
-      strokeRect(x + 22, y + 19, 24, 10, COLORS.ink, 2);
+      fillRect(x + 16, y + 25, 34, 34, COLORS.yellow);
+      fillRect(x + 21, y + 16, 24, 10, "#fff8c6");
+      drawCircle(x + 33, y + 40, 12, "#fff8c6");
+      fillRect(x + 25, y + 38, 18, 8, COLORS.yellow);
+      fillRect(x + 50, y + 18, 5, 33, "#7a5123");
+      fillRect(x + 45, y + 26, 15, 5, "#7a5123");
+      fillRect(x + 46, y + 34, 13, 5, "#7a5123");
+      fillRect(x + 54, y + 43, 6, 10, COLORS.yellow);
+      strokeRect(x + 16, y + 25, 34, 34, COLORS.ink, 3);
+      strokeRect(x + 21, y + 16, 24, 10, COLORS.ink, 2);
     } else if (key === "oat") {
       for (let i = 0; i < 5; i += 1) {
-        const ox = x + 14 + i * 8;
-        const oy = y + 26 + (i % 2) * 8;
-        fillRect(ox, oy, 10, 19, "#f4e3bf");
-        fillRect(ox + 3, oy + 3, 4, 13, "#fff7da");
-        strokeRect(ox, oy, 10, 19, "#a47b42", 2);
+        const ox = x + 16 + i * 8;
+        const oy = y + 27 + (i % 2) * 7;
+        fillRect(ox, oy, 9, 21, "#f4e3bf");
+        fillRect(ox + 3, oy + 3, 4, 14, "#fff7da");
+        strokeRect(ox, oy, 9, 21, "#a47b42", 2);
+        strokePerspectiveLine(ox + 4, oy + 19, x + 34, y + 57, "#a47b42", 2);
       }
-      fillRect(x + 16, y + 52, 36, 5, "#a47b42");
+      fillRect(x + 17, y + 52, 36, 6, "#a47b42");
+      drawCircle(x + 35, y + 55, 12, "#fff7da");
     } else if (key === "matcha") {
-      fillRect(x + 16, y + 39, 38, 16, "#dff0d5");
-      fillRect(x + 20, y + 31, 30, 12, "#83c46a");
-      fillRect(x + 25, y + 25, 4, 20, "#4f9a4b");
-      fillRect(x + 34, y + 23, 4, 22, "#4f9a4b");
-      fillRect(x + 43, y + 25, 4, 20, "#4f9a4b");
-      strokeRect(x + 16, y + 39, 38, 16, "#4f9a4b", 3);
-      strokeRect(x + 20, y + 31, 30, 12, COLORS.ink, 2);
+      drawCircle(x + 35, y + 48, 21, "#dff0d5");
+      fillRect(x + 16, y + 40, 38, 16, "#dff0d5");
+      fillRect(x + 21, y + 32, 29, 12, "#83c46a");
+      for (let i = 0; i < 4; i += 1) {
+        fillRect(x + 24 + i * 7, y + 23 + (i % 2) * 3, 4, 24, "#4f9a4b");
+      }
+      strokeCircle(x + 35, y + 48, 21, "#4f9a4b", 3);
+      strokeRect(x + 21, y + 32, 29, 12, COLORS.ink, 2);
     } else if (key === "cocoa") {
-      fillRect(x + 17, y + 24, 34, 32, "#7a4b35");
+      drawQuad(x + 18, y + 21, x + 51, y + 25, x + 48, y + 60, x + 15, y + 56, "#7a4b35");
       for (let row = 0; row < 2; row += 1) {
         for (let col = 0; col < 3; col += 1) {
-          fillRect(x + 21 + col * 9, y + 29 + row * 12, 7, 9, "#9b644a");
-          strokeRect(x + 21 + col * 9, y + 29 + row * 12, 7, 9, "#4f3025", 1);
+          fillRect(x + 21 + col * 9, y + 30 + row * 13, 7, 10, "#9b644a");
+          strokeRect(x + 21 + col * 9, y + 30 + row * 13, 7, 10, "#4f3025", 1);
         }
       }
-      fillRect(x + 13, y + 18, 40, 7, "#efd5c6");
-      strokeRect(x + 17, y + 24, 34, 32, COLORS.ink, 3);
+      fillRect(x + 13, y + 16, 41, 7, "#efd5c6");
+      strokeRect(x + 17, y + 24, 34, 34, COLORS.ink, 3);
     } else if (key === "salt") {
-      fillRect(x + 20, y + 25, 28, 32, "#d9f0fb");
-      fillRect(x + 23, y + 17, 22, 10, "#ffffff");
-      fillRect(x + 24, y + 34, 20, 8, "#ffffff");
-      strokeRect(x + 20, y + 25, 28, 32, "#5aa4c8", 3);
-      strokeRect(x + 23, y + 17, 22, 10, COLORS.ink, 2);
-      for (let i = 0; i < 7; i += 1) fillRect(x + 14 + i * 7, y + 54 + (i % 2) * 3, 4, 4, i % 2 ? "#5aa4c8" : "#ffffff");
+      fillRect(x + 19, y + 24, 30, 34, "#d9f0fb");
+      fillRect(x + 22, y + 15, 24, 10, "#ffffff");
+      fillRect(x + 24, y + 34, 20, 9, "#ffffff");
+      strokeRect(x + 19, y + 24, 30, 34, "#5aa4c8", 3);
+      strokeRect(x + 22, y + 15, 24, 10, COLORS.ink, 2);
+      for (let i = 0; i < 8; i += 1) fillRect(x + 12 + i * 7, y + 55 + (i % 2) * 3, 4, 4, i % 2 ? "#5aa4c8" : "#ffffff");
     } else if (key === "crunch") {
-      for (let i = 0; i < 7; i += 1) {
+      fillRect(x + 17, y + 47, 37, 10, "#fff8c6");
+      for (let i = 0; i < 8; i += 1) {
         const cx = x + 13 + (i % 4) * 11;
         const cy = y + 26 + Math.floor(i / 4) * 15;
-        fillRect(cx, cy, 10 + (i % 2) * 3, 9 + (i % 3), i % 2 ? COLORS.yellow : "#d48c32");
-        strokeRect(cx, cy, 10 + (i % 2) * 3, 9 + (i % 3), COLORS.ink, 1);
+        fillRect(cx, cy, 11 + (i % 2) * 4, 10 + (i % 3), i % 2 ? COLORS.yellow : "#d48c32");
+        strokeRect(cx, cy, 11 + (i % 2) * 4, 10 + (i % 3), COLORS.ink, 1);
       }
-      fillRect(x + 23, y + 50, 23, 6, "#fff8c6");
     } else {
       drawCircle(x + 34, y + 38, 17, def.color);
       strokeCircle(x + 34, y + 38, 17, COLORS.ink, 2);
     }
+    ctx.restore();
   }
 
   function drawStation(entity) {
@@ -5374,13 +7325,13 @@
     const y = Math.round(entity.y - 72 + Math.sin(entity.anim * 8) * 4);
     ctx.save();
     ctx.translate(x + 36, y + 36);
-    ctx.scale(0.94, 0.94);
+    ctx.scale(1.0, 1.0);
     ctx.translate(-(x + 36), -(y + 36));
     if (!entity.done) drawHazardAlert(entity, x, y);
     drawPixelShadow(x + 10, entity.y - 9, entity.w + 10);
     const pulse = 0.55 + Math.sin(entity.anim * 10) * 0.22;
     fillRect(x - 8, y - 3, 88, 82, `rgba(216,36,60,${0.12 + pulse * 0.08})`);
-    drawNegativeElement3D(entity, x + 3, y + 7, 66, 60);
+    drawNegativeElement3D(entity, x + 1, y + 6, 70, 62);
     drawHazardSymbol(entity, x, y);
     drawText("避開", x + 36, y - 8, 15, entity.color, "center");
     drawText(entity.short, x + 36, y + 75, 15, entity.color, "center");
@@ -5540,19 +7491,28 @@
 
   function drawHazardSymbol(entity, x, y) {
     const c = entity.color;
+    ctx.save();
+    ctx.translate(x + 36, y + 39);
+    ctx.scale(1.16, 1.16);
+    ctx.translate(-(x + 36), -(y + 39));
     fillRect(x + 16, y + 18, 40, 7, c);
     fillRect(x + 16, y + 49, 40, 7, c);
     if (entity.key === "flavor") {
-      fillRect(x + 27, y + 24, 18, 29, "#ffffff");
-      fillRect(x + 30, y + 18, 12, 8, c);
-      fillRect(x + 31, y + 34, 12, 7, c);
-      strokeRect(x + 27, y + 24, 18, 29, c, 2);
+      drawQuad(x + 24, y + 21, x + 43, y + 18, x + 47, y + 52, x + 27, y + 56, "#ffffff");
+      fillRect(x + 29, y + 16, 13, 8, c);
+      fillRect(x + 32, y + 31, 12, 8, c);
+      strokePerspectiveLine(x + 45, y + 24, x + 56, y + 18, c, 3);
+      strokePerspectiveLine(x + 46, y + 31, x + 58, y + 31, c, 3);
+      strokeRect(x + 26, y + 23, 20, 30, c, 2);
     } else if (entity.key === "coloring") {
-      fillRect(x + 29, y + 21, 14, 12, "#ffffff");
-      fillRect(x + 32, y + 32, 8, 18, c);
-      fillRect(x + 27, y + 45, 18, 8, c);
-      strokeRect(x + 29, y + 21, 14, 12, c, 2);
+      drawCircle(x + 36, y + 39, 18, "#ffffff");
+      drawQuad(x + 36, y + 17, x + 48, y + 37, x + 36, y + 57, x + 24, y + 37, c);
+      drawCircle(x + 36, y + 40, 8, "#ffffff");
+      fillRect(x + 31, y + 17, 10, 9, "#ffffff");
+      strokeCircle(x + 36, y + 39, 18, c, 2);
     } else if (entity.key === "dirty") {
+      fillRect(x + 22, y + 24, 29, 33, "#fff1cf");
+      strokeRect(x + 22, y + 24, 29, 33, c, 3);
       for (let i = 0; i < 6; i += 1) {
         const dx = x + 18 + (i % 3) * 14;
         const dy = y + 28 + Math.floor(i / 3) * 12;
@@ -5560,30 +7520,37 @@
         fillRect(dx - 2, dy + 3, 13, 3, i % 2 ? "#6f1020" : c);
       }
     } else if (entity.key === "sugar") {
-      fillRect(x + 21, y + 30, 17, 17, "#ffffff");
-      fillRect(x + 36, y + 25, 17, 17, "#ffd9df");
-      strokeRect(x + 21, y + 30, 17, 17, c, 2);
-      strokeRect(x + 36, y + 25, 17, 17, c, 2);
+      drawQuad(x + 18, y + 33, x + 35, y + 27, x + 45, y + 39, x + 27, y + 47, "#ffffff");
+      drawQuad(x + 35, y + 27, x + 53, y + 31, x + 61, y + 43, x + 45, y + 39, "#ffd9df");
+      drawQuad(x + 27, y + 47, x + 45, y + 39, x + 61, y + 43, x + 42, y + 55, "#ffe8ed");
+      strokePerspectiveLine(x + 18, y + 33, x + 35, y + 27, c, 2);
+      strokePerspectiveLine(x + 35, y + 27, x + 53, y + 31, c, 2);
+      strokePerspectiveLine(x + 42, y + 55, x + 61, y + 43, c, 2);
     } else if (entity.key === "sour") {
-      fillRect(x + 18, y + 35, 36, 9, c);
-      fillRect(x + 22, y + 28, 7, 7, c);
-      fillRect(x + 36, y + 25, 7, 7, c);
-      fillRect(x + 47, y + 32, 7, 7, c);
-      drawText("酸", x + 36, y + 45, 18, "#ffffff", "center");
+      drawCircle(x + 36, y + 40, 20, "#fff6d8");
+      drawCircle(x + 28, y + 34, 5, c);
+      drawCircle(x + 43, y + 31, 5, c);
+      drawCircle(x + 49, y + 44, 5, c);
+      drawText("酸", x + 36, y + 47, 22, c, "center");
+      strokeCircle(x + 36, y + 40, 20, c, 3);
     } else if (entity.key === "ice") {
-      fillRect(x + 25, y + 25, 22, 28, "#ffffff");
-      strokeRect(x + 25, y + 25, 22, 28, c, 3);
-      fillRect(x + 34, y + 25, 4, 28, c);
-      fillRect(x + 28, y + 36, 16, 4, c);
+      drawCircle(x + 36, y + 42, 21, "#ffffff");
+      drawCircle(x + 29, y + 35, 13, "#fff4dc");
+      drawCircle(x + 44, y + 34, 12, "#fff4dc");
+      fillRect(x + 21, y + 45, 31, 12, "#ffd9df");
+      strokeCircle(x + 36, y + 42, 21, c, 3);
+      fillRect(x + 34, y + 22, 4, 38, c);
     } else if (entity.key === "sticky") {
-      fillRect(x + 21, y + 27, 30, 20, c);
-      fillRect(x + 24, y + 46, 6, 10, c);
-      fillRect(x + 36, y + 46, 6, 12, c);
-      fillRect(x + 48, y + 46, 5, 8, c);
-      drawText("黏", x + 36, y + 42, 14, "#ffffff", "center");
+      fillRect(x + 18, y + 24, 36, 20, c);
+      fillRect(x + 23, y + 44, 7, 18, c);
+      fillRect(x + 36, y + 44, 7, 21, c);
+      fillRect(x + 49, y + 44, 6, 15, c);
+      fillRect(x + 23, y + 18, 25, 9, "#ffffff");
+      drawText("黏", x + 36, y + 40, 18, "#ffffff", "center");
     } else {
       drawText("!", x + 36, y + 39, 30, c, "center");
     }
+    ctx.restore();
   }
 
   function drawFeatureChip(entity, cx, y) {
@@ -6170,6 +8137,73 @@
     }
   }
 
+  function drawBrandBurst(burst) {
+    const alpha = clamp(burst.life / burst.maxLife, 0, 1);
+    const progress = 1 - alpha;
+    const easeOut = 1 - (1 - progress) * (1 - progress);
+    const pulse = 0.5 + Math.sin(state.time * 14 + burst.angle) * 0.5;
+    const power = burst.power || 1;
+    const scale = 0.82 + easeOut * 0.18 + pulse * 0.04 + Math.min(0.14, Math.max(0, power - 1) * 0.08);
+    const x = burst.x;
+    const y = burst.y - easeOut * 18;
+    const color = burst.color || COLORS.aquaDeep;
+    const cardW = clamp(160 + (burst.label || "").length * 9, 188, isMobileLayout() ? 238 : 310) * scale;
+    const cardH = (isMobileLayout() ? 76 : 88) * scale;
+    const logoW = Math.min(cardW * 0.56, 148 * scale);
+    const logoH = logoW * 0.42;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    ctx.rotate(Math.sin(burst.angle + state.time * 2) * 0.025);
+
+    const glow = 20 + pulse * 12;
+    ctx.globalAlpha = alpha * 0.22;
+    fillRect(-cardW / 2 - glow, -cardH / 2 - glow * 0.6, cardW + glow * 2, cardH + glow * 1.2, color);
+    ctx.globalAlpha = alpha * 0.92;
+    fillRect(-cardW / 2 + 6 * scale, -cardH / 2 + 7 * scale, cardW, cardH, "rgba(36,50,58,.18)");
+    fillRect(-cardW / 2, -cardH / 2, cardW, cardH, "rgba(255,255,255,.94)");
+    strokeRect(-cardW / 2, -cardH / 2, cardW, cardH, COLORS.ink, Math.max(2, 4 * scale));
+    strokeRect(-cardW / 2 + 6 * scale, -cardH / 2 + 6 * scale, cardW - 12 * scale, cardH - 12 * scale, color, Math.max(2, 3 * scale));
+
+    ctx.globalAlpha = alpha * (0.55 + pulse * 0.35);
+    for (let i = 0; i < 10; i += 1) {
+      const a = burst.angle + state.time * (burst.style === "rush" ? 3.2 : 1.9) + i * Math.PI * 2 / 10;
+      const rX = cardW * (0.46 + (i % 2) * 0.08);
+      const rY = cardH * (0.48 + (i % 3) * 0.06);
+      fillRect(Math.cos(a) * rX - 4 * scale, Math.sin(a) * rY - 4 * scale, 8 * scale, 8 * scale, i % 2 ? "#ffffff" : color);
+    }
+
+    ctx.globalAlpha = alpha;
+    drawBrandLogo(-logoW / 2, -cardH * 0.32, logoW, logoH, color);
+    drawText(burst.label || "純淨達成", 0, cardH * 0.18, Math.max(16, 22 * scale), color, "center");
+    drawText(burst.sub || "純粹優格多一點", 0, cardH * 0.38, Math.max(9, 12 * scale), COLORS.ink, "center");
+
+    if (burst.style === "rush") {
+      ctx.globalAlpha = alpha * 0.78;
+      for (let i = 0; i < 5; i += 1) {
+        fillRect(-cardW * 0.56 - i * 12 * scale, -cardH * 0.12 + i * 9 * scale, cardW * 0.36, 5 * scale, i % 2 ? "#ffffff" : color);
+        fillRect(cardW * 0.2 + i * 14 * scale, -cardH * 0.26 + i * 8 * scale, cardW * 0.28, 5 * scale, i % 2 ? COLORS.yellow : color);
+      }
+    } else if (burst.style === "shield") {
+      ctx.globalAlpha = alpha * 0.6;
+      strokeRect(-cardW * 0.56, -cardH * 0.62, cardW * 1.12, cardH * 1.24, COLORS.leaf, Math.max(2, 4 * scale));
+    }
+    ctx.restore();
+  }
+
+  function drawBrandLogo(x, y, w, h, color) {
+    if (logo.complete && logo.naturalWidth > 0) {
+      ctx.drawImage(logo, x, y, w, h);
+      return;
+    }
+    drawCircle(x + h * 0.55, y + h * 0.52, h * 0.42, COLORS.aqua);
+    drawCircle(x + h * 0.38, y + h * 0.62, h * 0.09, "#ffffff");
+    drawCircle(x + h * 0.72, y + h * 0.62, h * 0.09, "#ffffff");
+    fillRect(x + h * 0.47, y + h * 0.78, h * 0.32, h * 0.06, "#ffffff");
+    drawText("純粹好食", x + h * 1.12, y + h * 0.65, h * 0.38, color, "left");
+  }
+
   function drawParticle(particle) {
     const alpha = Math.max(0, particle.life / particle.maxLife);
     ctx.save();
@@ -6731,18 +8765,25 @@
 
   function canEntityCollideWithPlayer(entity) {
     if (!Number.isFinite(entity.lane)) return true;
-    if (state.magnetTime > 0 && entity.type !== "hazard") return true;
-    const currentLane = entity.type === "hazard" ? playerEffectiveLane() : nearestLane(player.x);
     if (isLaneGapHazard(entity)) return true;
+    const currentLane = entity.type === "hazard" ? playerEffectiveLane() : player.lane;
+    if (entity.lane !== (currentLane ?? player.lane)) {
+      if (state.magnetTime > 0 && entity.type !== "hazard") {
+        const laneCenter = roadLaneCenter(entity.lane, entity.y);
+        const itemCenter = Number.isFinite(entity.x) ? entity.x + entity.w / 2 : laneCenter;
+        return Math.abs(itemCenter - player.x) <= Math.max(16, 22 * (entity.depthScale || 1));
+      }
+      return false;
+    }
     return entity.lane === (currentLane ?? player.lane);
   }
 
   function playerRect() {
-    const arcadeReach = (state.width < 620 ? 8 : 0) + Math.min(12, Math.floor(state.combo / 4) * 2);
+    const arcadeReach = (state.width < 620 ? 3 : 0) + Math.min(5, Math.floor(state.combo / 10) * 1.2);
     const weightScale = getPlayerWeightScale();
-    const weightReach = Math.max(0, (weightScale - 1) * 18);
+    const weightReach = Math.max(0, (weightScale - 1) * 10);
     const width = 46 + arcadeReach * 2 + weightReach;
-    const height = 78 + Math.max(0, (weightScale - 1) * 18);
+    const height = 76 + Math.max(0, (weightScale - 1) * 12);
     return { x: player.x - width / 2, y: player.y - 76, w: width, h: height };
   }
 
@@ -6755,9 +8796,12 @@
       const height = (entity.h + 42) * scale;
       return { x: road.centerX - width / 2, y: entity.y - height + 10, w: width, h: height };
     }
-    const width = (entity.w + 10) * scale;
-    const height = (entity.h + 34) * scale;
-    const cx = entity.x + entity.w / 2;
+    const typeScale = entity.type === "hazard" ? 0.72 : entity.type === "station" ? 0.64 : entity.type === "bonus" ? 0.62 : 0.54;
+    const heightScale = entity.type === "hazard" ? 0.82 : entity.type === "station" ? 0.74 : 0.66;
+    const width = entity.w * typeScale * scale;
+    const height = (entity.h * heightScale + 8) * scale;
+    const laneCx = Number.isFinite(entity.lane) ? roadLaneCenter(entity.lane, entity.y) : entity.x + entity.w / 2;
+    const cx = state.magnetTime > 0 && entity.type !== "hazard" ? entity.x + entity.w / 2 : laneCx;
     return { x: cx - width / 2, y: entity.y - height + 10, w: width, h: height };
   }
 
@@ -6773,21 +8817,24 @@
       .join("、");
   }
 
-  function renderNeedChips(hint, limit = 3) {
-    const items = hint.missing.length
-      ? hint.missing
-      : Object.entries(hint.recipe.needs).slice(0, limit).map(([key, count]) => ({ key, count, ready: true }));
+  function renderNeedChips(hint) {
+    const items = (hint.needs || []).slice().sort((a, b) => {
+      if (a.ready !== b.ready) return a.ready ? 1 : -1;
+      if (a.missing !== b.missing) return b.missing - a.missing;
+      return laneForKey(a.key) - laneForKey(b.key);
+    });
     return items
-      .slice(0, limit)
       .map((item) => {
         const def = TYPES[item.key] || {};
         const label = def.label || item.key;
         const short = def.short || label.slice(0, 1);
         const color = def.color || hint.recipe.color;
-        const countText = item.count > 1 ? `x${item.count}` : "";
+        const countText = item.missing > 1 ? `x${item.missing}` : "";
+        const statusText = item.ready ? "✓" : countText || "缺";
         return `
-          <span class="recipe-need-chip ${item.ready ? "is-ready" : ""}">
+          <span class="recipe-need-chip ${item.ready ? "is-ready" : "is-missing"}" aria-label="${escapeHtml(label)}${item.ready ? "已收集" : `缺 ${item.missing}`}">
             <span class="recipe-need-icon" style="--need-color:${escapeHtml(color)}">${escapeHtml(short)}</span>
+            <span class="recipe-need-status">${escapeHtml(statusText)}</span>
             <span class="recipe-need-text">${escapeHtml(label)}${escapeHtml(countText)}</span>
           </span>
         `;
@@ -6812,7 +8859,7 @@
           <span>${escapeHtml(readyText)}</span>
         </div>
         <div class="recipe-progress" aria-hidden="true"><span style="width:${Math.round(progress * 100)}%"></span></div>
-        <div class="recipe-need-list">${renderNeedChips(hint, hint.ready ? 2 : 3)}</div>
+        <div class="recipe-need-list">${renderNeedChips(hint)}</div>
       </div>
     `;
   }
@@ -6886,6 +8933,8 @@
     if (state.phase === "over") return;
     state.phase = "over";
     state.paused = false;
+    state.pauseLandmark = null;
+    hidePauseDomOverlay();
     updatePauseUi();
     stopBgm(0.28);
     controls.left = false;
@@ -7056,15 +9105,20 @@
     resetPointerControl();
     updatePauseUi();
     if (state.paused) {
+      state.pauseLandmark = pickPauseLandmark(state.pauseLandmark?.model);
+      renderPauseDomOverlay();
       stopBgm(0.12);
       showToast("已暫停");
     } else {
+      state.pauseLandmark = null;
+      hidePauseDomOverlay();
       showToast("繼續遊戲");
       startBgm(false);
     }
   }
 
   function updatePauseUi() {
+    dom.root?.classList.toggle("is-game-paused", state.paused && state.phase === "playing");
     if (!dom.pauseButton || !dom.pauseIcon) return;
     dom.pauseIcon.textContent = state.paused ? "▶" : "Ⅱ";
     dom.pauseButton.setAttribute("aria-label", state.paused ? "繼續遊戲" : "暫停遊戲");

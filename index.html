@@ -13,7 +13,7 @@
   </head>
   <body>
     <main class="game-root" aria-label="純粹好食純淨優格快線">
-      <canvas id="sceneCanvas" aria-label="像素風三路優格收集道路遊戲"></canvas>
+      <canvas id="sceneCanvas" aria-label="像素風優格收集道路遊戲"></canvas>
 
       <header class="topbar" aria-label="遊戲狀態">
         <div class="brand-lockup">
@@ -105,12 +105,51 @@
 
       <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+      <section class="pause-overlay hidden" id="pauseOverlay" aria-label="暫停與臺南地標介紹">
+        <div class="pause-dialog" role="dialog" aria-modal="true" aria-labelledby="pauseLandmarkTitle">
+          <div class="pause-dialog-head">
+            <div class="pause-mark" aria-hidden="true"><span></span><span></span></div>
+            <div>
+              <p class="pause-eyebrow">遊戲暫停</p>
+              <h2 id="pauseLandmarkTitle">臺南地標小檔案</h2>
+            </div>
+            <button class="pause-close" id="pauseContinueButton" type="button" aria-label="繼續遊戲">▶</button>
+          </div>
+
+          <div class="pause-landmark-grid">
+            <article class="pause-landmark-card">
+              <strong>遊戲樣貌</strong>
+              <div class="pause-visual" id="pauseGameVisual" aria-hidden="true"></div>
+              <p id="pauseGameCaption">跑道旁的像素建模。</p>
+            </article>
+            <article class="pause-landmark-card">
+              <strong>真實樣貌</strong>
+              <div class="pause-visual" id="pauseRealVisual" aria-hidden="true"></div>
+              <p id="pauseRealCaption">依真實地標特徵整理。</p>
+            </article>
+          </div>
+
+          <div class="pause-copy-block">
+            <p id="pauseOverview">暫停一下，看看臺南路邊的地標。</p>
+            <p id="pauseRealLook">真實特色會依地標更新。</p>
+            <a id="pauseSourceLink" href="https://www.twtainan.net/" target="_blank" rel="noopener noreferrer">資料來源</a>
+          </div>
+        </div>
+      </section>
+
       <section class="overlay" id="startOverlay" aria-label="開始遊戲">
         <div class="dialog">
           <img class="dialog-logo" src="./assets/ugoodays-logo.png" alt="純粹好食" />
           <p class="eyebrow">純粹優格多一點 健康多一點!</p>
           <h1>多一點健康優格快線</h1>
-          <p class="dialog-copy">在臺南道路兩側街景中三路前進：左滑右滑換線，主動吃到鮮奶、益菌與工序道具，避開紅色香精、色素、額外糖與添加物，做出純粹好食在售優格。官方純粹優格不增重，連吃還能減重；紅色添加物會增重，70kg 就失敗。</p>
+          <p class="dialog-copy">沿著臺南道路前進：左滑右滑換線，主動吃到鮮奶、益菌與工序道具，避開紅色香精、色素、額外糖與添加物，做出純粹好食在售優格。官方純粹優格不增重，連吃還能減重；紅色添加物會增重，70kg 就失敗。</p>
+          <details class="daily-note">
+            <summary>
+              <span>今天的小紙條</span>
+              <strong>點一下看看</strong>
+            </summary>
+            <p>要快快恢復健康，不要感冒～</p>
+          </details>
           <label class="name-field">
             <span>玩家名稱</span>
             <input id="nameInput" maxlength="16" autocomplete="nickname" placeholder="輸入暱稱" />
