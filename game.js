@@ -3943,36 +3943,107 @@
     drawSeasonDetails(w, h, road, mood, t);
     drawCuteBrandDecals(w, road.horizonY - 90, t);
     drawPseudoRoad(w, h, t);
-    drawPauseSnapshotRoadsideLandmark(landmark, road, w);
+    drawRoadsideGreenBelts(road, 0.18, {});
     drawMoodOverlay(w, h, mood);
     drawWeatherEffects(w, h, mood, weather, t);
     drawConveyor(w, h, t);
+    drawPauseSnapshotRoadsideLandmark(landmark, road, w, h);
   }
 
-  function drawPauseSnapshotRoadsideLandmark(landmark, road, w) {
+  function drawPauseSnapshotRoadsideLandmark(landmark, road, w, h) {
     const modelKey = landmark.model || landmark.kind || landmark.name || "";
     const side = modelKey.length % 2 === 0 ? -1 : 1;
-    const depth = 0.46;
-    const eased = depth ** 1.12;
-    const y = road.horizonY + (road.nearY - road.horizonY) * eased;
-    const roadW = roadWidthAtDepth(Math.min(eased, 1.18));
-    const roadEdge = road.centerX + side * roadW * 0.5;
-    const scale = ((isMobileLayout() ? 0.42 : 0.54) + eased * (isMobileLayout() ? 0.98 : 1.34)) * 1.06;
     const modelSize = getRoadsideModelSize(landmark);
+    const scenicModels = new Set(["sicaoTunnel", "anpingTreeHouse", "yuguangIsland", "jingzaijiaoSaltFields", "hutoupi", "bigFish", "beimenCrystalChurch"]);
+    const maxW = w * (scenicModels.has(modelKey) ? 0.42 : 0.36);
+    const maxH = h * (landmark.kind === "street" || landmark.kind === "market" ? 0.48 : 0.64);
+    const scale = Math.min(maxW / Math.max(1, modelSize.w), maxH / Math.max(1, modelSize.h), scenicModels.has(modelKey) ? 1.78 : 1.42);
     const modelW = modelSize.w * scale;
-    const groundY = y + (landmark.kind === "flora" ? 62 : 74) * scale;
-    const sideGap = landmark.kind === "flora" ? 0 : 2 + eased * 2;
-    let x = side < 0 ? roadEdge - sideGap - modelW : roadEdge + sideGap;
-    x = clamp(x, 10, Math.max(10, w - modelW - 10));
+    const groundY = h - 48;
+    let x = side < 0 ? 30 : w - modelW - 30;
+    x = clamp(x, 24, Math.max(24, w - modelW - 24));
+    const roadEdge = side < 0 ? x + modelW + 4 * scale : x - 4 * scale;
 
-    drawRoadsideGreenBelts(road, 0.18, {
-      "-1": side < 0 ? [depth] : [],
-      "1": side > 0 ? [depth] : [],
-    });
     ctx.save();
     ctx.globalAlpha *= 0.98;
-    drawRoadsideModel(landmark, x, groundY, scale, side, 17, roadEdge);
+    drawQuad(
+      x - 12 * scale,
+      groundY + 8 * scale,
+      x + modelW + 12 * scale,
+      groundY + 8 * scale,
+      x + modelW + side * 30 * scale,
+      groundY + 26 * scale,
+      x + side * 30 * scale,
+      groundY + 26 * scale,
+      "rgba(36,50,58,.16)"
+    );
+    if (!drawPauseSnapshotSpecialLandmark(landmark, x, groundY, scale, side, roadEdge)) {
+      drawRoadsideModel(landmark, x, groundY, scale, side, 17, roadEdge);
+    }
+    drawPauseSnapshotFocusBadge(landmark, x, groundY, modelW, scale);
     ctx.restore();
+  }
+
+  function drawPauseSnapshotSpecialLandmark(landmark, x, groundY, scale, side, roadEdge) {
+    void roadEdge;
+    const model = landmark.model || landmark.kind;
+    const accent = landmark.accent || COLORS.aquaDeep;
+    const size = getRoadsideModelSize(landmark);
+    const w = size.w * scale;
+
+    if (model === "sicaoTunnel" || model === "anpingTreeHouse") {
+      const water = model === "sicaoTunnel";
+      drawQuad(x + 4 * scale, groundY - 34 * scale, x + w - 4 * scale, groundY - 34 * scale, x + w + side * 18 * scale, groundY + 6 * scale, x + side * 18 * scale, groundY + 6 * scale, water ? "#8fcfe0" : "#d8c1a2");
+      if (water) {
+        for (let i = 0; i < 5; i += 1) {
+          const wx = x + (20 + i * 31) * scale;
+          fillRect(wx, groundY - 22 * scale + (i % 2) * 4 * scale, 24 * scale, 4 * scale, "rgba(255,255,255,.52)");
+        }
+      } else {
+        fillRect(x + 42 * scale, groundY - 70 * scale, w - 84 * scale, 46 * scale, "#d8c1a2");
+        drawBrickPattern(x + 42 * scale, groundY - 70 * scale, w - 84 * scale, 46 * scale, "#8f5f42");
+      }
+      for (let i = 0; i < 7; i += 1) {
+        const ratio = i / 6;
+        const tx = x + (16 + ratio * (size.w - 32)) * scale;
+        const crownY = groundY - (86 + Math.sin(ratio * Math.PI) * 36) * scale;
+        const treeScale = scale * (0.86 + Math.sin(ratio * Math.PI) * 0.24);
+        fillRect(tx - 5 * treeScale, crownY + 24 * treeScale, 10 * treeScale, groundY - crownY - 18 * treeScale, "#5f7a45");
+        drawCircle(tx - 12 * treeScale, crownY, 22 * treeScale, "#4a9f72");
+        drawCircle(tx + 9 * treeScale, crownY - 9 * treeScale, 24 * treeScale, "#76b96c");
+        drawCircle(tx + side * 5 * treeScale, crownY + 12 * treeScale, 18 * treeScale, "#8ac277");
+      }
+      strokePerspectiveLine(x + 34 * scale, groundY - 95 * scale, x + w - 34 * scale, groundY - 98 * scale, "rgba(101,168,95,.72)", Math.max(2, 4 * scale));
+      drawRoadsideSign(landmark, x + w * 0.14, groundY - 116 * scale, w * 0.72, scale * 0.72);
+      return true;
+    }
+
+    if (model === "yuguangIsland") {
+      drawQuad(x + 4 * scale, groundY - 44 * scale, x + w - 4 * scale, groundY - 44 * scale, x + w + side * 14 * scale, groundY - 8 * scale, x + side * 14 * scale, groundY - 8 * scale, "#8fcfe0");
+      drawQuad(x + 10 * scale, groundY - 24 * scale, x + w - 6 * scale, groundY - 24 * scale, x + w + side * 20 * scale, groundY + 4 * scale, x + side * 20 * scale, groundY + 4 * scale, "#f2d4a8");
+      for (let i = 0; i < 4; i += 1) fillRect(x + (18 + i * 36) * scale, groundY - (38 + (i % 2) * 5) * scale, 24 * scale, 5 * scale, "#dff6ff");
+      drawCircle(x + 36 * scale, groundY - 76 * scale, 19 * scale, "#f4d16f");
+      fillRect(x + w * 0.66, groundY - 99 * scale, 17 * scale, 58 * scale, "#f7fdff");
+      fillRect(x + w * 0.66 - 6 * scale, groundY - 107 * scale, 29 * scale, 9 * scale, "#d8484f");
+      fillRect(x + w * 0.66 + 2 * scale, groundY - 77 * scale, 14 * scale, 9 * scale, "#d8484f");
+      drawCircle(x + w * 0.82, groundY - 33 * scale, 17 * scale, "#7aa15f");
+      drawCircle(x + w * 0.91, groundY - 39 * scale, 15 * scale, "#7aa15f");
+      drawRoadsideSign(landmark, x + w * 0.12, groundY - 106 * scale, w * 0.5, scale * 0.72);
+      return true;
+    }
+
+    return false;
+  }
+
+  function drawPauseSnapshotFocusBadge(landmark, x, groundY, modelW, scale) {
+    const badgeW = Math.min(modelW * 0.72, Math.max(92 * scale, landmark.name.length * 12 * scale));
+    const badgeH = 24 * scale;
+    const badgeX = x + modelW / 2 - badgeW / 2;
+    const badgeY = groundY + 9 * scale;
+    fillRect(badgeX + 3 * scale, badgeY + 3 * scale, badgeW, badgeH, "rgba(36,50,58,.14)");
+    fillRect(badgeX, badgeY, badgeW, badgeH, "rgba(255,255,255,.94)");
+    strokeRect(badgeX, badgeY, badgeW, badgeH, landmark.accent || COLORS.aquaDeep, Math.max(1, 2 * scale));
+    drawText(landmark.name, badgeX + badgeW / 2, badgeY + badgeH * 0.66, Math.max(9, 13 * scale), landmark.accent || COLORS.aquaDeep, "center");
   }
 
   function drawPauseLandmarkFeature(landmark, x, y, w, h, compact) {
