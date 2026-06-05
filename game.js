@@ -3923,64 +3923,197 @@
   function drawPauseGameLandmarkScene(landmark, w, h, t) {
     const mood = getWorldMood(t);
     const weather = getWeatherVisual();
+    const accent = landmark.accent || COLORS.aquaDeep;
     fillRect(0, 0, w, h, mood.skyBase);
     fillRect(0, 0, w, h * 0.42, mood.skyTop);
     drawDayNightSky(w, h, mood, t);
     drawWeatherSky(w, h, mood, weather, t);
 
     ctx.save();
-    ctx.globalAlpha = (1 - mood.night * 0.5) * (1 - getWeatherCloudAmount(weather) * 0.26);
-    for (let i = 0; i < 5; i += 1) {
-      const x = ((i * 220 - t * 14) % (w + 260)) - 150;
-      drawCloud(x, 54 + (i % 3) * 36 + Math.sin(t * 0.25 + i) * 4);
+    ctx.globalAlpha = (1 - mood.night * 0.5) * (1 - getWeatherCloudAmount(weather) * 0.32);
+    for (let i = 0; i < 4; i += 1) {
+      const x = ((i * 235 - t * 10) % (w + 260)) - 140;
+      drawCloud(x, 40 + (i % 2) * 34 + Math.sin(t * 0.22 + i) * 3);
     }
     ctx.restore();
 
-    const road = getRoadMetrics();
-    fillRect(0, road.horizonY - 42, w, h - road.horizonY + 42, mood.ground);
-    fillRect(0, road.horizonY - 42, w, 18, mood.seasonWash);
-    fillRect(0, road.horizonY - 38, w, 8, `rgba(38,138,161,${0.16 + mood.night * 0.12})`);
-    drawSeasonDetails(w, h, road, mood, t);
-    drawCuteBrandDecals(w, road.horizonY - 90, t);
-    drawPseudoRoad(w, h, t);
-    drawRoadsideGreenBelts(road, 0.18, {});
-    drawMoodOverlay(w, h, mood);
+    const horizonY = h * 0.45;
+    fillRect(0, horizonY - 18, w, h - horizonY + 18, mixColor(mood.ground, "#fff4dc", 0.2));
+    fillRect(0, horizonY - 18, w, 16, mood.seasonWash);
+    fillRect(0, horizonY - 12, w, 5, `rgba(38,138,161,${0.18 + mood.night * 0.1})`);
+    ctx.save();
+    ctx.globalAlpha = 0.18;
+    drawCuteBrandDecals(w, horizonY - 62, t);
+    ctx.restore();
+
+    ctx.save();
+    ctx.globalAlpha = 0.22;
+    drawPseudoRoad(w, h, t * 0.35);
+    ctx.restore();
+
+    drawPauseSnapshotPhotoFrame(landmark, w, h, accent, mood);
     drawWeatherEffects(w, h, mood, weather, t);
-    drawConveyor(w, h, t);
-    drawPauseSnapshotRoadsideLandmark(landmark, road, w, h);
+    drawMoodOverlay(w, h, mood);
+    drawPauseSnapshotRoadsideLandmark(landmark, null, w, h);
   }
 
   function drawPauseSnapshotRoadsideLandmark(landmark, road, w, h) {
     const modelKey = landmark.model || landmark.kind || landmark.name || "";
-    const side = modelKey.length % 2 === 0 ? -1 : 1;
+    void road;
+    const side = 1;
     const modelSize = getRoadsideModelSize(landmark);
     const scenicModels = new Set(["sicaoTunnel", "anpingTreeHouse", "yuguangIsland", "jingzaijiaoSaltFields", "hutoupi", "bigFish", "beimenCrystalChurch"]);
-    const maxW = w * (scenicModels.has(modelKey) ? 0.42 : 0.36);
-    const maxH = h * (landmark.kind === "street" || landmark.kind === "market" ? 0.48 : 0.64);
-    const scale = Math.min(maxW / Math.max(1, modelSize.w), maxH / Math.max(1, modelSize.h), scenicModels.has(modelKey) ? 1.78 : 1.42);
+    const isFlora = landmark.kind === "flora";
+    const maxW = w * (isFlora ? 0.64 : scenicModels.has(modelKey) ? 0.7 : 0.74);
+    const maxH = h * (isFlora ? 0.74 : scenicModels.has(modelKey) ? 0.78 : 0.82);
+    const scaleCap = modelKey === "ugoodaysStore" ? 2.12 : isFlora ? 1.76 : scenicModels.has(modelKey) ? 2.04 : 1.96;
+    const scale = Math.min(maxW / Math.max(1, modelSize.w), maxH / Math.max(1, modelSize.h), scaleCap);
     const modelW = modelSize.w * scale;
-    const groundY = h - 48;
-    let x = side < 0 ? 30 : w - modelW - 30;
-    x = clamp(x, 24, Math.max(24, w - modelW - 24));
-    const roadEdge = side < 0 ? x + modelW + 4 * scale : x - 4 * scale;
+    const modelH = modelSize.h * scale;
+    const groundY = h - 38;
+    const x = clamp(w / 2 - modelW / 2, 22, Math.max(22, w - modelW - 22));
+    const roadEdge = x - 20 * scale;
 
     ctx.save();
-    ctx.globalAlpha *= 0.98;
+    ctx.beginPath();
+    ctx.rect(0, 0, w, h);
+    ctx.clip();
+    drawPauseSnapshotCloseupStage(landmark, x, groundY, modelW, modelH, scale, w, h);
     drawQuad(
-      x - 12 * scale,
-      groundY + 8 * scale,
-      x + modelW + 12 * scale,
-      groundY + 8 * scale,
-      x + modelW + side * 30 * scale,
-      groundY + 26 * scale,
-      x + side * 30 * scale,
-      groundY + 26 * scale,
-      "rgba(36,50,58,.16)"
+      x - 30 * scale,
+      groundY + 3 * scale,
+      x + modelW + 30 * scale,
+      groundY + 3 * scale,
+      x + modelW + 48 * scale,
+      groundY + 21 * scale,
+      x - 48 * scale,
+      groundY + 21 * scale,
+      "rgba(36,50,58,.2)"
     );
     if (!drawPauseSnapshotSpecialLandmark(landmark, x, groundY, scale, side, roadEdge)) {
       drawRoadsideModel(landmark, x, groundY, scale, side, 17, roadEdge);
     }
+    drawPauseSnapshotPhotoDetails(landmark, x, groundY, modelW, modelH, scale, side);
     drawPauseSnapshotFocusBadge(landmark, x, groundY, modelW, scale);
+    ctx.restore();
+  }
+
+  function drawPauseSnapshotPhotoFrame(landmark, w, h, accent, mood) {
+    const palette = getPausePhotoPalette(landmark);
+    const accentRgb = hexToRgb(accent);
+    fillRect(18, 20, w - 36, h - 42, "rgba(255,255,255,.22)");
+    strokeRect(18, 20, w - 36, h - 42, `rgba(${accentRgb.r},${accentRgb.g},${accentRgb.b},.24)`, 3);
+    fillRect(34, h - 70, w - 68, 12, "rgba(36,50,58,.11)");
+    fillRect(34, h - 82, w - 68, 8, palette.ground || mixColor(mood.ground, "#ffffff", 0.25));
+    for (let i = 0; i < 5; i += 1) {
+      const swatchW = 24 + (i % 2) * 12;
+      fillRect(42 + i * 42, h - 62 - (i % 2) * 7, swatchW, 5, i % 2 ? palette.accent : palette.facade);
+    }
+  }
+
+  function drawPauseSnapshotCloseupStage(landmark, x, groundY, modelW, modelH, scale, w, h) {
+    const palette = getPausePhotoPalette(landmark);
+    const topY = Math.max(24, groundY - modelH - 28 * scale);
+    const stagePad = 22 * scale;
+    const stageX = clamp(x - stagePad, 18, w - 40);
+    const stageW = Math.min(w - stageX - 18, modelW + stagePad * 2);
+    const stageH = Math.min(h - topY - 22, modelH + 52 * scale);
+
+    ctx.save();
+    ctx.globalAlpha *= 0.96;
+    fillRect(stageX + 8 * scale, topY + 9 * scale, stageW, stageH, "rgba(36,50,58,.12)");
+    fillRect(stageX, topY, stageW, stageH, "rgba(255,255,255,.48)");
+    strokeRect(stageX, topY, stageW, stageH, palette.accent, Math.max(2, 2.2 * scale));
+    fillRect(stageX + 8 * scale, topY + 8 * scale, stageW - 16 * scale, 10 * scale, palette.roof || palette.accent);
+    fillRect(stageX + 10 * scale, groundY - 9 * scale, stageW - 20 * scale, 12 * scale, palette.ground);
+    drawQuad(stageX + 12 * scale, groundY + 4 * scale, stageX + stageW - 12 * scale, groundY + 4 * scale, stageX + stageW - 30 * scale, groundY + 24 * scale, stageX + 30 * scale, groundY + 24 * scale, "rgba(36,50,58,.13)");
+    ctx.restore();
+  }
+
+  function getPausePhotoPalette(landmark) {
+    const model = landmark.model || landmark.kind;
+    const base = {
+      facade: landmark.color || "#f7fdff",
+      accent: landmark.accent || COLORS.aquaDeep,
+      roof: landmark.accent || COLORS.aquaDeep,
+      glass: "#dff6ff",
+      ground: "#f3e6d0",
+      shadow: "rgba(36,50,58,.2)",
+      plant: "#65a85f",
+    };
+    const palettes = {
+      ugoodaysStore: { facade: "#ffffff", accent: "#7fc3de", roof: "#ffffff", glass: "#eefcff", ground: "#e9ded0", plant: "#89b381" },
+      tainanStation: { facade: "#fff1cf", accent: "#8f3550", roof: "#8f3550", glass: "#dff6ff", ground: "#e1c7a4" },
+      shanhuaStation: { facade: "#f7fdff", accent: "#6f9fb0", roof: "#6f9fb0", ground: "#e3d2b8" },
+      nanfangMall: { facade: "#eefcff", accent: "#82c6d8", roof: "#bfeef8", glass: "#c7f3ff", ground: "#dce7e6" },
+      chihkanTower: { facade: "#fff1cf", accent: "#b44966", roof: "#8f3550", ground: "#d7a66e" },
+      mazuTemple: { facade: "#f5d4b2", accent: "#d8243c", roof: "#d8243c", ground: "#d7a66e" },
+      confuciusTemple: { facade: "#b44966", accent: "#8f3550", roof: "#8f3550", ground: "#d7a66e" },
+      chimeiMuseum: { facade: "#f7fdff", accent: "#7aa9b6", roof: "#ffffff", glass: "#dff6ff", ground: "#dfe6e6" },
+      judicialMuseum: { facade: "#e7c0a7", accent: "#7aa9b6", roof: "#ffffff", ground: "#d3b096" },
+      tainanArtMuseum: { facade: "#f3f5f0", accent: "#c9a57c", roof: "#d9c3a7", glass: "#dff6ff", ground: "#e5d7c5" },
+      hayashi: { facade: "#e9e1cf", accent: "#8a9aa1", roof: "#8f5f42", glass: "#fff6d8", ground: "#d8c8ad" },
+      tenDrum: { facade: "#9b5844", accent: "#a85f4f", roof: "#6e3b32", ground: "#d8b09b" },
+      waterworksMuseum: { facade: "#9b5844", accent: "#a85f4f", roof: "#d99b72", ground: "#d8b09b" },
+      sicaoTunnel: { facade: "#d5ead4", accent: "#65a85f", roof: "#4a9f72", glass: "#8fcfe0", ground: "#dfe9cf", plant: "#4a9f72" },
+      anpingTreeHouse: { facade: "#d8c1a2", accent: "#65a85f", roof: "#4a9f72", ground: "#c6aa8b", plant: "#4a9f72" },
+      yuguangIsland: { facade: "#f7e2bd", accent: "#f4d16f", roof: "#f4d16f", glass: "#8fcfe0", ground: "#f0cf9f" },
+      hutoupi: { facade: "#d5ead4", accent: "#4a9f72", roof: "#65a85f", glass: "#8fcfe0", ground: "#dce3c1", plant: "#4a9f72" },
+      jingzaijiaoSaltFields: { facade: "#f7e2bd", accent: "#7aa9b6", roof: "#ffffff", glass: "#bfeef8", ground: "#e3c596" },
+      qiguSaltMountain: { facade: "#ffffff", accent: "#7fc3de", roof: "#ffffff", glass: "#dff6ff", ground: "#e9e3d4" },
+      beimenCrystalChurch: { facade: "#ffffff", accent: "#7fc3de", roof: "#bfeef8", glass: "#bfeef8", ground: "#dfe8eb" },
+      bigFish: { facade: "#e7f7fa", accent: "#7fc3de", roof: "#7fc3de", glass: "#dff6ff", ground: "#d8ecef" },
+    };
+    return { ...base, ...(palettes[model] || {}) };
+  }
+
+  function drawPauseSnapshotPhotoDetails(landmark, x, groundY, modelW, modelH, scale, side) {
+    void side;
+    const model = landmark.model || landmark.kind;
+    const palette = getPausePhotoPalette(landmark);
+    const topY = groundY - modelH;
+    ctx.save();
+    if (model === "ugoodaysStore") {
+      const signY = topY + 12 * scale;
+      fillRect(x + 18 * scale, signY, modelW - 28 * scale, 44 * scale, "rgba(255,255,255,.88)");
+      for (let i = 0; i < 22; i += 1) fillRect(x + (24 + i * 8) * scale, signY + 4 * scale, 2 * scale, 36 * scale, "rgba(36,50,58,.1)");
+      drawCircle(x + modelW * 0.34, signY + 22 * scale, 21 * scale, COLORS.aqua);
+      drawCircle(x + modelW * 0.34 - 9 * scale, signY + 28 * scale, 4.5 * scale, "#ffffff");
+      drawCircle(x + modelW * 0.34 + 8 * scale, signY + 28 * scale, 4.5 * scale, "#ffffff");
+      fillRect(x + modelW * 0.34 - 8 * scale, signY + 35 * scale, 17 * scale, 3 * scale, "#ffffff");
+      drawText("UGOODAYS", x + modelW * 0.66, signY + 31 * scale, Math.max(7, 10 * scale), COLORS.aquaDeep, "center");
+      fillRect(x + 12 * scale, topY + 73 * scale, modelW - 24 * scale, 13 * scale, palette.accent);
+      for (let i = 0; i < 6; i += 1) drawCircle(x + (52 + i * 29) * scale, topY + 81 * scale, 4 * scale, "#ffffff");
+      fillRect(x + modelW * 0.68, topY + 96 * scale, 14 * scale, 21 * scale, "#268aa1");
+      drawText("294", x + modelW * 0.68 + 7 * scale, topY + 106 * scale, Math.max(6, 8 * scale), "#ffffff", "center");
+      fillRect(x + modelW * 0.69, topY + 121 * scale, 43 * scale, 45 * scale, "#bfeef8");
+      drawCircle(x + modelW * 0.72, topY + 149 * scale, 13 * scale, "#ffffff");
+      fillRect(x + 22 * scale, groundY - 24 * scale, 76 * scale, 15 * scale, "#bfeef8");
+      for (let i = 0; i < 5; i += 1) {
+        const px = x + (30 + i * 13) * scale;
+        drawCircle(px, groundY - 32 * scale, 8 * scale, i % 2 ? "#89b381" : "#65a85f");
+        drawCircle(px + 3 * scale, groundY - 38 * scale, 3 * scale, i % 2 ? "#f19aa0" : "#f4d16f");
+      }
+    } else if (model === "tainanStation" || model === "shanhuaStation") {
+      drawCircle(x + modelW / 2, topY + 50 * scale, 15 * scale, "#ffffff");
+      strokeCircle(x + modelW / 2, topY + 50 * scale, 15 * scale, palette.accent, Math.max(2, 3 * scale));
+      strokePerspectiveLine(x + modelW / 2, topY + 50 * scale, x + modelW / 2, topY + 40 * scale, palette.accent, Math.max(1, 2 * scale));
+      strokePerspectiveLine(x + modelW / 2, topY + 50 * scale, x + modelW / 2 + 8 * scale, topY + 55 * scale, palette.accent, Math.max(1, 2 * scale));
+    } else if (model === "nanfangMall") {
+      for (let i = 0; i < 5; i += 1) fillRect(x + (28 + i * 31) * scale, topY + 72 * scale, 20 * scale, 14 * scale, i % 2 ? "#fff4dc" : "#dff6ff");
+      drawQuad(x + modelW * 0.58, topY + 27 * scale, x + modelW * 0.9, topY + 3 * scale, x + modelW * 0.94, topY + 116 * scale, x + modelW * 0.61, topY + 130 * scale, "rgba(191,238,248,.58)");
+    } else if (model === "chihkanTower" || model === "mazuTemple" || model === "confuciusTemple" || model === "madouDaitianTemple" || model === "koxingaShrine") {
+      for (let i = 0; i < 4; i += 1) drawCircle(x + (38 + i * (modelW / scale - 76) / 3) * scale, topY + 67 * scale, 5 * scale, "#f4d16f");
+      strokePerspectiveLine(x + 22 * scale, topY + 92 * scale, x + modelW - 22 * scale, topY + 92 * scale, "rgba(255,255,255,.38)", Math.max(2, 3 * scale));
+    } else if (model === "beimenCrystalChurch") {
+      strokePerspectiveLine(x + modelW * 0.5, topY + 8 * scale, x + modelW * 0.5, groundY - 18 * scale, "#ffffff", Math.max(2, 4 * scale));
+      drawCircle(x + modelW * 0.5, groundY - 36 * scale, 6 * scale, "#d8484f");
+    } else if (model === "bigFish") {
+      drawCircle(x + modelW * 0.57, topY + modelH * 0.44, 8 * scale, "#ffffff");
+      strokeCircle(x + modelW * 0.57, topY + modelH * 0.44, 20 * scale, "rgba(255,255,255,.58)", Math.max(2, 3 * scale));
+    }
+    ctx.globalAlpha *= 0.78;
+    strokeRect(x - 7 * scale, topY - 7 * scale, modelW + 14 * scale, modelH + 12 * scale, "rgba(255,255,255,.5)", Math.max(1, 1.5 * scale));
     ctx.restore();
   }
 
@@ -4039,7 +4172,7 @@
     const badgeW = Math.min(modelW * 0.72, Math.max(92 * scale, landmark.name.length * 12 * scale));
     const badgeH = 24 * scale;
     const badgeX = x + modelW / 2 - badgeW / 2;
-    const badgeY = groundY + 9 * scale;
+    const badgeY = groundY - badgeH - 3 * scale;
     fillRect(badgeX + 3 * scale, badgeY + 3 * scale, badgeW, badgeH, "rgba(36,50,58,.14)");
     fillRect(badgeX, badgeY, badgeW, badgeH, "rgba(255,255,255,.94)");
     strokeRect(badgeX, badgeY, badgeW, badgeH, landmark.accent || COLORS.aquaDeep, Math.max(1, 2 * scale));
